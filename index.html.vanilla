@@ -1,0 +1,2533 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>QuickRand — Dado + Sorteo + Multi-Touch</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dice-roller-parser@1.2.0/dist/dice-roller-parser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/rpg-dice-roller@5.2.1/lib/bundle/dice-roller.js"></script>
+  <script src="https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --panel: rgba(23, 24, 26, 0.7);
+      --panel-solid: #17181a;
+      --muted: #888e96;
+      --text: #ffffff;
+      --line: rgba(255, 255, 255, 0.08);
+      --good: #2dd4bf;
+      --warn: #f59e0b;
+      --accent-1: #2dd4bf;
+      --accent-2: #f59e0b;
+      --accent-3: #818cf8;
+      --accent-4: #f472b6;
+      --accent-5: #34d399;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+      /* Traffic Light colors */
+      --traffic-red: #ef4444;
+      --traffic-yellow: #facc15;
+      --traffic-green: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(45, 212, 191, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background: conic-gradient(from 180deg, rgba(45, 212, 191, 0.08), rgba(129, 140, 248, 0.06), rgba(244, 114, 182, 0.08), rgba(45, 212, 191, 0.08));
+      filter: blur(80px);
+      z-index: -2;
+      animation: ambientShift 20s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes ambientShift {
+      from {
+        transform: rotate(0deg) scale(1);
+      }
+
+      to {
+        transform: rotate(360deg) scale(1.12);
+      }
+    }
+
+    header {
+      padding: 24px 20px 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 11, 0.8);
+    }
+
+    .title {
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, #888 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    main {
+      padding: 16px 20px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px;
+      margin: 8px 0 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab[aria-selected="true"] {
+      background: var(--text);
+      color: var(--bg);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+    }
+
+    @media(min-width:900px) {
+      .grid {
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow-premium);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input,
+    select,
+    textarea {
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--good);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1);
+    }
+
+    textarea {
+      min-height: 120px;
+      width: 100%;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    input[type="number"] {
+      width: 100px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+    }
+
+    .btn.primary:hover {
+      background: #eee;
+    }
+
+    .btn.good {
+      background: rgba(45, 212, 191, 0.1);
+      border-color: rgba(45, 212, 191, 0.3);
+      color: var(--good);
+    }
+
+    .btn.good:hover {
+      background: rgba(45, 212, 191, 0.2);
+    }
+
+    .btn.warn {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--warn);
+    }
+
+    .btn.warn:hover {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .out {
+      font-size: 64px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      padding: 20px 0;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    }
+
+    .smallout {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 20px 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .touchpad {
+      position: relative;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%),
+        #0a0a0b;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      height: 360px;
+      overflow: hidden;
+      touch-action: none;
+      transition: border-color 0.3s ease;
+    }
+
+    .touchpad:active {
+      border-color: var(--good);
+    }
+
+    .dot {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 2px solid var(--dot-color, var(--good));
+      background: radial-gradient(circle, var(--dot-bg, rgba(45, 212, 191, 0.15)) 0%, transparent 80%);
+      transform: translate(-50%, -50%) scale(1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      user-select: none;
+      pointer-events: none;
+      z-index: 10;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 30px var(--dot-bg);
+      backdrop-filter: blur(4px);
+    }
+
+    .dot.capturing {
+      animation: ripple 1s infinite cubic-bezier(0, 0, 0.2, 1);
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+
+    @keyframes ripple {
+      0% {
+        box-shadow: 0 0 0 0 var(--dot-color);
+        opacity: 1;
+      }
+
+      100% {
+        box-shadow: 0 0 0 40px transparent;
+        opacity: 0.5;
+      }
+    }
+
+    .orderlist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .orderitem {
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
+    }
+
+    .orderitem.active {
+      border-color: var(--warn);
+      background: rgba(245, 158, 11, 0.05);
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.9em;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Code Red Animation */
+    @keyframes codeRed {
+
+      0%,
+      100% {
+        background-color: rgba(239, 68, 68, 0.05);
+      }
+
+      50% {
+        background-color: rgba(239, 68, 68, 0.2);
+      }
+    }
+
+    .code-red {
+      animation: codeRed 1s infinite;
+      border-color: var(--traffic-red) !important;
+    }
+
+    /* Health Bar */
+    .health-container {
+      width: 100%;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      position: relative;
+      margin: 10px 0;
+    }
+
+    .health-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--traffic-red), var(--good));
+      width: 100%;
+      transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .health-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Badges */
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      aspect-ratio: 1;
+      background: var(--glass);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      opacity: 0.2;
+      filter: grayscale(1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      cursor: help;
+    }
+
+    .badge.unlocked {
+      opacity: 1;
+      filter: grayscale(0);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--good);
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(45, 212, 191, 0.2);
+    }
+
+    .badge-name {
+      font-size: 9px;
+      font-weight: 700;
+      margin-top: 4px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* Traffic Light UI */
+    .traffic-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .traffic-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      opacity: 0.2;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .traffic-btn.active {
+      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px currentColor;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Roulette Premium */
+    .roulette-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      padding: 20px 0;
+    }
+
+    .roulette-wrapper {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      padding: 10px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+      border-radius: 50%;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #rouletteCanvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
+    }
+
+    .roulette-arrow {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 34px;
+      height: 44px;
+      background: #fff;
+      clip-path: polygon(50% 100%, 0 0, 100% 0);
+      z-index: 20;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    }
+
+    .roulette-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px;
+      height: 32px;
+      background: var(--bg);
+      border-radius: 50%;
+      border: 6px solid #fff;
+      z-index: 15;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 3D Dice Engine */
+    .scene {
+      width: 100px;
+      height: 100px;
+      perspective: 600px;
+      margin: 30px auto;
+    }
+
+    .cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1.2s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+      will-change: transform;
+    }
+
+    .face {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: rgba(45, 212, 191, 0.4);
+      /* Clinica Teal */
+      backdrop-filter: blur(5px);
+      color: white;
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+    }
+
+    .front {
+      transform: rotateY(0deg) translateZ(50px);
+    }
+
+    .back {
+      transform: rotateY(180deg) translateZ(50px);
+    }
+
+    .right {
+      transform: rotateY(90deg) translateZ(50px);
+    }
+
+    .left {
+      transform: rotateY(-90deg) translateZ(50px);
+    }
+
+    .top {
+      transform: rotateX(90deg) translateZ(50px);
+    }
+
+    .bottom {
+      transform: rotateX(-90deg) translateZ(50px);
+    }
+
+    .rolling {
+      animation: diceSpin 0.2s infinite linear;
+    }
+
+    @keyframes diceSpin {
+      from {
+        transform: rotateX(0) rotateY(0);
+      }
+
+      to {
+        transform: rotateX(360deg) rotateY(360deg);
+      }
+    }
+
+    @media (max-width: 900px) {
+      main {
+        padding: 12px 14px 28px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .out {
+        font-size: clamp(36px, 10vw, 56px);
+      }
+
+      .roulette-wrapper {
+        width: min(86vw, 320px);
+        height: min(86vw, 320px);
+      }
+
+      .touchpad {
+        height: 300px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      header {
+        padding: 16px 14px 10px;
+      }
+
+      .title {
+        font-size: 18px;
+      }
+
+      .row>.btn,
+      .row>div,
+      .row>input,
+      .row>select {
+        width: 100%;
+      }
+
+      input[type="number"],
+      select,
+      input[type="text"] {
+        width: 100%;
+      }
+
+      .dot {
+        width: 52px;
+        height: 52px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+      .face {
+        background: rgba(45, 212, 191, 0.8);
+      }
+    }
+
+    /* Winner Flash */
+    .winner-flash {
+      animation: winnerFlash 0.2s 5;
+    }
+
+    @keyframes winnerFlash {
+      50% {
+        background: white;
+        color: black;
+        box-shadow: 0 0 30px white;
+      }
+    }
+
+    .exam-question {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 8px 0 18px;
+      line-height: 1.3;
+    }
+
+    .exam-options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .exam-option {
+      width: 100%;
+      text-align: left;
+      justify-content: flex-start;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .exam-option.correct {
+      border-color: rgba(45, 212, 191, 0.5);
+      background: rgba(45, 212, 191, 0.18);
+      color: #9ef5e8;
+    }
+
+    .exam-option.incorrect {
+      border-color: rgba(239, 68, 68, 0.6);
+      background: rgba(239, 68, 68, 0.2);
+      color: #ffc9c9;
+    }
+
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .score-item.active {
+      border-color: rgba(129, 140, 248, 0.5);
+      background: rgba(129, 140, 248, 0.15);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <div class="title">QuickRand</div>
+      <div class="subtitle">Dado · Sorteo · Multi-Touch · Equipos (offline-ready si lo vuelves PWA)</div>
+    </div>
+    <div class="pill"><span class="mono" id="rngLabel">RNG: crypto</span></div>
+  </header>
+
+  <main>
+    <div class="tabs" role="tablist" aria-label="Módulos">
+      <button class="tab" role="tab" aria-selected="true" data-tab="progreso">Progreso RPG</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="control">Control de Flujo</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="dice">Dado</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="touch">Orden por toque</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="picker">Sorteo</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="roulette">Ruleta</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="teams">Equipos</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="exam">Examen grupal</button>
+    </div>
+
+    <!-- DICE -->
+    <section id="tab-dice" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Visualizador 3D</h2>
+        <div class="scene">
+          <div class="cube" id="diceCube" aria-label="Dado 3D" role="img">
+            <div class="face front">1</div>
+            <div class="face back">2</div>
+            <div class="face right">3</div>
+            <div class="face left">4</div>
+            <div class="face top">5</div>
+            <div class="face bottom">6</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="out" id="diceOut">—</div>
+        <div class="smallout" id="diceDetail"></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Tipo</label><br />
+          <select id="diceType">
+            <option value="4">d4</option>
+            <option value="6" selected>d6</option>
+            <option value="8">d8</option>
+            <option value="10">d10</option>
+            <option value="12">d12</option>
+            <option value="20">d20</option>
+            <option value="custom">custom</option>
+          </select>
+        </div>
+        <div id="customDiceWrap" style="display:none;">
+          <label>Caras</label><br />
+          <input id="customDiceFaces" type="number" min="2" step="1" value="100" />
+        </div>
+        <div>
+          <label># de dados</label><br />
+          <input id="diceCount" type="number" min="1" step="1" value="1" />
+        </div>
+        <div>
+          <label>Mod (+/-)</label><br />
+          <input id="diceMod" type="number" step="1" value="0" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <label>Fórmula avanzada (ej. 2d20 + 5)</label><br />
+        <div class="row" style="margin-top: 5px;">
+          <input id="diceFormula" type="text" placeholder="2d10 + 3" style="flex: 1;" />
+          <button class="btn good" id="rollFormulaBtn">Tirar fórmula</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <button class="btn primary good" id="rollBtn">Tirar</button>
+        <button class="btn" id="roll2d10Btn">Dificultad (2d10)</button>
+        <button class="btn" id="roll3Btn">Tirar ×3</button>
+        <button class="btn" id="clearDiceBtn">Limpiar</button>
+        <span class="hint">Tip: vibración si tu dispositivo lo permite.</span>
+      </div>
+      </div>
+
+      <div class="card">
+        <h2>Métodos rápidos</h2>
+        <div class="row">
+          <button class="btn" id="coinBtn">Moneda</button>
+          <button class="btn" id="yesNoBtn">Sí/No</button>
+          <button class="btn" id="d100Btn">d100</button>
+          <button class="btn warn" id="timer30Btn">Timer 30s</button>
+        </div>
+        <div class="divider"></div>
+        <div class="out" id="quickOut">—</div>
+        <div class="smallout" id="quickDetail"></div>
+      </div>
+    </section>
+
+    <!-- PROGRESO RPG -->
+    <section id="tab-progreso" class="grid">
+      <div class="card">
+        <h2>Jerarquía Médica</h2>
+        <div class="row" style="justify-content: space-between;">
+          <div id="rankTitle" style="font-size: 24px; font-weight: 800; color: var(--good);">Interno/a</div>
+          <div class="pill">XP: <span id="xpVal" class="mono">0</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn good" id="addXpBtn">+10 XP (Acierto)</button>
+          <button class="btn" id="addXpLargeBtn">+50 XP (Caso Resuelto)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Energía del Grupo</h2>
+        <div class="health-container">
+          <div class="health-bar" id="healthBar"></div>
+          <div class="health-text" id="healthText">100 / 100</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn warn" id="damageBtn">Daño (Error)</button>
+          <button class="btn good" id="healBtn">Heal (Recuperación)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Logros Médicos (Badges)</h2>
+        <div class="badge-grid">
+          <div class="badge" data-badge="eye" title="Ojo Clínico: Detectar un síntoma clave">
+            👁️<div class="badge-name">Ojo Clínico</div>
+          </div>
+          <div class="badge" data-badge="heart" title="Empatía: Resolver conflicto ético">
+            ❤️<div class="badge-name">Empatía</div>
+          </div>
+          <div class="badge" data-badge="brain" title="Genio Diagnóstico: Diferencial complejo">
+            🧠<div class="badge-name">Genio</div>
+          </div>
+          <div class="badge" data-badge="fast" title="Código Rojo: Resolver bajo presión">
+            ⚡<div class="badge-name">Velocidad</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Gestión de Datos</h2>
+        <div class="smallout">Exporta el progreso para usarlo en otra clase o navegador.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn primary" id="exportBtn">Exportar JSON</button>
+          <button class="btn" id="importTriggerBtn">Importar</button>
+          <input type="file" id="importFile" style="display:none" accept=".json">
+          <button class="btn warn" id="resetProgressBtn">Reset Total</button>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- CONTROL DE FLUJO -->
+    <section id="tab-control" class="grid" style="display:none;">
+      <div class="card" id="timerCard">
+        <h2>Temporizador de "Código Rojo"</h2>
+        <div class="out" id="controlTimer">30</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn warn" id="startRedTimerBtn">⚡ INICIAR CÓDIGO ROJO</button>
+          <button class="btn" id="stopTimerBtn">Detener</button>
+          <button class="btn" id="resetTimerBtn">Reset 30s</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Semáforo de Atención</h2>
+        <div class="smallout">Controla el ruido y la fase de la clase.</div>
+        <div class="traffic-row">
+          <div class="traffic-btn" style="background: var(--traffic-green); color: var(--traffic-green);"
+            id="trafficGreen" title="Verde: Trabajo en equipo"></div>
+          <div class="traffic-btn" style="background: var(--traffic-yellow); color: var(--traffic-yellow);"
+            id="trafficYellow" title="Amarillo: Dudas / Transición"></div>
+          <div class="traffic-btn" style="background: var(--traffic-red); color: var(--traffic-red);" id="trafficRed"
+            title="Rojo: Explicación Prof."></div>
+        </div>
+        <div class="divider"></div>
+        <div id="trafficStatus" style="text-align:center; font-weight: 700; text-transform: uppercase;">Libre</div>
+      </div>
+
+      <div class="card">
+        <h2>Líder de Guardia</h2>
+        <div class="smallout">Selecciona al responsable del grupo hoy.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn primary good" id="pickLeaderBtn">Asignar Líder</button>
+        </div>
+        <div class="out" id="leaderOut" style="font-size: 24px;">—</div>
+      </div>
+      </div>
+    </section>
+
+    <!-- TOUCH ORDER -->
+    <section id="tab-touch" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Orden aleatorio por multi-touch</h2>
+        <div class="smallout">
+          Coloca <b>N dedos</b> simultáneamente en el panel. Si se mantienen <b>~0.6s</b> sin moverse,
+          se “capturan” como participantes y se genera un orden aleatorio.
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <div>
+            <label>Hold para capturar (ms)</label><br />
+            <input id="holdMs" type="number" min="200" step="50" value="600" />
+          </div>
+          <div>
+            <label>Tolerancia movimiento (px)</label><br />
+            <input id="moveTol" type="number" min="5" step="1" value="18" />
+          </div>
+          <div>
+            <label>Etiquetado</label><br />
+            <select id="labelMode">
+              <option value="left2right" selected>izq→der (por x)</option>
+              <option value="id">por identifier (técnico)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="touchpad" id="touchPad" aria-label="Panel táctil"></div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <span class="pill">Dedos: <span class="mono" id="touchCount">0</span></span>
+          <span class="pill">Estado: <span class="mono" id="touchState">idle</span></span>
+          <span class="pill">Participantes: <span class="mono" id="partCount">0</span></span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <button class="btn primary good" id="genOrderBtn">Generar orden (manual)</button>
+          <button class="btn" id="nextTurnBtn" disabled>Siguiente turno</button>
+          <button class="btn" id="resetTouchBtn">Reset</button>
+        </div>
+
+        <div class="orderlist" id="orderList"></div>
+      </div>
+
+      <div class="card">
+        <h2>Roles rápidos (opcional)</h2>
+        <div class="smallout">
+          Asigna roles al mismo grupo capturado (p.ej., “líder”, “secretario”, “abogado del diablo”, “crítico”,
+          “tiempo”).
+        </div>
+        <div class="divider"></div>
+        <label>Roles (uno por línea)</label>
+        <textarea id="rolesInput">Líder
+Secretario/a
+Abogado/a del diablo
+Cronometrista
+Observador/a</textarea>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn good" id="assignRolesBtn">Asignar roles al azar</button>
+          <button class="btn" id="clearRolesBtn">Limpiar</button>
+        </div>
+        <div class="divider"></div>
+        <div class="smallout" id="rolesOut"></div>
+      </div>
+    </section>
+
+    <!-- PICKER -->
+    <section id="tab-picker" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Sorteo / Ruleta de nombres</h2>
+        <label>Opciones (una por línea)</label>
+        <textarea id="itemsInput">Opción A
+Opción B
+Opción C
+Opción D</textarea>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <button class="btn good" id="pickOneBtn">Elegir 1</button>
+          <button class="btn" id="shuffleBtn">Mezclar (shuffle)</button>
+          <button class="btn warn" id="pick3Btn">Elegir 3 sin reemplazo</button>
+          <button class="btn" id="clearItemsBtn">Limpiar</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="smallout">Modo justo activo: usa rotación balanceada para evitar repeticiones injustas.</div>
+        <div class="divider"></div>
+
+        <div class="out" id="pickOut">—</div>
+        <div class="smallout" id="pickDetail"></div>
+      </div>
+
+      <div class="card">
+        <h2>Random numérico</h2>
+        <div class="row">
+          <div>
+            <label>Min</label><br />
+            <input id="minN" type="number" step="1" value="1" />
+          </div>
+          <div>
+            <label>Max</label><br />
+            <input id="maxN" type="number" step="1" value="10" />
+          </div>
+          <button class="btn good" id="randIntBtn">Random int</button>
+        </div>
+        <div class="divider"></div>
+        <div class="out" id="numOut">—</div>
+        <div class="smallout" id="numDetail"></div>
+      </div>
+    </section>
+
+    <!-- ROULETTE -->
+    <section id="tab-roulette" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Ruleta de la Suerte</h2>
+        <div class="smallout">Usa las opciones configuradas en la pestaña "Sorteo".</div>
+        <div class="divider"></div>
+        <div class="roulette-container">
+          <div class="roulette-wrapper">
+            <div class="roulette-arrow"></div>
+            <div class="roulette-center"></div>
+            <canvas id="rouletteCanvas" width="600" height="600"></canvas>
+          </div>
+          <button class="btn primary good" id="spinBtn" style="padding: 15px 40px; font-size: 18px;">¡GIRAR!</button>
+        </div>
+        <div class="divider"></div>
+        <div class="out" id="rouletteOut">—</div>
+      </div>
+      <div class="card">
+        <h2>Configuración de Ruleta</h2>
+        <div class="smallout">La ruleta toma los nombres de la lista de Sorteo.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn" id="syncRouletteBtn">Actualizar Ruleta</button>
+          <span class="hint">Haz clic aquí si cambiaste los nombres.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAMS -->
+    <section id="tab-teams" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Equipos aleatorios</h2>
+        <label>Participantes (uno por línea)</label>
+        <textarea id="peopleInput">P1
+P2
+P3
+P4
+P5
+P6</textarea>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <div>
+            <label># Equipos</label><br />
+            <input id="teamCount" type="number" min="2" step="1" value="2" />
+          </div>
+          <button class="btn good" id="makeTeamsBtn">Asignar</button>
+          <button class="btn" id="shufflePeopleBtn">Mezclar lista</button>
+          <button class="btn" id="clearPeopleBtn">Limpiar</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="smallout" id="teamsOut">—</div>
+      </div>
+
+      <div class="card">
+        <h2>Mini-mecánicas “rápidas”</h2>
+        <div class="smallout">
+          Úsalas para dinamizar actividades sin preparar nada:
+          <span class="goodtext">bonus</span> / <span class="warntext">penalización</span> / constraints.
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn" id="constraintBtn">Constraint aleatorio</button>
+          <button class="btn" id="bonusBtn">Bonus aleatorio</button>
+          <button class="btn" id="penaltyBtn">Penalización aleatoria</button>
+        </div>
+        <div class="divider"></div>
+        <div class="out" id="mechOut">—</div>
+        <div class="smallout" id="mechDetail"></div>
+      </div>
+    </section>
+
+    <!-- GROUP EXAM -->
+    <section id="tab-exam" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Examen grupal importable</h2>
+        <div class="smallout">Importa un JSON con preguntas y opciones. Cada ronda asigna turno justo a un equipo y
+          valida la respuesta en vivo.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn" id="examTemplateBtn">Descargar plantilla JSON</button>
+          <button class="btn good" id="examImportTriggerBtn">Importar examen</button>
+          <input id="examImportFile" type="file" accept="application/json" style="display:none;" />
+        </div>
+        <div class="divider"></div>
+        <label>Equipos participantes (uno por línea)</label>
+        <textarea id="examTeamsInput">Equipo A
+Equipo B
+Equipo C</textarea>
+        <div class="row" style="margin-top: 10px;">
+          <button class="btn" id="examInitTeamsBtn">Inicializar equipos</button>
+          <button class="btn" id="examNextTeamBtn">Siguiente equipo (justo)</button>
+          <button class="btn warn" id="examResetBtn">Reiniciar examen</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Pregunta actual</h2>
+        <div class="pill">Turno: <span class="mono" id="examCurrentTeam">—</span></div>
+        <div class="divider"></div>
+        <div class="smallout" id="examMeta">Sin examen importado.</div>
+        <div class="exam-question" id="examQuestion">Importa un examen para comenzar.</div>
+        <div class="exam-options" id="examOptions"></div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn" id="examPrevBtn">Anterior</button>
+          <button class="btn good" id="examNextBtn">Siguiente pregunta</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Marcador por equipos</h2>
+        <div class="smallout" id="examScoreOut">Inicializa equipos para ver puntajes.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---------------------------
+    // BalancedRNG (Encapsulated)
+    // ---------------------------
+    function hasCryptoRng() {
+      return typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function";
+    }
+
+    const RNG = {
+      _bags: new Map(), // key -> Array of available indices
+
+      u32() {
+        if (!hasCryptoRng()) return (Math.random() * 0x100000000) >>> 0;
+        const a = new Uint32Array(1);
+        crypto.getRandomValues(a);
+        return a[0] >>> 0;
+      },
+
+      int(min, max) {
+        min = Math.ceil(min); max = Math.floor(max);
+        if (max < min) [min, max] = [max, min];
+        const range = (max - min + 1) >>> 0;
+        if (range === 0) return min;
+        const limit = Math.floor(0x100000000 / range) * range;
+        let x;
+        do { x = RNG.u32(); } while (x >= limit);
+        return min + (x % range);
+      },
+
+      // Public API for balanced behavior
+      pickBalancedIndex(key, size) {
+        if (size <= 0) return -1;
+        let bag = this._bags.get(key);
+
+        // Refresh bag if size changed or exhausted
+        if (!bag || bag.length === 0 || bag.max_size !== size) {
+          bag = Array.from({ length: size }, (_, i) => i);
+          bag.max_size = size;
+          // Fisher-Yates
+          for (let i = bag.length - 1; i > 0; i--) {
+            const j = this.int(0, i);
+            [bag[i], bag[j]] = [bag[j], bag[i]];
+          }
+        }
+        const idx = bag.pop();
+        this._bags.set(key, bag);
+        return idx;
+      },
+
+      keyFromItems(scope, arr) {
+        const normalized = (arr || []).map(v => String(v).trim().toLowerCase()).sort().join("||");
+        return `${scope}:${normalized}`;
+      },
+
+      pick(arr, key = "global") {
+        if (!arr || arr.length === 0) return null;
+        if (arr.length === 1) return arr[0];
+        const idx = this.pickBalancedIndex(key, arr.length);
+        return arr[idx];
+      },
+
+      shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = this.int(0, i);
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      },
+
+      resetBag(key) {
+        this._bags.delete(key);
+      }
+    };
+
+    const rngLabel = document.getElementById("rngLabel");
+    rngLabel.textContent = "RNG: " + (hasCryptoRng() ? "crypto" : "math.random (fallback)");
+
+    function vibrate(ms = 18) {
+      try { if (navigator.vibrate) navigator.vibrate(ms); } catch { }
+    }
+
+    function cleanLines(text) {
+      return text
+        .split(/\r?\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    // ---------------------------
+    // Tabs
+    // ---------------------------
+    const tabButtons = Array.from(document.querySelectorAll(".tab"));
+    const tabs = {
+      progreso: document.getElementById("tab-progreso"),
+      control: document.getElementById("tab-control"),
+      dice: document.getElementById("tab-dice"),
+      touch: document.getElementById("tab-touch"),
+      picker: document.getElementById("tab-picker"),
+      roulette: document.getElementById("tab-roulette"),
+      teams: document.getElementById("tab-teams"),
+      exam: document.getElementById("tab-exam")
+    };
+
+    tabButtons.forEach(btn => btn.addEventListener("click", () => {
+      tabButtons.forEach(b => b.setAttribute("aria-selected", "false"));
+      btn.setAttribute("aria-selected", "true");
+      const key = btn.dataset.tab;
+      Object.entries(tabs).forEach(([k, el]) => el.style.display = (k === key ? "" : "none"));
+    }));
+
+    // ---------------------------
+    // Dice
+    // ---------------------------
+    const diceType = document.getElementById("diceType");
+    const customDiceWrap = document.getElementById("customDiceWrap");
+    const customDiceFaces = document.getElementById("customDiceFaces");
+    const diceCount = document.getElementById("diceCount");
+    const diceMod = document.getElementById("diceMod");
+    const diceOut = document.getElementById("diceOut");
+    const diceDetail = document.getElementById("diceDetail");
+
+    diceType.addEventListener("change", () => {
+      customDiceWrap.style.display = diceType.value === "custom" ? "" : "none";
+    });
+
+    function rollDiceOnce(faces) {
+      return RNG.int(1, faces);
+    }
+
+    // ---------------------------
+    // 3D Dice Engine (Custom)
+    // ---------------------------
+    const diceCube = document.getElementById("diceCube");
+    const faceRotation = {
+      1: { x: 0, y: 0 },
+      2: { x: 0, y: 180 },
+      3: { x: 0, y: -90 },
+      4: { x: 0, y: 90 },
+      5: { x: -90, y: 0 },
+      6: { x: 90, y: 0 },
+    };
+
+    function setDiceFace(value) {
+      if (!diceCube) return;
+      const r = faceRotation[value] ?? faceRotation[1];
+      // Extra turns for visual drama
+      const extraX = 360 * (2 + RNG.int(0, 1));
+      const extraY = 360 * (2 + RNG.int(0, 1));
+      diceCube.style.transform = `rotateX(${r.x + extraX}deg) rotateY(${r.y + extraY}deg)`;
+    }
+
+    function rollDice() {
+      let faces = (diceType.value === "custom")
+        ? Math.max(2, parseInt(customDiceFaces.value || "2", 10))
+        : parseInt(diceType.value, 10);
+
+      let n = Math.max(1, parseInt(diceCount.value || "1", 10));
+      let mod = parseInt(diceMod.value || "0", 10);
+
+      const formula = `${n}d${faces}${mod ? (mod > 0 ? `+${mod}` : `${mod}`) : ""}`;
+      executeDiceFormula(formula);
+    }
+
+    function executeDiceFormula(formula) {
+      if (!formula) return;
+
+      function fallbackRoll(rawFormula) {
+        const normalized = String(rawFormula).replace(/\s+/g, "");
+        const match = normalized.match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+        if (!match) throw new Error("Unsupported fallback formula");
+        const qty = Math.max(1, parseInt(match[1] || "1", 10));
+        const sides = Math.max(2, parseInt(match[2], 10));
+        const mod = parseInt(match[3] || "0", 10);
+        const rolls = Array.from({ length: qty }, () => rollDiceOnce(sides));
+        const subtotal = rolls.reduce((acc, n) => acc + n, 0);
+        const total = subtotal + mod;
+        return { qty, sides, mod, rolls, total, notation: `${qty}d${sides}${mod ? (mod > 0 ? `+${mod}` : `${mod}`) : ""}` };
+      }
+
+      try {
+        if (typeof rpgDiceRoller !== "undefined") {
+          const roller = new rpgDiceRoller.DiceRoller();
+          const roll = roller.roll(formula);
+          const total = roll.total;
+
+          // Sync 3D Cube if it's a single d6
+          const isSingleD6 = roll.notation.toLowerCase() === "1d6";
+          if (isSingleD6 && diceCube) {
+            diceCube.classList.add("rolling");
+            setTimeout(() => {
+              diceCube.classList.remove("rolling");
+              setDiceFace(total);
+              diceOut.textContent = String(total);
+              diceDetail.innerHTML = `
+                <div><span class="mono">${roll.notation}</span></div>
+                <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
+              `;
+              vibrate([30, 40, 30]);
+            }, 800);
+          } else {
+            diceOut.textContent = String(total);
+            diceDetail.innerHTML = `
+              <div><span class="mono">${roll.notation}</span></div>
+              <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
+            `;
+            vibrate(12);
+          }
+
+          // More balanced Celebration logic
+          const maxVal = roll.dice.reduce((acc, d) => acc + (d.sides * d.qty), 0);
+          if (total >= maxVal && maxVal > 1) {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#2dd4bf', '#f59e0b', '#f2f3f5'] });
+            vibrate([20, 50, 20]);
+          }
+          return;
+        }
+
+        // Offline/network fallback
+        const fb = fallbackRoll(formula);
+        const isSingleD6 = fb.notation.toLowerCase() === "1d6";
+
+        if (isSingleD6 && diceCube) {
+          diceCube.classList.add("rolling");
+          setTimeout(() => {
+            diceCube.classList.remove("rolling");
+            setDiceFace(fb.total);
+            diceOut.textContent = String(fb.total);
+            diceDetail.innerHTML = `
+              <div><span class="mono">${fb.notation}</span> <span class="hint">(modo local)</span></div>
+              <div>Resultados: <span class="mono">[${fb.rolls.join(", ")}]${fb.mod ? ` ${fb.mod > 0 ? "+" : ""}${fb.mod}` : ""}</span></div>
+            `;
+            vibrate([30, 40, 30]);
+          }, 800);
+        } else {
+          diceOut.textContent = String(fb.total);
+          diceDetail.innerHTML = `
+            <div><span class="mono">${fb.notation}</span> <span class="hint">(modo local)</span></div>
+            <div>Resultados: <span class="mono">[${fb.rolls.join(", ")}]${fb.mod ? ` ${fb.mod > 0 ? "+" : ""}${fb.mod}` : ""}</span></div>
+          `;
+          vibrate(12);
+        }
+      } catch (e) {
+        diceOut.textContent = "Err";
+        diceDetail.textContent = "Fórmula inválida o no soportada en modo local.";
+        console.error(e);
+      }
+    }
+
+    document.getElementById("rollBtn").addEventListener("click", rollDice);
+    document.getElementById("roll2d10Btn").addEventListener("click", () => {
+      executeDiceFormula("2d10");
+    });
+    document.getElementById("rollFormulaBtn").addEventListener("click", () => {
+      executeDiceFormula(document.getElementById("diceFormula").value);
+    });
+    document.getElementById("roll3Btn").addEventListener("click", () => { rollDice(); setTimeout(rollDice, 120); setTimeout(rollDice, 240); });
+    document.getElementById("clearDiceBtn").addEventListener("click", () => { diceOut.textContent = "—"; diceDetail.textContent = ""; document.getElementById("diceFormula").value = ""; });
+
+    // Quick methods
+    const quickOut = document.getElementById("quickOut");
+    const quickDetail = document.getElementById("quickDetail");
+    function setQuick(out, detail = "") {
+      quickOut.textContent = out;
+      quickDetail.textContent = detail;
+      vibrate(10);
+    }
+    document.getElementById("coinBtn").addEventListener("click", () => setQuick(RNG.pick(["Cara", "Cruz"], "coin_flip")));
+    document.getElementById("yesNoBtn").addEventListener("click", () => setQuick(RNG.pick(["Sí", "No"], "yes_no_choice")));
+    document.getElementById("d100Btn").addEventListener("click", () => setQuick(String(RNG.int(1, 100)), "d100"));
+    let timerInt = null;
+    document.getElementById("timer30Btn").addEventListener("click", () => {
+      let t = 30;
+      setQuick(String(t), "Timer (s)");
+      clearInterval(timerInt);
+      timerInt = setInterval(() => {
+        t--;
+        quickOut.textContent = String(t);
+        if (t <= 0) { clearInterval(timerInt); timerInt = null; setQuick("¡Tiempo!", ""); vibrate(60); }
+      }, 1000);
+    });
+
+    // ---------------------------
+    // Picker
+    // ---------------------------
+    const itemsInput = document.getElementById("itemsInput");
+    const pickOut = document.getElementById("pickOut");
+    const pickDetail = document.getElementById("pickDetail");
+
+    function setPick(out, detail = "") {
+      pickOut.textContent = out;
+      pickDetail.textContent = detail;
+      vibrate(10);
+    }
+
+    function easeOutQuad(t) { return t * (2 - t); }
+
+    let pickerRunning = false;
+    function startPickerShuffle() {
+      if (pickerRunning) return;
+      const items = cleanLines(itemsInput.value);
+      if (items.length < 1) return setPick("—", "Sin opciones.");
+
+      pickerRunning = true;
+      pickOut.classList.remove("winner-flash");
+      const pickBtn = document.getElementById("pickOneBtn");
+      if (pickBtn) pickBtn.disabled = true;
+
+      const totalSteps = 40;
+      const minDelay = 40;
+      const maxDelay = 220;
+      let step = 0;
+
+      const tick = () => {
+        const tempResult = RNG.pick(items, RNG.keyFromItems("picker_temp", items));
+        pickOut.textContent = tempResult;
+
+        const t = step / (totalSteps - 1);
+        const eased = easeOutQuad(t);
+        const delay = Math.round(minDelay + (maxDelay - minDelay) * eased);
+        step++;
+
+        if (step >= totalSteps) {
+          // Final Result
+          const finalResult = RNG.pick(items, RNG.keyFromItems("picker_items", items));
+          pickOut.textContent = finalResult;
+          pickOut.classList.add("winner-flash");
+          setPick(finalResult, `n=${items.length}`);
+          confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+
+          if (navigator.vibrate) navigator.vibrate([20, 30, 60]);
+          pickerRunning = false;
+          if (pickBtn) pickBtn.disabled = false;
+          return;
+        }
+        setTimeout(tick, delay);
+      };
+      tick();
+    }
+
+    document.getElementById("pickOneBtn").addEventListener("click", startPickerShuffle);
+
+    document.getElementById("shuffleBtn").addEventListener("click", () => {
+      const items = cleanLines(itemsInput.value);
+      if (items.length < 2) return setPick("—", "Necesitas ≥2 opciones.");
+      const s = RNG.shuffle(items);
+      itemsInput.value = s.join("\n");
+      setPick("Mezclado", `Primero: ${s[0]}`);
+    });
+
+    document.getElementById("pick3Btn").addEventListener("click", () => {
+      const items = cleanLines(itemsInput.value);
+      if (items.length < 3) return setPick("—", "Necesitas ≥3 opciones.");
+      const s = RNG.shuffle(items);
+      const chosen = s.slice(0, 3);
+      setPick(chosen.join(" · "), "3 sin reemplazo");
+    });
+
+    document.getElementById("clearItemsBtn").addEventListener("click", () => {
+      itemsInput.value = "";
+      setPick("—", "");
+    });
+
+    // Random numeric
+    const minN = document.getElementById("minN");
+    const maxN = document.getElementById("maxN");
+    const numOut = document.getElementById("numOut");
+    const numDetail = document.getElementById("numDetail");
+    document.getElementById("randIntBtn").addEventListener("click", () => {
+      const a = parseInt(minN.value || "0", 10);
+      const b = parseInt(maxN.value || "0", 10);
+      const r = RNG.int(a, b);
+      numOut.textContent = String(r);
+      numDetail.textContent = `Uniforme en [${Math.min(a, b)}, ${Math.max(a, b)}]`;
+      vibrate(10);
+    });
+
+    // ---------------------------
+    // Teams
+    // ---------------------------
+    const peopleInput = document.getElementById("peopleInput");
+    const teamCount = document.getElementById("teamCount");
+    const teamsOut = document.getElementById("teamsOut");
+
+    function renderTeams(teams) {
+      const lines = teams.map((t, i) => `<div class="orderitem"><b>Equipo ${i + 1}</b><span class="mono">${t.join(", ") || "—"}</span></div>`);
+      teamsOut.innerHTML = lines.join("");
+    }
+
+    document.getElementById("makeTeamsBtn").addEventListener("click", () => {
+      const people = cleanLines(peopleInput.value);
+      let k = Math.max(2, parseInt(teamCount.value || "2", 10));
+      k = Math.min(k, Math.max(2, people.length || 2));
+
+      if (people.length < 2) {
+        teamsOut.textContent = "Necesitas ≥2 participantes.";
+        return;
+      }
+      const s = RNG.shuffle(people);
+      const teams = Array.from({ length: k }, () => []);
+      s.forEach((p, idx) => teams[idx % k].push(p));
+      renderTeams(teams);
+      vibrate(12);
+    });
+
+    document.getElementById("shufflePeopleBtn").addEventListener("click", () => {
+      const people = cleanLines(peopleInput.value);
+      peopleInput.value = RNG.shuffle(people).join("\n");
+      vibrate(8);
+    });
+
+    document.getElementById("clearPeopleBtn").addEventListener("click", () => {
+      peopleInput.value = "";
+      teamsOut.textContent = "—";
+    });
+
+    // Mini-mechanics
+    const mechOut = document.getElementById("mechOut");
+    const mechDetail = document.getElementById("mechDetail");
+    const constraints = [
+      "Responde en ≤10 segundos.",
+      "Solo puedes dar 1 ejemplo clínico.",
+      "Prohibido usar la palabra principal del tema.",
+      "Explica usando una metáfora.",
+      "Da 2 diferenciales y justifica 1.",
+      "Habla como si fuera para un paciente (60s)."
+    ];
+    const bonuses = [
+      "+1 punto si nombras criterio diagnóstico correcto.",
+      "+1 punto si das dosis/rango plausible (si aplica).",
+      "+1 punto si incluyes bandera roja + acción.",
+      "+1 punto si incluyes bandera roja + acción.",
+      "+1 punto si mencionas efecto adverso relevante.",
+      "Re-roll: puedes volver a tirar el dado una vez."
+    ];
+    const penalties = [
+      "-1 punto si repites una pista de alguien.",
+      "Pierdes turno si tardas >15s.",
+      "Debes empezar con un contraejemplo.",
+      "Debes dar un error frecuente y corregirlo."
+    ];
+    function setMech(out, detail = "") { mechOut.textContent = out; mechDetail.textContent = detail; vibrate(10); }
+    document.getElementById("constraintBtn").addEventListener("click", () => setMech(RNG.pick(constraints, "mech_constraints"), "Constraint"));
+    document.getElementById("bonusBtn").addEventListener("click", () => setMech(RNG.pick(bonuses, "mech_bonuses"), "Bonus"));
+    document.getElementById("penaltyBtn").addEventListener("click", () => setMech(RNG.pick(penalties, "mech_penalties"), "Penalización"));
+
+    // ---------------------------
+    // Multi-touch order engine
+    // ---------------------------
+    const touchPad = document.getElementById("touchPad");
+    const touchCountEl = document.getElementById("touchCount");
+    const touchStateEl = document.getElementById("touchState");
+    const partCountEl = document.getElementById("partCount");
+    const orderListEl = document.getElementById("orderList");
+    const nextTurnBtn = document.getElementById("nextTurnBtn");
+    const genOrderBtn = document.getElementById("genOrderBtn");
+    const resetTouchBtn = document.getElementById("resetTouchBtn");
+    const holdMsEl = document.getElementById("holdMs");
+    const moveTolEl = document.getElementById("moveTol");
+    const labelModeEl = document.getElementById("labelMode");
+
+    // Active touches map: id -> {x,y,startX,startY,t0, dotEl}
+    const active = new Map();
+    let capturedParticipants = []; // [{label, x, y}]
+    let currentOrder = []; // labels
+    let currentTurnIndex = -1;
+    let captureTimer = null;
+    let captured = false;
+
+    function setState(s) { touchStateEl.textContent = s; }
+
+    function clearDots() {
+      active.forEach(v => { if (v.dotEl && v.dotEl.parentNode) v.dotEl.parentNode.removeChild(v.dotEl); });
+      active.clear();
+      touchCountEl.textContent = "0";
+    }
+
+    function resetTouchAll() {
+      clearDots();
+      capturedParticipants = [];
+      currentOrder = [];
+      currentTurnIndex = -1;
+      captured = false;
+      orderListEl.innerHTML = "";
+      partCountEl.textContent = "0";
+      nextTurnBtn.disabled = true;
+      setState("idle");
+      if (captureTimer) { clearTimeout(captureTimer); captureTimer = null; }
+      vibrate(8);
+    }
+
+    function renderOrder() {
+      orderListEl.innerHTML = "";
+      currentOrder.forEach((label, idx) => {
+        const div = document.createElement("div");
+        div.className = "orderitem" + (idx === currentTurnIndex ? " active" : "");
+        div.innerHTML = `<span><b>${idx + 1}.</b> Participante <span class="mono">${label}</span></span>
+                         <span class="pill">turno</span>`;
+        orderListEl.appendChild(div);
+      });
+    }
+
+    function labelParticipantsFromActive() {
+      const mode = labelModeEl.value;
+      const pts = Array.from(active.entries()).map(([id, v]) => ({ id, x: v.x, y: v.y }));
+
+      let ordered;
+      if (mode === "left2right") {
+        ordered = pts.sort((a, b) => a.x - b.x);
+      } else {
+        ordered = pts.sort((a, b) => a.id - b.id);
+      }
+      return ordered.map((p, i) => ({ label: String(i + 1), x: p.x, y: p.y }));
+    }
+
+    function generateOrder() {
+      if (capturedParticipants.length < 2) {
+        setState("need>=2");
+        vibrate(30);
+        return;
+      }
+      currentOrder = RNG.shuffle(capturedParticipants.map(p => p.label));
+      currentTurnIndex = 0;
+      nextTurnBtn.disabled = false;
+      setState("ordered");
+      renderOrder();
+      vibrate(14);
+    }
+
+    function nextTurn() {
+      if (currentOrder.length === 0) return;
+      currentTurnIndex = (currentTurnIndex + 1) % currentOrder.length;
+      renderOrder();
+      vibrate(10);
+    }
+
+    nextTurnBtn.addEventListener("click", nextTurn);
+    genOrderBtn.addEventListener("click", generateOrder);
+    resetTouchBtn.addEventListener("click", resetTouchAll);
+
+    function scheduleCapture() {
+      if (captureTimer) clearTimeout(captureTimer);
+      const holdMs = Math.max(200, parseInt(holdMsEl.value || "600", 10));
+      captureTimer = setTimeout(() => {
+        // Verify stability (movement tolerance)
+        const tol = Math.max(5, parseInt(moveTolEl.value || "18", 10));
+        let stable = true;
+        active.forEach(v => {
+          const dx = v.x - v.startX;
+          const dy = v.y - v.startY;
+          if (Math.hypot(dx, dy) > tol) stable = false;
+        });
+        if (!stable || active.size < 2) { setState("moving/insufficient"); return; }
+
+        capturedParticipants = labelParticipantsFromActive();
+        partCountEl.textContent = String(capturedParticipants.length);
+
+        // Update dot labels
+        const sortedActive = labelParticipantsFromActive();
+        const mode = labelModeEl.value;
+        const sortedEntries = Array.from(active.entries()).sort((a, b) => {
+          return mode === "left2right" ? (a[1].x - b[1].x) : (a[0] - b[0]);
+        });
+
+        sortedEntries.forEach((entry, i) => {
+          entry[1].dotEl.textContent = String(i + 1);
+        });
+
+        captured = true;
+        setState("captured");
+        vibrate(16);
+        generateOrder();
+      }, holdMs);
+    }
+
+    const DOT_COLORS = [
+      { border: '#2dd4bf', bg: 'rgba(45,212,191,0.3)' }, // Teal
+      { border: '#f59e0b', bg: 'rgba(245,158,11,0.3)' }, // Orange
+      { border: '#818cf8', bg: 'rgba(129,140,248,0.3)' }, // Indigo
+      { border: '#f472b6', bg: 'rgba(244,114,182,0.3)' }, // Pink
+      { border: '#34d399', bg: 'rgba(52,211,153,0.3)' }, // Emerald
+      { border: '#60a5fa', bg: 'rgba(96,165,250,0.3)' }  // Blue
+    ];
+
+    function upsertDot(id, x, y) {
+      let v = active.get(id);
+      if (!v) {
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        dot.textContent = "•";
+
+        // Assign color based on finger count
+        const colorIdx = active.size % DOT_COLORS.length;
+        const color = DOT_COLORS[colorIdx];
+        dot.style.setProperty('--dot-color', color.border);
+        dot.style.setProperty('--dot-bg', color.bg);
+
+        touchPad.appendChild(dot);
+        v = { x, y, startX: x, startY: y, t0: performance.now(), dotEl: dot };
+        active.set(id, v);
+      }
+      v.x = x; v.y = y;
+      v.dotEl.style.left = x + "px";
+      v.dotEl.style.top = y + "px";
+
+      // Add capturing class if enough fingers
+      if (active.size >= 2 && !captured) {
+        v.dotEl.classList.add('capturing');
+      } else {
+        v.dotEl.classList.remove('capturing');
+      }
+    }
+
+    function updateTouchCount() {
+      touchCountEl.textContent = String(active.size);
+    }
+
+    function localCoords(touch) {
+      const r = touchPad.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.min(r.width, touch.clientX - r.left)),
+        y: Math.max(0, Math.min(r.height, touch.clientY - r.top))
+      };
+    }
+
+    function onTouchStart(e) {
+      e.preventDefault();
+      setState("touching");
+      for (const t of e.changedTouches) {
+        const p = localCoords(t);
+        upsertDot(t.identifier, p.x, p.y);
+      }
+      updateTouchCount();
+      if (!captured && active.size >= 2) scheduleCapture();
+    }
+
+    function onTouchMove(e) {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (!active.has(t.identifier)) continue;
+        const p = localCoords(t);
+        upsertDot(t.identifier, p.x, p.y);
+      }
+      updateTouchCount();
+      if (!captured && active.size >= 2) scheduleCapture();
+    }
+
+    function onTouchEnd(e) {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        const v = active.get(t.identifier);
+        if (v && v.dotEl && v.dotEl.parentNode) v.dotEl.parentNode.removeChild(v.dotEl);
+        active.delete(t.identifier);
+      }
+      updateTouchCount();
+      if (active.size === 0 && !captured) {
+        setState("idle");
+        if (captureTimer) { clearTimeout(captureTimer); captureTimer = null; }
+      }
+    }
+
+    // Important: passive:false to allow preventDefault on mobile
+    touchPad.addEventListener("touchstart", onTouchStart, { passive: false });
+    touchPad.addEventListener("touchmove", onTouchMove, { passive: false });
+    touchPad.addEventListener("touchend", onTouchEnd, { passive: false });
+    touchPad.addEventListener("touchcancel", onTouchEnd, { passive: false });
+
+    // ---------------------------
+    // Roles assignment to captured group
+    // ---------------------------
+    const rolesInput = document.getElementById("rolesInput");
+    const rolesOut = document.getElementById("rolesOut");
+    document.getElementById("assignRolesBtn").addEventListener("click", () => {
+      if (capturedParticipants.length < 2) {
+        rolesOut.textContent = "Primero captura participantes en el panel (≥2 dedos).";
+        vibrate(28);
+        return;
+      }
+      const roles = cleanLines(rolesInput.value);
+      if (roles.length < 1) {
+        rolesOut.textContent = "Agrega roles (uno por línea).";
+        return;
+      }
+      const people = capturedParticipants.map(p => p.label); // labels 1..N
+      const shuffledPeople = RNG.shuffle(people);
+      const shuffledRoles = RNG.shuffle(roles);
+
+      const pairs = [];
+      for (let i = 0; i < shuffledPeople.length; i++) {
+        const role = shuffledRoles[i % shuffledRoles.length];
+        pairs.push(`Participante ${shuffledPeople[i]} → ${role}`);
+      }
+      rolesOut.innerHTML = pairs.map(s => `<div class="orderitem"><span>${s}</span></div>`).join("");
+      vibrate(12);
+    });
+
+    document.getElementById("clearRolesBtn").addEventListener("click", () => {
+      rolesInput.value = "";
+      rolesOut.textContent = "";
+    });
+
+    // ---------------------------
+    // Roulette Engine
+    // ---------------------------
+    const rouletteCanvas = document.getElementById("rouletteCanvas");
+    const spinBtn = document.getElementById("spinBtn");
+    const rouletteOut = document.getElementById("rouletteOut");
+    const syncRouletteBtn = document.getElementById("syncRouletteBtn");
+
+    let rouletteItems = [];
+    let currentRotation = 0;
+    let isSpinning = false;
+
+    function drawRoulette() {
+      if (!rouletteCanvas) return;
+      const ctx = rouletteCanvas.getContext("2d");
+      rouletteItems = cleanLines(itemsInput.value);
+      if (rouletteItems.length === 0) rouletteItems = ["Agrega opciones"];
+
+      const centerX = rouletteCanvas.width / 2;
+      const centerY = rouletteCanvas.height / 2;
+      const radius = rouletteCanvas.width / 2 - 10;
+      const sliceAngle = (2 * Math.PI) / rouletteItems.length;
+
+      ctx.clearRect(0, 0, rouletteCanvas.width, rouletteCanvas.height);
+
+      rouletteItems.forEach((text, i) => {
+        const angle = i * sliceAngle;
+
+        // Slice
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + sliceAngle);
+        ctx.closePath();
+
+        const colors = [
+          '#2dd4bf', '#f59e0b', '#818cf8',
+          '#f472b6', '#34d399', '#60a5fa'
+        ];
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.2)";
+        ctx.stroke();
+
+        // Text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 24px system-ui";
+        ctx.fillText(text.length > 15 ? text.substring(0, 12) + "..." : text, radius - 30, 10);
+        ctx.restore();
+      });
+    }
+
+    function spinRoulette() {
+      if (isSpinning) return;
+      const items = cleanLines(itemsInput.value);
+      if (items.length === 0) {
+        rouletteOut.textContent = "¡Agrega opciones!";
+        return;
+      }
+
+      isSpinning = true;
+      spinBtn.disabled = true;
+      vibrate(20);
+
+      // Use encapsulated pickBalancedIndex
+      const rouletteKey = RNG.keyFromItems("roulette_items", items);
+      const winningIndex = RNG.pickBalancedIndex(rouletteKey, items.length);
+
+      const sliceAngle = (2 * Math.PI) / items.length;
+      const targetSliceCenter = (winningIndex + 0.5) * sliceAngle;
+
+      const currentPos = currentRotation % (2 * Math.PI);
+      let targetRotationEnd = (1.5 * Math.PI - targetSliceCenter);
+      while (targetRotationEnd < 0) targetRotationEnd += 2 * Math.PI;
+
+      const spins = RNG.int(5, 8);
+      const startRotation = currentRotation;
+      const totalRotationChange = spins * 2 * Math.PI + (targetRotationEnd - currentPos);
+
+      currentRotation += totalRotationChange;
+      rouletteCanvas.style.transform = `rotate(${currentRotation}rad)`;
+
+      // Better Tick effect (simulated ease-out proxy)
+      const duration = 4000;
+      const startT = performance.now();
+      let lastSlice = -1;
+
+      function checkTicks(now) {
+        if (!isSpinning) return;
+        const p = Math.min((now - startT) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        const angle = (startRotation + totalRotationChange * ease);
+        const currentSlice = Math.floor(((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / sliceAngle);
+
+        if (currentSlice !== lastSlice) {
+          vibrate(5);
+          lastSlice = currentSlice;
+        }
+        if (p < 1) requestAnimationFrame(checkTicks);
+      }
+      requestAnimationFrame(checkTicks);
+
+      setTimeout(() => {
+        isSpinning = false;
+        spinBtn.disabled = false;
+
+        const winner = items[winningIndex];
+        rouletteOut.textContent = winner;
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#2dd4bf', '#f59e0b', '#818cf8']
+        });
+        vibrate([30, 60, 30]);
+      }, duration);
+    }
+
+    if (syncRouletteBtn) syncRouletteBtn.addEventListener("click", drawRoulette);
+    if (spinBtn) spinBtn.addEventListener("click", spinRoulette);
+
+    // Initialize roulette when tab is shown
+    tabButtons.forEach(btn => btn.addEventListener("click", () => {
+      if (btn.dataset.tab === "roulette") {
+        setTimeout(drawRoulette, 50);
+      }
+    }));
+
+    if ("serviceWorker" in navigator && window.location.protocol.startsWith('http')) {
+      navigator.serviceWorker.register("./sw.js");
+    } else {
+      console.warn("Service Worker skipped: only supported on http/https");
+    }
+
+    // ---------------------------
+    // RPG State & Progress Engine
+    // ---------------------------
+    const RANKS = [
+      { minXp: 0, title: "Interno/a (Pregrado)" },
+      { minXp: 100, title: "Residente R1" },
+      { minXp: 300, title: "Residente R2" },
+      { minXp: 600, title: "Residente Mayor" },
+      { minXp: 1000, title: "Especialista" },
+      { minXp: 2000, title: "Jefe/a de Servicio" },
+      { minXp: 5000, title: "Director/a Médico" }
+    ];
+
+    let state = {
+      xp: 0,
+      health: 100,
+      badges: [],
+      traffic: "green",
+      lastReset: new Date().toISOString()
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem("quickrand_class_state");
+      if (saved) {
+        state = { ...state, ...JSON.parse(saved) };
+      }
+      updateStateUI();
+    }
+
+    function saveState() {
+      localStorage.setItem("quickrand_class_state", JSON.stringify(state));
+    }
+
+    function updateStateUI() {
+      // XP & Rank
+      document.getElementById("xpVal").textContent = state.xp;
+      const rank = [...RANKS].reverse().find(r => state.xp >= r.minXp) || RANKS[0];
+      document.getElementById("rankTitle").textContent = rank.title;
+
+      // Health
+      const hb = document.getElementById("healthBar");
+      const ht = document.getElementById("healthText");
+      hb.style.width = state.health + "%";
+      ht.textContent = `${state.health} / 100`;
+
+      if (state.health <= 0) {
+        hb.style.background = "var(--traffic-red)";
+        confetti({ particleCount: 50, colors: ['#ff0000'] });
+      } else {
+        hb.style.background = "linear-gradient(90deg, var(--traffic-red), var(--good))";
+      }
+
+      // Badges
+      document.querySelectorAll(".badge").forEach(el => {
+        const b = el.dataset.badge;
+        if (state.badges.includes(b)) el.classList.add("unlocked");
+        else el.classList.remove("unlocked");
+      });
+
+      // Traffic
+      updateTrafficUI();
+    }
+
+    function addXP(val) {
+      state.xp += val;
+      if (val > 20) confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+      saveState();
+      updateStateUI();
+      vibrate(10);
+    }
+
+    function modifyHealth(val) {
+      state.health = Math.max(0, Math.min(100, state.health + val));
+      saveState();
+      updateStateUI();
+      vibrate(val < 0 ? 40 : 15);
+    }
+
+    function toggleBadge(id) {
+      if (state.badges.includes(id)) {
+        state.badges = state.badges.filter(b => b !== id);
+      } else {
+        state.badges.push(id);
+        confetti({ particleCount: 60, spread: 80 });
+      }
+      saveState();
+      updateStateUI();
+      vibrate(12);
+    }
+
+    // RPG Events
+    document.getElementById("addXpBtn").addEventListener("click", () => addXP(10));
+    document.getElementById("addXpLargeBtn").addEventListener("click", () => addXP(50));
+    document.getElementById("damageBtn").addEventListener("click", () => modifyHealth(-10));
+    document.getElementById("healBtn").addEventListener("click", () => modifyHealth(10));
+    document.querySelectorAll(".badge").forEach(el => {
+      el.addEventListener("click", () => toggleBadge(el.dataset.badge));
+    });
+
+    // ---------------------------
+    // Flow Control Engine
+    // ---------------------------
+    let controlTimerInt = null;
+    let controlTime = 30;
+    const ctOut = document.getElementById("controlTimer");
+    const ctCard = document.getElementById("timerCard");
+
+    function updateTimerUI() {
+      ctOut.textContent = controlTime;
+    }
+
+    function startCodeRed() {
+      clearInterval(controlTimerInt);
+      controlTime = 30;
+      updateTimerUI();
+      ctCard.classList.add("code-red");
+      vibrate([50, 100, 50]);
+
+      controlTimerInt = setInterval(() => {
+        controlTime--;
+        updateTimerUI();
+        if (controlTime <= 5) vibrate(20);
+        if (controlTime <= 0) {
+          clearInterval(controlTimerInt);
+          ctCard.classList.remove("code-red");
+          ctOut.textContent = "CÓDIGO ROJO";
+          vibrate(500);
+          confetti({ particleCount: 200, colors: ['#ff0000', '#000000'] });
+        }
+      }, 1000);
+    }
+
+    document.getElementById("startRedTimerBtn").addEventListener("click", startCodeRed);
+    document.getElementById("stopTimerBtn").addEventListener("click", () => {
+      clearInterval(controlTimerInt);
+      ctCard.classList.remove("code-red");
+    });
+    document.getElementById("resetTimerBtn").addEventListener("click", () => {
+      controlTime = 30;
+      updateTimerUI();
+      clearInterval(controlTimerInt);
+      ctCard.classList.remove("code-red");
+    });
+
+    // Traffic Light
+    const tBtns = {
+      green: document.getElementById("trafficGreen"),
+      yellow: document.getElementById("trafficYellow"),
+      red: document.getElementById("trafficRed")
+    };
+    const tStatus = document.getElementById("trafficStatus");
+
+    function setTraffic(color) {
+      state.traffic = color;
+      saveState();
+      updateTrafficUI();
+      vibrate(8);
+    }
+
+    function updateTrafficUI() {
+      Object.entries(tBtns).forEach(([c, el]) => {
+        el.classList.toggle("active", state.traffic === c);
+      });
+      const labels = { green: "Trabajo libre / Equipo", yellow: "Transición / Dudas", red: "Explicación (Silencio)" };
+      tStatus.textContent = labels[state.traffic] || "Libre";
+      tStatus.style.color = `var(--traffic-${state.traffic})`;
+    }
+
+    Object.entries(tBtns).forEach(([c, el]) => {
+      el.addEventListener("click", () => setTraffic(c));
+    });
+
+    // Leader of Guard
+    document.getElementById("pickLeaderBtn").addEventListener("click", () => {
+      const items = cleanLines(itemsInput.value); // Use shared list from picker
+      if (items.length === 0) {
+        document.getElementById("leaderOut").textContent = "Sin alumnos";
+        return;
+      }
+      const leader = RNG.pick(items, RNG.keyFromItems("leader_guard", items));
+      document.getElementById("leaderOut").textContent = leader;
+      vibrate(15);
+      confetti({ particleCount: 40, spread: 60 });
+    });
+
+    // ---------------------------
+    // Data Management
+    // ---------------------------
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const data = {
+        app: "QuickRand",
+        version: "2.5",
+        state: state,
+        timestamp: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quickrand_progreso_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("importTriggerBtn").addEventListener("click", () => {
+      document.getElementById("importFile").click();
+    });
+
+    document.getElementById("importFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.app === "QuickRand" && data.state) {
+            state = data.state;
+            saveState();
+            updateStateUI();
+            alert("Progreso importado con éxito.");
+          }
+        } catch (err) {
+          alert("Error al importar el archivo.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("resetProgressBtn").addEventListener("click", () => {
+      if (confirm("¿Estás seguro de que deseas reiniciar TODO el progreso médico? Esto no se puede deshacer.")) {
+        state = { xp: 0, health: 100, badges: [], traffic: "green", lastReset: new Date().toISOString() };
+        saveState();
+        updateStateUI();
+        vibrate(50);
+      }
+    });
+
+    // ---------------------------
+    // Group Exam Engine
+    // ---------------------------
+    const examState = {
+      title: "",
+      questions: [],
+      current: 0,
+      teams: [],
+      currentTeam: "",
+      scores: {}
+    };
+
+    const examQuestion = document.getElementById("examQuestion");
+    const examOptions = document.getElementById("examOptions");
+    const examMeta = document.getElementById("examMeta");
+    const examCurrentTeam = document.getElementById("examCurrentTeam");
+    const examScoreOut = document.getElementById("examScoreOut");
+    const examTeamsInput = document.getElementById("examTeamsInput");
+
+    function parseExamData(raw) {
+      if (!raw || !Array.isArray(raw.questions)) {
+        throw new Error("Formato inválido: se esperaba { questions: [...] }");
+      }
+
+      const questions = raw.questions.map((q, i) => {
+        if (!q || typeof q.question !== "string" || !Array.isArray(q.options) || q.options.length < 2) {
+          throw new Error(`Pregunta ${i + 1} inválida.`);
+        }
+        const correct = Number(q.correct);
+        if (!Number.isInteger(correct) || correct < 0 || correct >= q.options.length) {
+          throw new Error(`Pregunta ${i + 1}: índice 'correct' fuera de rango.`);
+        }
+        return {
+          question: q.question,
+          options: q.options.map(op => String(op)),
+          correct,
+          points: Number.isFinite(Number(q.points)) ? Number(q.points) : 10,
+          explanation: q.explanation ? String(q.explanation) : ""
+        };
+      });
+
+      return {
+        title: raw.title ? String(raw.title) : "Examen grupal",
+        questions
+      };
+    }
+
+    function renderScores() {
+      if (examState.teams.length === 0) {
+        examScoreOut.textContent = "Inicializa equipos para ver puntajes.";
+        return;
+      }
+      examScoreOut.innerHTML = examState.teams.map(name => {
+        const activeClass = name === examState.currentTeam ? "active" : "";
+        return `<div class="score-item ${activeClass}"><strong>${name}</strong><span class="mono">${examState.scores[name] || 0} pts</span></div>`;
+      }).join("");
+    }
+
+    function renderQuestion() {
+      const total = examState.questions.length;
+      if (!total) {
+        examMeta.textContent = "Sin examen importado.";
+        examQuestion.textContent = "Importa un examen para comenzar.";
+        examOptions.innerHTML = "";
+        return;
+      }
+
+      const q = examState.questions[examState.current];
+      examMeta.textContent = `${examState.title} · Pregunta ${examState.current + 1}/${total} · ${q.points} pts`;
+      examQuestion.textContent = q.question;
+      examOptions.innerHTML = "";
+
+      q.options.forEach((option, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "btn exam-option";
+        btn.textContent = `${String.fromCharCode(65 + idx)}. ${option}`;
+        btn.addEventListener("click", () => {
+          const isCorrect = idx === q.correct;
+          btn.classList.add(isCorrect ? "correct" : "incorrect");
+
+          const allBtns = Array.from(examOptions.querySelectorAll("button"));
+          allBtns.forEach(b => b.disabled = true);
+          const correctBtn = allBtns[q.correct];
+          if (correctBtn) correctBtn.classList.add("correct");
+
+          if (isCorrect && examState.currentTeam) {
+            examState.scores[examState.currentTeam] = (examState.scores[examState.currentTeam] || 0) + q.points;
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.75 } });
+            vibrate([15, 20, 15]);
+          } else {
+            vibrate(35);
+          }
+
+          if (q.explanation) {
+            const exp = document.createElement("div");
+            exp.className = "smallout";
+            exp.style.marginTop = "10px";
+            exp.textContent = `Explicación: ${q.explanation}`;
+            examOptions.appendChild(exp);
+          }
+          renderScores();
+        });
+        examOptions.appendChild(btn);
+      });
+    }
+
+    function nextExamTeam() {
+      if (examState.teams.length === 0) return;
+      const idx = RNG.pickBalancedIndex(RNG.keyFromItems("exam_teams", examState.teams), examState.teams.length);
+      examState.currentTeam = examState.teams[idx];
+      examCurrentTeam.textContent = examState.currentTeam;
+      renderScores();
+    }
+
+    document.getElementById("examTemplateBtn").addEventListener("click", () => {
+      const template = {
+        title: "Examen grupal: Caso clínico",
+        questions: [
+          {
+            question: "¿Cuál es la frecuencia respiratoria normal en adulto en reposo?",
+            options: ["8-10 rpm", "12-20 rpm", "24-30 rpm", "30-40 rpm"],
+            correct: 1,
+            points: 10,
+            explanation: "En adulto sano, lo esperado es entre 12 y 20 rpm."
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "plantilla_examen_grupal.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("examImportTriggerBtn").addEventListener("click", () => {
+      document.getElementById("examImportFile").click();
+    });
+
+    document.getElementById("examImportFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = parseExamData(JSON.parse(ev.target.result));
+          examState.title = parsed.title;
+          examState.questions = parsed.questions;
+          examState.current = 0;
+          renderQuestion();
+          alert(`Examen importado: ${parsed.questions.length} preguntas.`);
+        } catch (err) {
+          alert(`No se pudo importar el examen: ${err.message}`);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
+    document.getElementById("examInitTeamsBtn").addEventListener("click", () => {
+      const teams = cleanLines(examTeamsInput.value);
+      if (teams.length < 2) {
+        alert("Ingresa al menos 2 equipos.");
+        return;
+      }
+      examState.teams = teams;
+      examState.scores = Object.fromEntries(teams.map(name => [name, 0]));
+      examState.currentTeam = "";
+      RNG.resetBag(RNG.keyFromItems("exam_teams", examState.teams));
+      nextExamTeam();
+    });
+
+    document.getElementById("examNextTeamBtn").addEventListener("click", nextExamTeam);
+
+    document.getElementById("examPrevBtn").addEventListener("click", () => {
+      if (!examState.questions.length) return;
+      examState.current = (examState.current - 1 + examState.questions.length) % examState.questions.length;
+      renderQuestion();
+    });
+
+    document.getElementById("examNextBtn").addEventListener("click", () => {
+      if (!examState.questions.length) return;
+      examState.current = (examState.current + 1) % examState.questions.length;
+      nextExamTeam();
+      renderQuestion();
+    });
+
+    document.getElementById("examResetBtn").addEventListener("click", () => {
+      examState.current = 0;
+      examState.currentTeam = "";
+      examState.scores = Object.fromEntries(examState.teams.map(name => [name, 0]));
+      examCurrentTeam.textContent = "—";
+      renderQuestion();
+      renderScores();
+    });
+
+    renderQuestion();
+    renderScores();
+
+    // Init
+    loadState();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,59 @@
+.default-animation {
+    width: 100%;
+    height: 100%;
+    perspective: 1000px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.default-animation--scene {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+}
+
+.cube {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.cube-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--cube-face-bg, #060010);
+    border: var(--cube-face-border, 1px solid rgba(255, 255, 255, 0.1));
+    box-shadow: var(--cube-face-shadow, none);
+}
+
+.cube-face--front {
+    transform: rotateY(0deg) translateZ(calc(100% / 2));
+}
+
+.cube-face--back {
+    transform: rotateY(180deg) translateZ(calc(100% / 2));
+}
+
+.cube-face--right {
+    transform: rotateY(90deg) translateZ(calc(100% / 2));
+}
+
+.cube-face--left {
+    transform: rotateY(-90deg) translateZ(calc(100% / 2));
+}
+
+.cube-face--top {
+    transform: rotateX(90deg) translateZ(calc(100% / 2));
+}
+
+.cube-face--bottom {
+    transform: rotateX(-90deg) translateZ(calc(100% / 2));
+}

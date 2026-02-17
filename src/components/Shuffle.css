@@ -1,0 +1,22 @@
+.shuffle-parent {
+    display: inline-block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.shuffle-parent.is-ready {
+    opacity: 1;
+}
+
+.shuffle-char {
+    display: inline-block;
+}
+
+.shuffle-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.shuffle-line {
+    display: block;
+}
