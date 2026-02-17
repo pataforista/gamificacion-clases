@@ -57,6 +57,29 @@
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior: none;
       min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background: conic-gradient(from 180deg, rgba(45, 212, 191, 0.08), rgba(129, 140, 248, 0.06), rgba(244, 114, 182, 0.08), rgba(45, 212, 191, 0.08));
+      filter: blur(80px);
+      z-index: -2;
+      animation: ambientShift 20s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes ambientShift {
+      from {
+        transform: rotate(0deg) scale(1);
+      }
+
+      to {
+        transform: rotate(360deg) scale(1.12);
+      }
     }
 
     header {
@@ -653,6 +676,70 @@
       }
     }
 
+    @media (max-width: 900px) {
+      main {
+        padding: 12px 14px 28px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .out {
+        font-size: clamp(36px, 10vw, 56px);
+      }
+
+      .roulette-wrapper {
+        width: min(86vw, 320px);
+        height: min(86vw, 320px);
+      }
+
+      .touchpad {
+        height: 300px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      header {
+        padding: 16px 14px 10px;
+      }
+
+      .title {
+        font-size: 18px;
+      }
+
+      .row>.btn,
+      .row>div,
+      .row>input,
+      .row>select {
+        width: 100%;
+      }
+
+      input[type="number"],
+      select,
+      input[type="text"] {
+        width: 100%;
+      }
+
+      .dot {
+        width: 52px;
+        height: 52px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
       .face {
         background: rgba(45, 212, 191, 0.8);
@@ -748,11 +835,6 @@
           <button class="btn good" id="rollFormulaBtn">Tirar fórmula</button>
         </div>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="out" id="diceOut">—</div>
-      <div class="smallout" id="diceDetail"></div>
 
       <div class="divider"></div>
 
@@ -974,6 +1056,9 @@ Opción D</textarea>
 
         <div class="divider"></div>
 
+        <div class="smallout">Modo justo activo: usa rotación balanceada para evitar repeticiones injustas.</div>
+        <div class="divider"></div>
+
         <div class="out" id="pickOut">—</div>
         <div class="smallout" id="pickDetail"></div>
       </div>
@@ -1120,6 +1205,11 @@ P6</textarea>
         const idx = bag.pop();
         this._bags.set(key, bag);
         return idx;
+      },
+
+      keyFromItems(scope, arr) {
+        const normalized = (arr || []).map(v => String(v).trim().toLowerCase()).sort().join("||");
+        return `${scope}:${normalized}`;
       },
 
       pick(arr, key = "global") {
@@ -1381,7 +1471,7 @@ P6</textarea>
       let step = 0;
 
       const tick = () => {
-        const tempResult = RNG.pick(items, "picker_temp");
+        const tempResult = RNG.pick(items, RNG.keyFromItems("picker_temp", items));
         pickOut.textContent = tempResult;
 
         const t = step / (totalSteps - 1);
@@ -1391,7 +1481,7 @@ P6</textarea>
 
         if (step >= totalSteps) {
           // Final Result
-          const finalResult = RNG.pick(items, "picker_items");
+          const finalResult = RNG.pick(items, RNG.keyFromItems("picker_items", items));
           pickOut.textContent = finalResult;
           pickOut.classList.add("winner-flash");
           setPick(finalResult, `n=${items.length}`);
@@ -1836,7 +1926,8 @@ P6</textarea>
       vibrate(20);
 
       // Use encapsulated pickBalancedIndex
-      const winningIndex = RNG.pickBalancedIndex("roulette_items", items.length);
+      const rouletteKey = RNG.keyFromItems("roulette_items", items);
+      const winningIndex = RNG.pickBalancedIndex(rouletteKey, items.length);
 
       const sliceAngle = (2 * Math.PI) / items.length;
       const targetSliceCenter = (winningIndex + 0.5) * sliceAngle;
@@ -2083,7 +2174,7 @@ P6</textarea>
         document.getElementById("leaderOut").textContent = "Sin alumnos";
         return;
       }
-      const leader = RNG.pick(items, "leader_guard");
+      const leader = RNG.pick(items, RNG.keyFromItems("leader_guard", items));
       document.getElementById("leaderOut").textContent = leader;
       vibrate(15);
       confetti({ particleCount: 40, spread: 60 });
