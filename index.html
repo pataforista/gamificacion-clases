@@ -751,15 +751,14 @@ P6</textarea>
 
   <script>
     // ---------------------------
-    // BalancedRNG (crypto-backed + stability)
+    // BalancedRNG (Encapsulated)
     // ---------------------------
     function hasCryptoRng() {
       return typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function";
     }
 
     const RNG = {
-      _history: new Map(), // key -> Array of last picked indices
-      _bags: new Map(),    // key -> Array of available indices
+      _bags: new Map(), // key -> Array of available indices
 
       u32() {
         if (!hasCryptoRng()) return (Math.random() * 0x100000000) >>> 0;
@@ -779,25 +778,30 @@ P6</textarea>
         return min + (x % range);
       },
 
-      pick(arr, key = "global") {
-        if (arr.length === 0) return null;
-        if (arr.length === 1) return arr[0];
-
-        // "No-Repeat" and "Fair Distribution" Logic
-        // We use a shuffle-bag approach for small lists to ensure variety.
+      // Public API for balanced behavior
+      pickBalancedIndex(key, size) {
+        if (size <= 0) return -1;
         let bag = this._bags.get(key);
-        if (!bag || bag.length === 0 || bag.max_size !== arr.length) {
-          bag = Array.from({ length: arr.length }, (_, i) => i);
-          bag.max_size = arr.length;
-          // Initial shuffle
+
+        // Refresh bag if size changed or exhausted
+        if (!bag || bag.length === 0 || bag.max_size !== size) {
+          bag = Array.from({ length: size }, (_, i) => i);
+          bag.max_size = size;
+          // Fisher-Yates
           for (let i = bag.length - 1; i > 0; i--) {
             const j = this.int(0, i);
             [bag[i], bag[j]] = [bag[j], bag[i]];
           }
         }
-
         const idx = bag.pop();
         this._bags.set(key, bag);
+        return idx;
+      },
+
+      pick(arr, key = "global") {
+        if (!arr || arr.length === 0) return null;
+        if (arr.length === 1) return arr[0];
+        const idx = this.pickBalancedIndex(key, arr.length);
         return arr[idx];
       },
 
@@ -930,18 +934,23 @@ P6</textarea>
             <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
           `;
 
-          // Trigger 3D Dice if initialized
+          // Isolated 3D Dice Box trigger
           if (diceBox) {
-            document.getElementById("dice-box").style.pointerEvents = "auto";
-            diceBox.roll(formula).then(() => {
-              setTimeout(() => {
-                document.getElementById("dice-box").style.pointerEvents = "none";
-              }, 3000);
-            });
+            try {
+              document.getElementById("dice-box").style.pointerEvents = "auto";
+              diceBox.roll(formula).catch(e => console.warn("3D Dice fail:", e)).then(() => {
+                setTimeout(() => {
+                  document.getElementById("dice-box").style.pointerEvents = "none";
+                }, 3000);
+              });
+            } catch (err3d) {
+              console.warn("DiceBox sync error:", err3d);
+            }
           }
 
-          // Celebration for critical rolls or high values
-          if (total >= (roll.dice[0]?.sides * roll.dice[0]?.qty || 0)) {
+          // More balanced Celebration logic
+          const maxVal = roll.dice.reduce((acc, d) => acc + (d.sides * d.qty), 0);
+          if (total >= maxVal && maxVal > 1) {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#2dd4bf', '#f59e0b', '#f2f3f5'] });
             vibrate([20, 50, 20]);
           } else {
@@ -950,7 +959,7 @@ P6</textarea>
           return;
         }
 
-        // Offline/network fallback if external dice library is unavailable.
+        // Offline/network fallback
         const fb = fallbackRoll(formula);
         diceOut.textContent = String(fb.total);
         diceDetail.innerHTML = `
@@ -960,7 +969,7 @@ P6</textarea>
         vibrate(12);
       } catch (e) {
         diceOut.textContent = "Err";
-        diceDetail.textContent = "Fórmula inválida.";
+        diceDetail.textContent = "Fórmula inválida o no soportada en modo local.";
         console.error(e);
       }
     }
@@ -980,8 +989,8 @@ P6</textarea>
       quickDetail.textContent = detail;
       vibrate(10);
     }
-    document.getElementById("coinBtn").addEventListener("click", () => setQuick(RNG.pick(["Cara", "Cruz"])));
-    document.getElementById("yesNoBtn").addEventListener("click", () => setQuick(RNG.pick(["Sí", "No"])));
+    document.getElementById("coinBtn").addEventListener("click", () => setQuick(RNG.pick(["Cara", "Cruz"], "coin_flip")));
+    document.getElementById("yesNoBtn").addEventListener("click", () => setQuick(RNG.pick(["Sí", "No"], "yes_no_choice")));
     document.getElementById("d100Btn").addEventListener("click", () => setQuick(String(RNG.int(1, 100)), "d100"));
     let timerInt = null;
     document.getElementById("timer30Btn").addEventListener("click", () => {
@@ -1011,7 +1020,7 @@ P6</textarea>
     document.getElementById("pickOneBtn").addEventListener("click", () => {
       const items = cleanLines(itemsInput.value);
       if (items.length < 1) return setPick("—", "Sin opciones.");
-      const result = RNG.pick(items);
+      const result = RNG.pick(items, "picker_items");
       setPick(result, `n=${items.length}`);
       confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
     });
@@ -1116,9 +1125,9 @@ P6</textarea>
       "Debes dar un error frecuente y corregirlo."
     ];
     function setMech(out, detail = "") { mechOut.textContent = out; mechDetail.textContent = detail; vibrate(10); }
-    document.getElementById("constraintBtn").addEventListener("click", () => setMech(RNG.pick(constraints), "Constraint"));
-    document.getElementById("bonusBtn").addEventListener("click", () => setMech(RNG.pick(bonuses), "Bonus"));
-    document.getElementById("penaltyBtn").addEventListener("click", () => setMech(RNG.pick(penalties), "Penalización"));
+    document.getElementById("constraintBtn").addEventListener("click", () => setMech(RNG.pick(constraints, "mech_constraints"), "Constraint"));
+    document.getElementById("bonusBtn").addEventListener("click", () => setMech(RNG.pick(bonuses, "mech_bonuses"), "Bonus"));
+    document.getElementById("penaltyBtn").addEventListener("click", () => setMech(RNG.pick(penalties, "mech_penalties"), "Penalización"));
 
     // ---------------------------
     // Multi-touch order engine
@@ -1231,20 +1240,15 @@ P6</textarea>
         capturedParticipants = labelParticipantsFromActive();
         partCountEl.textContent = String(capturedParticipants.length);
 
-        // update dot labels
-        const byPos = new Map();
-        capturedParticipants.forEach(p => byPos.set(p.label, p));
-        // Assign labels onto dots by nearest (since we re-ordered)
-        // We re-label in order: left->right (or id) by sorting active similarly.
-        const sorted = labelParticipantsFromActive();
-        const entries = Array.from(active.entries());
-        // map same ordering strategy
+        // Update dot labels
+        const sortedActive = labelParticipantsFromActive();
         const mode = labelModeEl.value;
-        let orderedEntries = entries.map(([id, v]) => ({ id, v })).sort((a, b) => {
-          return mode === "left2right" ? (a.v.x - b.v.x) : (a.id - b.id);
+        const sortedEntries = Array.from(active.entries()).sort((a, b) => {
+          return mode === "left2right" ? (a[1].x - b[1].x) : (a[0] - b[0]);
         });
-        orderedEntries.forEach((obj, i) => {
-          obj.v.dotEl.textContent = String(i + 1);
+
+        sortedEntries.forEach((entry, i) => {
+          entry[1].dotEl.textContent = String(i + 1);
         });
 
         captured = true;
@@ -1447,75 +1451,48 @@ P6</textarea>
       spinBtn.disabled = true;
       vibrate(20);
 
-      // Determine the winner BEFORE the animation for better control/balancing
-      // Use the pick function with the "roulette" key for balanced results
-      // We need to find the index of the winner in the items array
-      // But RNG.pick returns the value. Let's modify physics to land on a balanced item.
-
-      // Get a balanced index
-      let bag = RNG._bags.get("roulette");
-      if (!bag || bag.length === 0 || bag.max_size !== items.length) {
-        bag = Array.from({ length: items.length }, (_, i) => i);
-        bag.max_size = items.length;
-        RNG.shuffle(bag); // Reuse internal shuffle logic if needed or just use RNG.int
-        // Basic shuffle for the bag
-        for (let i = bag.length - 1; i > 0; i--) {
-          const j = RNG.int(0, i);
-          [bag[i], bag[j]] = [bag[j], bag[i]];
-        }
-      }
-      const winningIndex = bag.pop();
-      RNG._bags.set("roulette", bag);
+      // Use encapsulated pickBalancedIndex
+      const winningIndex = RNG.pickBalancedIndex("roulette_items", items.length);
 
       const sliceAngle = (2 * Math.PI) / items.length;
-
-      // Calculate target rotation to land winningIndex at the top (1.5 * PI)
-      // currentRotation is where we are now.
-      // We want: (currentRotation + totalRotation) % 2PI = targetAngle
-      // targetAngle is such that the slice for winningIndex is under the arrow.
-      // Arrow is at 1.5 * PI.
-      // Slice i range: [i * sliceAngle, (i+1) * sliceAngle]
-      // Resulting slice is (1.5 * PI - totalRot) % 2PI
-
       const targetSliceCenter = (winningIndex + 0.5) * sliceAngle;
+
+      const currentPos = currentRotation % (2 * Math.PI);
       let targetRotationEnd = (1.5 * Math.PI - targetSliceCenter);
       while (targetRotationEnd < 0) targetRotationEnd += 2 * Math.PI;
 
-      const spins = RNG.int(4, 7);
-      const totalRotation = spins * 2 * Math.PI + (targetRotationEnd - (currentRotation % (2 * Math.PI)));
+      const spins = RNG.int(5, 8);
+      const startRotation = currentRotation;
+      const totalRotationChange = spins * 2 * Math.PI + (targetRotationEnd - currentPos);
 
-      currentRotation += totalRotation;
+      currentRotation += totalRotationChange;
       rouletteCanvas.style.transform = `rotate(${currentRotation}rad)`;
 
-      // Tick effect (vibration as it spins)
-      const startTime = performance.now();
+      // Better Tick effect (simulated ease-out proxy)
       const duration = 4000;
-      let lastTickAngle = 0;
+      const startT = performance.now();
+      let lastSlice = -1;
 
-      function checkTick() {
+      function checkTicks(now) {
         if (!isSpinning) return;
-        const now = performance.now();
-        const p = (now - startTime) / duration;
-        if (p < 1) {
-          // Approximate current angle based on cubic-bezier(0.1, 0, 0.1, 1)
-          // Simplified: just check the actual transform if possible or use a proxy
-          const currentAngle = currentRotation * p; // Not accurate but gives some ticks
-          if (Math.abs(currentAngle - lastTickAngle) > sliceAngle) {
-            vibrate(5);
-            lastTickAngle = currentAngle;
-          }
-          requestAnimationFrame(checkTick);
-        }
-      }
-      checkTick();
+        const p = Math.min((now - startT) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        const angle = (startRotation + totalRotationChange * ease);
+        const currentSlice = Math.floor(((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / sliceAngle);
 
-      // When animation ends
+        if (currentSlice !== lastSlice) {
+          vibrate(5);
+          lastSlice = currentSlice;
+        }
+        if (p < 1) requestAnimationFrame(checkTicks);
+      }
+      requestAnimationFrame(checkTicks);
+
       setTimeout(() => {
         isSpinning = false;
         spinBtn.disabled = false;
 
         const winner = items[winningIndex];
-
         rouletteOut.textContent = winner;
         confetti({
           particleCount: 150,
@@ -1524,7 +1501,7 @@ P6</textarea>
           colors: ['#2dd4bf', '#f59e0b', '#818cf8']
         });
         vibrate([30, 60, 30]);
-      }, 4000);
+      }, duration);
     }
 
     if (syncRouletteBtn) syncRouletteBtn.addEventListener("click", drawRoulette);
