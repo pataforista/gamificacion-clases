@@ -758,6 +758,53 @@
         box-shadow: 0 0 30px white;
       }
     }
+
+    .exam-question {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 8px 0 18px;
+      line-height: 1.3;
+    }
+
+    .exam-options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .exam-option {
+      width: 100%;
+      text-align: left;
+      justify-content: flex-start;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .exam-option.correct {
+      border-color: rgba(45, 212, 191, 0.5);
+      background: rgba(45, 212, 191, 0.18);
+      color: #9ef5e8;
+    }
+
+    .exam-option.incorrect {
+      border-color: rgba(239, 68, 68, 0.6);
+      background: rgba(239, 68, 68, 0.2);
+      color: #ffc9c9;
+    }
+
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .score-item.active {
+      border-color: rgba(129, 140, 248, 0.5);
+      background: rgba(129, 140, 248, 0.15);
+    }
   </style>
 </head>
 
@@ -779,6 +826,7 @@
       <button class="tab" role="tab" aria-selected="false" data-tab="picker">Sorteo</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="roulette">Ruleta</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="teams">Equipos</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="exam">Examen grupal</button>
     </div>
 
     <!-- DICE -->
@@ -1156,6 +1204,50 @@ P6</textarea>
         <div class="smallout" id="mechDetail"></div>
       </div>
     </section>
+
+    <!-- GROUP EXAM -->
+    <section id="tab-exam" class="grid" style="display:none;">
+      <div class="card">
+        <h2>Examen grupal importable</h2>
+        <div class="smallout">Importa un JSON con preguntas y opciones. Cada ronda asigna turno justo a un equipo y
+          valida la respuesta en vivo.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn" id="examTemplateBtn">Descargar plantilla JSON</button>
+          <button class="btn good" id="examImportTriggerBtn">Importar examen</button>
+          <input id="examImportFile" type="file" accept="application/json" style="display:none;" />
+        </div>
+        <div class="divider"></div>
+        <label>Equipos participantes (uno por línea)</label>
+        <textarea id="examTeamsInput">Equipo A
+Equipo B
+Equipo C</textarea>
+        <div class="row" style="margin-top: 10px;">
+          <button class="btn" id="examInitTeamsBtn">Inicializar equipos</button>
+          <button class="btn" id="examNextTeamBtn">Siguiente equipo (justo)</button>
+          <button class="btn warn" id="examResetBtn">Reiniciar examen</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Pregunta actual</h2>
+        <div class="pill">Turno: <span class="mono" id="examCurrentTeam">—</span></div>
+        <div class="divider"></div>
+        <div class="smallout" id="examMeta">Sin examen importado.</div>
+        <div class="exam-question" id="examQuestion">Importa un examen para comenzar.</div>
+        <div class="exam-options" id="examOptions"></div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn" id="examPrevBtn">Anterior</button>
+          <button class="btn good" id="examNextBtn">Siguiente pregunta</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Marcador por equipos</h2>
+        <div class="smallout" id="examScoreOut">Inicializa equipos para ver puntajes.</div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -1258,7 +1350,8 @@ P6</textarea>
       touch: document.getElementById("tab-touch"),
       picker: document.getElementById("tab-picker"),
       roulette: document.getElementById("tab-roulette"),
-      teams: document.getElementById("tab-teams")
+      teams: document.getElementById("tab-teams"),
+      exam: document.getElementById("tab-exam")
     };
 
     tabButtons.forEach(btn => btn.addEventListener("click", () => {
@@ -2231,6 +2324,206 @@ P6</textarea>
         vibrate(50);
       }
     });
+
+    // ---------------------------
+    // Group Exam Engine
+    // ---------------------------
+    const examState = {
+      title: "",
+      questions: [],
+      current: 0,
+      teams: [],
+      currentTeam: "",
+      scores: {}
+    };
+
+    const examQuestion = document.getElementById("examQuestion");
+    const examOptions = document.getElementById("examOptions");
+    const examMeta = document.getElementById("examMeta");
+    const examCurrentTeam = document.getElementById("examCurrentTeam");
+    const examScoreOut = document.getElementById("examScoreOut");
+    const examTeamsInput = document.getElementById("examTeamsInput");
+
+    function parseExamData(raw) {
+      if (!raw || !Array.isArray(raw.questions)) {
+        throw new Error("Formato inválido: se esperaba { questions: [...] }");
+      }
+
+      const questions = raw.questions.map((q, i) => {
+        if (!q || typeof q.question !== "string" || !Array.isArray(q.options) || q.options.length < 2) {
+          throw new Error(`Pregunta ${i + 1} inválida.`);
+        }
+        const correct = Number(q.correct);
+        if (!Number.isInteger(correct) || correct < 0 || correct >= q.options.length) {
+          throw new Error(`Pregunta ${i + 1}: índice 'correct' fuera de rango.`);
+        }
+        return {
+          question: q.question,
+          options: q.options.map(op => String(op)),
+          correct,
+          points: Number.isFinite(Number(q.points)) ? Number(q.points) : 10,
+          explanation: q.explanation ? String(q.explanation) : ""
+        };
+      });
+
+      return {
+        title: raw.title ? String(raw.title) : "Examen grupal",
+        questions
+      };
+    }
+
+    function renderScores() {
+      if (examState.teams.length === 0) {
+        examScoreOut.textContent = "Inicializa equipos para ver puntajes.";
+        return;
+      }
+      examScoreOut.innerHTML = examState.teams.map(name => {
+        const activeClass = name === examState.currentTeam ? "active" : "";
+        return `<div class="score-item ${activeClass}"><strong>${name}</strong><span class="mono">${examState.scores[name] || 0} pts</span></div>`;
+      }).join("");
+    }
+
+    function renderQuestion() {
+      const total = examState.questions.length;
+      if (!total) {
+        examMeta.textContent = "Sin examen importado.";
+        examQuestion.textContent = "Importa un examen para comenzar.";
+        examOptions.innerHTML = "";
+        return;
+      }
+
+      const q = examState.questions[examState.current];
+      examMeta.textContent = `${examState.title} · Pregunta ${examState.current + 1}/${total} · ${q.points} pts`;
+      examQuestion.textContent = q.question;
+      examOptions.innerHTML = "";
+
+      q.options.forEach((option, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "btn exam-option";
+        btn.textContent = `${String.fromCharCode(65 + idx)}. ${option}`;
+        btn.addEventListener("click", () => {
+          const isCorrect = idx === q.correct;
+          btn.classList.add(isCorrect ? "correct" : "incorrect");
+
+          const allBtns = Array.from(examOptions.querySelectorAll("button"));
+          allBtns.forEach(b => b.disabled = true);
+          const correctBtn = allBtns[q.correct];
+          if (correctBtn) correctBtn.classList.add("correct");
+
+          if (isCorrect && examState.currentTeam) {
+            examState.scores[examState.currentTeam] = (examState.scores[examState.currentTeam] || 0) + q.points;
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.75 } });
+            vibrate([15, 20, 15]);
+          } else {
+            vibrate(35);
+          }
+
+          if (q.explanation) {
+            const exp = document.createElement("div");
+            exp.className = "smallout";
+            exp.style.marginTop = "10px";
+            exp.textContent = `Explicación: ${q.explanation}`;
+            examOptions.appendChild(exp);
+          }
+          renderScores();
+        });
+        examOptions.appendChild(btn);
+      });
+    }
+
+    function nextExamTeam() {
+      if (examState.teams.length === 0) return;
+      const idx = RNG.pickBalancedIndex(RNG.keyFromItems("exam_teams", examState.teams), examState.teams.length);
+      examState.currentTeam = examState.teams[idx];
+      examCurrentTeam.textContent = examState.currentTeam;
+      renderScores();
+    }
+
+    document.getElementById("examTemplateBtn").addEventListener("click", () => {
+      const template = {
+        title: "Examen grupal: Caso clínico",
+        questions: [
+          {
+            question: "¿Cuál es la frecuencia respiratoria normal en adulto en reposo?",
+            options: ["8-10 rpm", "12-20 rpm", "24-30 rpm", "30-40 rpm"],
+            correct: 1,
+            points: 10,
+            explanation: "En adulto sano, lo esperado es entre 12 y 20 rpm."
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "plantilla_examen_grupal.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("examImportTriggerBtn").addEventListener("click", () => {
+      document.getElementById("examImportFile").click();
+    });
+
+    document.getElementById("examImportFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = parseExamData(JSON.parse(ev.target.result));
+          examState.title = parsed.title;
+          examState.questions = parsed.questions;
+          examState.current = 0;
+          renderQuestion();
+          alert(`Examen importado: ${parsed.questions.length} preguntas.`);
+        } catch (err) {
+          alert(`No se pudo importar el examen: ${err.message}`);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
+    document.getElementById("examInitTeamsBtn").addEventListener("click", () => {
+      const teams = cleanLines(examTeamsInput.value);
+      if (teams.length < 2) {
+        alert("Ingresa al menos 2 equipos.");
+        return;
+      }
+      examState.teams = teams;
+      examState.scores = Object.fromEntries(teams.map(name => [name, 0]));
+      examState.currentTeam = "";
+      RNG.resetBag(RNG.keyFromItems("exam_teams", examState.teams));
+      nextExamTeam();
+    });
+
+    document.getElementById("examNextTeamBtn").addEventListener("click", nextExamTeam);
+
+    document.getElementById("examPrevBtn").addEventListener("click", () => {
+      if (!examState.questions.length) return;
+      examState.current = (examState.current - 1 + examState.questions.length) % examState.questions.length;
+      renderQuestion();
+    });
+
+    document.getElementById("examNextBtn").addEventListener("click", () => {
+      if (!examState.questions.length) return;
+      examState.current = (examState.current + 1) % examState.questions.length;
+      nextExamTeam();
+      renderQuestion();
+    });
+
+    document.getElementById("examResetBtn").addEventListener("click", () => {
+      examState.current = 0;
+      examState.currentTeam = "";
+      examState.scores = Object.fromEntries(examState.teams.map(name => [name, 0]));
+      examCurrentTeam.textContent = "—";
+      renderQuestion();
+      renderScores();
+    });
+
+    renderQuestion();
+    renderScores();
 
     // Init
     loadState();
