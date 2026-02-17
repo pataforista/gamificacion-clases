@@ -34,6 +34,10 @@
       --glass: rgba(255, 255, 255, 0.03);
       --glass-border: rgba(255, 255, 255, 0.1);
       --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+      /* Traffic Light colors */
+      --traffic-red: #ef4444;
+      --traffic-yellow: #facc15;
+      --traffic-green: #22c55e;
     }
 
     * {
@@ -408,6 +412,120 @@
       gap: 4px;
     }
 
+    /* Code Red Animation */
+    @keyframes codeRed {
+
+      0%,
+      100% {
+        background-color: rgba(239, 68, 68, 0.05);
+      }
+
+      50% {
+        background-color: rgba(239, 68, 68, 0.2);
+      }
+    }
+
+    .code-red {
+      animation: codeRed 1s infinite;
+      border-color: var(--traffic-red) !important;
+    }
+
+    /* Health Bar */
+    .health-container {
+      width: 100%;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      position: relative;
+      margin: 10px 0;
+    }
+
+    .health-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--traffic-red), var(--good));
+      width: 100%;
+      transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .health-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Badges */
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      aspect-ratio: 1;
+      background: var(--glass);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      opacity: 0.2;
+      filter: grayscale(1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      cursor: help;
+    }
+
+    .badge.unlocked {
+      opacity: 1;
+      filter: grayscale(0);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--good);
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(45, 212, 191, 0.2);
+    }
+
+    .badge-name {
+      font-size: 9px;
+      font-weight: 700;
+      margin-top: 4px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* Traffic Light UI */
+    .traffic-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .traffic-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      opacity: 0.2;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .traffic-btn.active {
+      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px currentColor;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     /* Roulette Premium */
     .roulette-container {
       display: flex;
@@ -461,6 +579,98 @@
       z-index: 15;
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
     }
+
+    /* 3D Dice Engine */
+    .scene {
+      width: 100px;
+      height: 100px;
+      perspective: 600px;
+      margin: 30px auto;
+    }
+
+    .cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1.2s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+      will-change: transform;
+    }
+
+    .face {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: rgba(45, 212, 191, 0.4);
+      /* Clinica Teal */
+      backdrop-filter: blur(5px);
+      color: white;
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+    }
+
+    .front {
+      transform: rotateY(0deg) translateZ(50px);
+    }
+
+    .back {
+      transform: rotateY(180deg) translateZ(50px);
+    }
+
+    .right {
+      transform: rotateY(90deg) translateZ(50px);
+    }
+
+    .left {
+      transform: rotateY(-90deg) translateZ(50px);
+    }
+
+    .top {
+      transform: rotateX(90deg) translateZ(50px);
+    }
+
+    .bottom {
+      transform: rotateX(-90deg) translateZ(50px);
+    }
+
+    .rolling {
+      animation: diceSpin 0.2s infinite linear;
+    }
+
+    @keyframes diceSpin {
+      from {
+        transform: rotateX(0) rotateY(0);
+      }
+
+      to {
+        transform: rotateX(360deg) rotateY(360deg);
+      }
+    }
+
+    @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+      .face {
+        background: rgba(45, 212, 191, 0.8);
+      }
+    }
+
+    /* Winner Flash */
+    .winner-flash {
+      animation: winnerFlash 0.2s 5;
+    }
+
+    @keyframes winnerFlash {
+      50% {
+        background: white;
+        color: black;
+        box-shadow: 0 0 30px white;
+      }
+    }
   </style>
 </head>
 
@@ -475,7 +685,9 @@
 
   <main>
     <div class="tabs" role="tablist" aria-label="Módulos">
-      <button class="tab" role="tab" aria-selected="true" data-tab="dice">Dado</button>
+      <button class="tab" role="tab" aria-selected="true" data-tab="progreso">Progreso RPG</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="control">Control de Flujo</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="dice">Dado</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="touch">Orden por toque</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="picker">Sorteo</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="roulette">Ruleta</button>
@@ -483,62 +695,74 @@
     </div>
 
     <!-- DICE -->
-    <section id="tab-dice" class="grid">
-      <div id="dice-box"
-        style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1000;">
-      </div>
+    <section id="tab-dice" class="grid" style="display:none;">
       <div class="card">
-        <h2>Dado(s)</h2>
-        <div class="row">
-          <div>
-            <label>Tipo</label><br />
-            <select id="diceType">
-              <option value="4">d4</option>
-              <option value="6" selected>d6</option>
-              <option value="8">d8</option>
-              <option value="10">d10</option>
-              <option value="12">d12</option>
-              <option value="20">d20</option>
-              <option value="custom">custom</option>
-            </select>
-          </div>
-          <div id="customDiceWrap" style="display:none;">
-            <label>Caras</label><br />
-            <input id="customDiceFaces" type="number" min="2" step="1" value="100" />
-          </div>
-          <div>
-            <label># de dados</label><br />
-            <input id="diceCount" type="number" min="1" step="1" value="1" />
-          </div>
-          <div>
-            <label>Mod (+/-)</label><br />
-            <input id="diceMod" type="number" step="1" value="0" />
+        <h2>Visualizador 3D</h2>
+        <div class="scene">
+          <div class="cube" id="diceCube" aria-label="Dado 3D" role="img">
+            <div class="face front">1</div>
+            <div class="face back">2</div>
+            <div class="face right">3</div>
+            <div class="face left">4</div>
+            <div class="face top">5</div>
+            <div class="face bottom">6</div>
           </div>
         </div>
-
         <div class="divider"></div>
-
-        <div>
-          <label>Fórmula avanzada (ej. 2d20 + 5)</label><br />
-          <div class="row" style="margin-top: 5px;">
-            <input id="diceFormula" type="text" placeholder="2d10 + 3" style="flex: 1;" />
-            <button class="btn good" id="rollFormulaBtn">Tirar fórmula</button>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
         <div class="out" id="diceOut">—</div>
         <div class="smallout" id="diceDetail"></div>
-
-        <div class="divider"></div>
-
-        <div class="row">
-          <button class="btn primary good" id="rollBtn">Tirar</button>
-          <button class="btn" id="roll3Btn">Tirar ×3</button>
-          <button class="btn" id="clearDiceBtn">Limpiar</button>
-          <span class="hint">Tip: vibración si tu dispositivo lo permite.</span>
+      </div>
+      <div class="row">
+        <div>
+          <label>Tipo</label><br />
+          <select id="diceType">
+            <option value="4">d4</option>
+            <option value="6" selected>d6</option>
+            <option value="8">d8</option>
+            <option value="10">d10</option>
+            <option value="12">d12</option>
+            <option value="20">d20</option>
+            <option value="custom">custom</option>
+          </select>
         </div>
+        <div id="customDiceWrap" style="display:none;">
+          <label>Caras</label><br />
+          <input id="customDiceFaces" type="number" min="2" step="1" value="100" />
+        </div>
+        <div>
+          <label># de dados</label><br />
+          <input id="diceCount" type="number" min="1" step="1" value="1" />
+        </div>
+        <div>
+          <label>Mod (+/-)</label><br />
+          <input id="diceMod" type="number" step="1" value="0" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <label>Fórmula avanzada (ej. 2d20 + 5)</label><br />
+        <div class="row" style="margin-top: 5px;">
+          <input id="diceFormula" type="text" placeholder="2d10 + 3" style="flex: 1;" />
+          <button class="btn good" id="rollFormulaBtn">Tirar fórmula</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="out" id="diceOut">—</div>
+      <div class="smallout" id="diceDetail"></div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <button class="btn primary good" id="rollBtn">Tirar</button>
+        <button class="btn" id="roll2d10Btn">Dificultad (2d10)</button>
+        <button class="btn" id="roll3Btn">Tirar ×3</button>
+        <button class="btn" id="clearDiceBtn">Limpiar</button>
+        <span class="hint">Tip: vibración si tu dispositivo lo permite.</span>
+      </div>
       </div>
 
       <div class="card">
@@ -552,6 +776,106 @@
         <div class="divider"></div>
         <div class="out" id="quickOut">—</div>
         <div class="smallout" id="quickDetail"></div>
+      </div>
+    </section>
+
+    <!-- PROGRESO RPG -->
+    <section id="tab-progreso" class="grid">
+      <div class="card">
+        <h2>Jerarquía Médica</h2>
+        <div class="row" style="justify-content: space-between;">
+          <div id="rankTitle" style="font-size: 24px; font-weight: 800; color: var(--good);">Interno/a</div>
+          <div class="pill">XP: <span id="xpVal" class="mono">0</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn good" id="addXpBtn">+10 XP (Acierto)</button>
+          <button class="btn" id="addXpLargeBtn">+50 XP (Caso Resuelto)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Energía del Grupo</h2>
+        <div class="health-container">
+          <div class="health-bar" id="healthBar"></div>
+          <div class="health-text" id="healthText">100 / 100</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn warn" id="damageBtn">Daño (Error)</button>
+          <button class="btn good" id="healBtn">Heal (Recuperación)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Logros Médicos (Badges)</h2>
+        <div class="badge-grid">
+          <div class="badge" data-badge="eye" title="Ojo Clínico: Detectar un síntoma clave">
+            👁️<div class="badge-name">Ojo Clínico</div>
+          </div>
+          <div class="badge" data-badge="heart" title="Empatía: Resolver conflicto ético">
+            ❤️<div class="badge-name">Empatía</div>
+          </div>
+          <div class="badge" data-badge="brain" title="Genio Diagnóstico: Diferencial complejo">
+            🧠<div class="badge-name">Genio</div>
+          </div>
+          <div class="badge" data-badge="fast" title="Código Rojo: Resolver bajo presión">
+            ⚡<div class="badge-name">Velocidad</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Gestión de Datos</h2>
+        <div class="smallout">Exporta el progreso para usarlo en otra clase o navegador.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn primary" id="exportBtn">Exportar JSON</button>
+          <button class="btn" id="importTriggerBtn">Importar</button>
+          <input type="file" id="importFile" style="display:none" accept=".json">
+          <button class="btn warn" id="resetProgressBtn">Reset Total</button>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- CONTROL DE FLUJO -->
+    <section id="tab-control" class="grid" style="display:none;">
+      <div class="card" id="timerCard">
+        <h2>Temporizador de "Código Rojo"</h2>
+        <div class="out" id="controlTimer">30</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn warn" id="startRedTimerBtn">⚡ INICIAR CÓDIGO ROJO</button>
+          <button class="btn" id="stopTimerBtn">Detener</button>
+          <button class="btn" id="resetTimerBtn">Reset 30s</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Semáforo de Atención</h2>
+        <div class="smallout">Controla el ruido y la fase de la clase.</div>
+        <div class="traffic-row">
+          <div class="traffic-btn" style="background: var(--traffic-green); color: var(--traffic-green);"
+            id="trafficGreen" title="Verde: Trabajo en equipo"></div>
+          <div class="traffic-btn" style="background: var(--traffic-yellow); color: var(--traffic-yellow);"
+            id="trafficYellow" title="Amarillo: Dudas / Transición"></div>
+          <div class="traffic-btn" style="background: var(--traffic-red); color: var(--traffic-red);" id="trafficRed"
+            title="Rojo: Explicación Prof."></div>
+        </div>
+        <div class="divider"></div>
+        <div id="trafficStatus" style="text-align:center; font-weight: 700; text-transform: uppercase;">Libre</div>
+      </div>
+
+      <div class="card">
+        <h2>Líder de Guardia</h2>
+        <div class="smallout">Selecciona al responsable del grupo hoy.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <button class="btn primary good" id="pickLeaderBtn">Asignar Líder</button>
+        </div>
+        <div class="out" id="leaderOut" style="font-size: 24px;">—</div>
+      </div>
       </div>
     </section>
 
@@ -838,6 +1162,8 @@ P6</textarea>
     // ---------------------------
     const tabButtons = Array.from(document.querySelectorAll(".tab"));
     const tabs = {
+      progreso: document.getElementById("tab-progreso"),
+      control: document.getElementById("tab-control"),
       dice: document.getElementById("tab-dice"),
       touch: document.getElementById("tab-touch"),
       picker: document.getElementById("tab-picker"),
@@ -871,28 +1197,27 @@ P6</textarea>
       return RNG.int(1, faces);
     }
 
-    // 3D Dice Box setup
-    let diceBox = null;
-    function initDiceBox() {
-      if (typeof DiceBox === "undefined") {
-        console.warn("DiceBox not yet defined, retrying...");
-        setTimeout(initDiceBox, 500);
-        return;
-      }
-      try {
-        diceBox = new DiceBox("#dice-box", {
-          assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
-          origin: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/",
-          theme: "default",
-          offscreen: true,
-          scale: 6
-        });
-        diceBox.init();
-      } catch (e) {
-        console.error("DiceBox init failed", e);
-      }
+    // ---------------------------
+    // 3D Dice Engine (Custom)
+    // ---------------------------
+    const diceCube = document.getElementById("diceCube");
+    const faceRotation = {
+      1: { x: 0, y: 0 },
+      2: { x: 0, y: 180 },
+      3: { x: 0, y: -90 },
+      4: { x: 0, y: 90 },
+      5: { x: -90, y: 0 },
+      6: { x: 90, y: 0 },
+    };
+
+    function setDiceFace(value) {
+      if (!diceCube) return;
+      const r = faceRotation[value] ?? faceRotation[1];
+      // Extra turns for visual drama
+      const extraX = 360 * (2 + RNG.int(0, 1));
+      const extraY = 360 * (2 + RNG.int(0, 1));
+      diceCube.style.transform = `rotateX(${r.x + extraX}deg) rotateY(${r.y + extraY}deg)`;
     }
-    initDiceBox();
 
     function rollDice() {
       let faces = (diceType.value === "custom")
@@ -928,24 +1253,27 @@ P6</textarea>
           const roll = roller.roll(formula);
           const total = roll.total;
 
-          diceOut.textContent = String(total);
-          diceDetail.innerHTML = `
-            <div><span class="mono">${roll.notation}</span></div>
-            <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
-          `;
-
-          // Isolated 3D Dice Box trigger
-          if (diceBox) {
-            try {
-              document.getElementById("dice-box").style.pointerEvents = "auto";
-              diceBox.roll(formula).catch(e => console.warn("3D Dice fail:", e)).then(() => {
-                setTimeout(() => {
-                  document.getElementById("dice-box").style.pointerEvents = "none";
-                }, 3000);
-              });
-            } catch (err3d) {
-              console.warn("DiceBox sync error:", err3d);
-            }
+          // Sync 3D Cube if it's a single d6
+          const isSingleD6 = roll.notation.toLowerCase() === "1d6";
+          if (isSingleD6 && diceCube) {
+            diceCube.classList.add("rolling");
+            setTimeout(() => {
+              diceCube.classList.remove("rolling");
+              setDiceFace(total);
+              diceOut.textContent = String(total);
+              diceDetail.innerHTML = `
+                <div><span class="mono">${roll.notation}</span></div>
+                <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
+              `;
+              vibrate([30, 40, 30]);
+            }, 800);
+          } else {
+            diceOut.textContent = String(total);
+            diceDetail.innerHTML = `
+              <div><span class="mono">${roll.notation}</span></div>
+              <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
+            `;
+            vibrate(12);
           }
 
           // More balanced Celebration logic
@@ -953,20 +1281,34 @@ P6</textarea>
           if (total >= maxVal && maxVal > 1) {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#2dd4bf', '#f59e0b', '#f2f3f5'] });
             vibrate([20, 50, 20]);
-          } else {
-            vibrate(12);
           }
           return;
         }
 
         // Offline/network fallback
         const fb = fallbackRoll(formula);
-        diceOut.textContent = String(fb.total);
-        diceDetail.innerHTML = `
-          <div><span class="mono">${fb.notation}</span> <span class="hint">(modo local)</span></div>
-          <div>Resultados: <span class="mono">[${fb.rolls.join(", ")}]${fb.mod ? ` ${fb.mod > 0 ? "+" : ""}${fb.mod}` : ""}</span></div>
-        `;
-        vibrate(12);
+        const isSingleD6 = fb.notation.toLowerCase() === "1d6";
+
+        if (isSingleD6 && diceCube) {
+          diceCube.classList.add("rolling");
+          setTimeout(() => {
+            diceCube.classList.remove("rolling");
+            setDiceFace(fb.total);
+            diceOut.textContent = String(fb.total);
+            diceDetail.innerHTML = `
+              <div><span class="mono">${fb.notation}</span> <span class="hint">(modo local)</span></div>
+              <div>Resultados: <span class="mono">[${fb.rolls.join(", ")}]${fb.mod ? ` ${fb.mod > 0 ? "+" : ""}${fb.mod}` : ""}</span></div>
+            `;
+            vibrate([30, 40, 30]);
+          }, 800);
+        } else {
+          diceOut.textContent = String(fb.total);
+          diceDetail.innerHTML = `
+            <div><span class="mono">${fb.notation}</span> <span class="hint">(modo local)</span></div>
+            <div>Resultados: <span class="mono">[${fb.rolls.join(", ")}]${fb.mod ? ` ${fb.mod > 0 ? "+" : ""}${fb.mod}` : ""}</span></div>
+          `;
+          vibrate(12);
+        }
       } catch (e) {
         diceOut.textContent = "Err";
         diceDetail.textContent = "Fórmula inválida o no soportada en modo local.";
@@ -975,6 +1317,9 @@ P6</textarea>
     }
 
     document.getElementById("rollBtn").addEventListener("click", rollDice);
+    document.getElementById("roll2d10Btn").addEventListener("click", () => {
+      executeDiceFormula("2d10");
+    });
     document.getElementById("rollFormulaBtn").addEventListener("click", () => {
       executeDiceFormula(document.getElementById("diceFormula").value);
     });
@@ -1017,13 +1362,52 @@ P6</textarea>
       vibrate(10);
     }
 
-    document.getElementById("pickOneBtn").addEventListener("click", () => {
+    function easeOutQuad(t) { return t * (2 - t); }
+
+    let pickerRunning = false;
+    function startPickerShuffle() {
+      if (pickerRunning) return;
       const items = cleanLines(itemsInput.value);
       if (items.length < 1) return setPick("—", "Sin opciones.");
-      const result = RNG.pick(items, "picker_items");
-      setPick(result, `n=${items.length}`);
-      confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
-    });
+
+      pickerRunning = true;
+      pickOut.classList.remove("winner-flash");
+      const pickBtn = document.getElementById("pickOneBtn");
+      if (pickBtn) pickBtn.disabled = true;
+
+      const totalSteps = 40;
+      const minDelay = 40;
+      const maxDelay = 220;
+      let step = 0;
+
+      const tick = () => {
+        const tempResult = RNG.pick(items, "picker_temp");
+        pickOut.textContent = tempResult;
+
+        const t = step / (totalSteps - 1);
+        const eased = easeOutQuad(t);
+        const delay = Math.round(minDelay + (maxDelay - minDelay) * eased);
+        step++;
+
+        if (step >= totalSteps) {
+          // Final Result
+          const finalResult = RNG.pick(items, "picker_items");
+          pickOut.textContent = finalResult;
+          pickOut.classList.add("winner-flash");
+          setPick(finalResult, `n=${items.length}`);
+          confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+
+          if (navigator.vibrate) navigator.vibrate([20, 30, 60]);
+          pickerRunning = false;
+          if (pickBtn) pickBtn.disabled = false;
+          return;
+        }
+        setTimeout(tick, delay);
+      };
+      tick();
+    }
+
+    document.getElementById("pickOneBtn").addEventListener("click", startPickerShuffle);
 
     document.getElementById("shuffleBtn").addEventListener("click", () => {
       const items = cleanLines(itemsInput.value);
@@ -1519,6 +1903,246 @@ P6</textarea>
     } else {
       console.warn("Service Worker skipped: only supported on http/https");
     }
+
+    // ---------------------------
+    // RPG State & Progress Engine
+    // ---------------------------
+    const RANKS = [
+      { minXp: 0, title: "Interno/a (Pregrado)" },
+      { minXp: 100, title: "Residente R1" },
+      { minXp: 300, title: "Residente R2" },
+      { minXp: 600, title: "Residente Mayor" },
+      { minXp: 1000, title: "Especialista" },
+      { minXp: 2000, title: "Jefe/a de Servicio" },
+      { minXp: 5000, title: "Director/a Médico" }
+    ];
+
+    let state = {
+      xp: 0,
+      health: 100,
+      badges: [],
+      traffic: "green",
+      lastReset: new Date().toISOString()
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem("quickrand_class_state");
+      if (saved) {
+        state = { ...state, ...JSON.parse(saved) };
+      }
+      updateStateUI();
+    }
+
+    function saveState() {
+      localStorage.setItem("quickrand_class_state", JSON.stringify(state));
+    }
+
+    function updateStateUI() {
+      // XP & Rank
+      document.getElementById("xpVal").textContent = state.xp;
+      const rank = [...RANKS].reverse().find(r => state.xp >= r.minXp) || RANKS[0];
+      document.getElementById("rankTitle").textContent = rank.title;
+
+      // Health
+      const hb = document.getElementById("healthBar");
+      const ht = document.getElementById("healthText");
+      hb.style.width = state.health + "%";
+      ht.textContent = `${state.health} / 100`;
+
+      if (state.health <= 0) {
+        hb.style.background = "var(--traffic-red)";
+        confetti({ particleCount: 50, colors: ['#ff0000'] });
+      } else {
+        hb.style.background = "linear-gradient(90deg, var(--traffic-red), var(--good))";
+      }
+
+      // Badges
+      document.querySelectorAll(".badge").forEach(el => {
+        const b = el.dataset.badge;
+        if (state.badges.includes(b)) el.classList.add("unlocked");
+        else el.classList.remove("unlocked");
+      });
+
+      // Traffic
+      updateTrafficUI();
+    }
+
+    function addXP(val) {
+      state.xp += val;
+      if (val > 20) confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+      saveState();
+      updateStateUI();
+      vibrate(10);
+    }
+
+    function modifyHealth(val) {
+      state.health = Math.max(0, Math.min(100, state.health + val));
+      saveState();
+      updateStateUI();
+      vibrate(val < 0 ? 40 : 15);
+    }
+
+    function toggleBadge(id) {
+      if (state.badges.includes(id)) {
+        state.badges = state.badges.filter(b => b !== id);
+      } else {
+        state.badges.push(id);
+        confetti({ particleCount: 60, spread: 80 });
+      }
+      saveState();
+      updateStateUI();
+      vibrate(12);
+    }
+
+    // RPG Events
+    document.getElementById("addXpBtn").addEventListener("click", () => addXP(10));
+    document.getElementById("addXpLargeBtn").addEventListener("click", () => addXP(50));
+    document.getElementById("damageBtn").addEventListener("click", () => modifyHealth(-10));
+    document.getElementById("healBtn").addEventListener("click", () => modifyHealth(10));
+    document.querySelectorAll(".badge").forEach(el => {
+      el.addEventListener("click", () => toggleBadge(el.dataset.badge));
+    });
+
+    // ---------------------------
+    // Flow Control Engine
+    // ---------------------------
+    let controlTimerInt = null;
+    let controlTime = 30;
+    const ctOut = document.getElementById("controlTimer");
+    const ctCard = document.getElementById("timerCard");
+
+    function updateTimerUI() {
+      ctOut.textContent = controlTime;
+    }
+
+    function startCodeRed() {
+      clearInterval(controlTimerInt);
+      controlTime = 30;
+      updateTimerUI();
+      ctCard.classList.add("code-red");
+      vibrate([50, 100, 50]);
+
+      controlTimerInt = setInterval(() => {
+        controlTime--;
+        updateTimerUI();
+        if (controlTime <= 5) vibrate(20);
+        if (controlTime <= 0) {
+          clearInterval(controlTimerInt);
+          ctCard.classList.remove("code-red");
+          ctOut.textContent = "CÓDIGO ROJO";
+          vibrate(500);
+          confetti({ particleCount: 200, colors: ['#ff0000', '#000000'] });
+        }
+      }, 1000);
+    }
+
+    document.getElementById("startRedTimerBtn").addEventListener("click", startCodeRed);
+    document.getElementById("stopTimerBtn").addEventListener("click", () => {
+      clearInterval(controlTimerInt);
+      ctCard.classList.remove("code-red");
+    });
+    document.getElementById("resetTimerBtn").addEventListener("click", () => {
+      controlTime = 30;
+      updateTimerUI();
+      clearInterval(controlTimerInt);
+      ctCard.classList.remove("code-red");
+    });
+
+    // Traffic Light
+    const tBtns = {
+      green: document.getElementById("trafficGreen"),
+      yellow: document.getElementById("trafficYellow"),
+      red: document.getElementById("trafficRed")
+    };
+    const tStatus = document.getElementById("trafficStatus");
+
+    function setTraffic(color) {
+      state.traffic = color;
+      saveState();
+      updateTrafficUI();
+      vibrate(8);
+    }
+
+    function updateTrafficUI() {
+      Object.entries(tBtns).forEach(([c, el]) => {
+        el.classList.toggle("active", state.traffic === c);
+      });
+      const labels = { green: "Trabajo libre / Equipo", yellow: "Transición / Dudas", red: "Explicación (Silencio)" };
+      tStatus.textContent = labels[state.traffic] || "Libre";
+      tStatus.style.color = `var(--traffic-${state.traffic})`;
+    }
+
+    Object.entries(tBtns).forEach(([c, el]) => {
+      el.addEventListener("click", () => setTraffic(c));
+    });
+
+    // Leader of Guard
+    document.getElementById("pickLeaderBtn").addEventListener("click", () => {
+      const items = cleanLines(itemsInput.value); // Use shared list from picker
+      if (items.length === 0) {
+        document.getElementById("leaderOut").textContent = "Sin alumnos";
+        return;
+      }
+      const leader = RNG.pick(items, "leader_guard");
+      document.getElementById("leaderOut").textContent = leader;
+      vibrate(15);
+      confetti({ particleCount: 40, spread: 60 });
+    });
+
+    // ---------------------------
+    // Data Management
+    // ---------------------------
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const data = {
+        app: "QuickRand",
+        version: "2.5",
+        state: state,
+        timestamp: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quickrand_progreso_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("importTriggerBtn").addEventListener("click", () => {
+      document.getElementById("importFile").click();
+    });
+
+    document.getElementById("importFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.app === "QuickRand" && data.state) {
+            state = data.state;
+            saveState();
+            updateStateUI();
+            alert("Progreso importado con éxito.");
+          }
+        } catch (err) {
+          alert("Error al importar el archivo.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("resetProgressBtn").addEventListener("click", () => {
+      if (confirm("¿Estás seguro de que deseas reiniciar TODO el progreso médico? Esto no se puede deshacer.")) {
+        state = { xp: 0, health: 100, badges: [], traffic: "green", lastReset: new Date().toISOString() };
+        saveState();
+        updateStateUI();
+        vibrate(50);
+      }
+    });
+
+    // Init
+    loadState();
   </script>
 </body>
 
