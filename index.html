@@ -7,17 +7,23 @@
   <meta name="theme-color" content="#111111" />
   <title>QuickRand — Dado + Sorteo + Multi-Touch</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dice-roller-parser@1.2.0/dist/dice-roller-parser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/rpg-dice-roller@5.2.1/lib/bundle/dice-roller.js"></script>
   <script src="https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.min.js"></script>
   <style>
     :root {
-      --bg: #0f0f10;
-      --panel: #17181a;
-      --muted: #a9acb3;
-      --text: #f2f3f5;
-      --line: #2a2c31;
+      --bg: #0a0a0b;
+      --panel: rgba(23, 24, 26, 0.7);
+      --panel-solid: #17181a;
+      --muted: #888e96;
+      --text: #ffffff;
+      --line: rgba(255, 255, 255, 0.08);
       --good: #2dd4bf;
       --warn: #f59e0b;
       --accent-1: #2dd4bf;
@@ -25,346 +31,421 @@
       --accent-3: #818cf8;
       --accent-4: #f472b6;
       --accent-5: #34d399;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
     }
 
     * {
-      box-sizing: border-box
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(45, 212, 191, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
       color: var(--text);
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior: none;
+      min-height: 100vh;
     }
 
     header {
-      padding: 16px 16px 8px;
+      padding: 24px 20px 12px;
       display: flex;
       gap: 12px;
       align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 11, 0.8);
     }
 
     .title {
-      font-weight: 700;
-      letter-spacing: .2px
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, #888 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .subtitle {
       color: var(--muted);
-      font-size: 12px
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
     }
 
     main {
-      padding: 12px 16px 18px;
-      max-width: 980px;
+      padding: 16px 20px 40px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
     .tabs {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 8px 0 14px;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px;
+      margin: 8px 0 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
     }
 
     .tab {
-      border: 1px solid var(--line);
+      border: none;
       background: transparent;
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 10px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .tab[aria-selected="true"] {
-      background: var(--panel);
-      border-color: #3a3d45
+      background: var(--text);
+      color: var(--bg);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
     }
 
     .grid {
       display: grid;
-      gap: 12px;
+      gap: 20px;
       grid-template-columns: 1fr;
     }
 
     @media(min-width:900px) {
       .grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1.2fr 0.8fr;
       }
     }
 
     .card {
       background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow-premium);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
     }
 
     .card h2 {
-      margin: 0 0 10px;
-      font-size: 16px
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
-      align-items: center
+      align-items: flex-end;
     }
 
     label {
-      font-size: 12px;
-      color: var(--muted)
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: block;
     }
 
     input,
     select,
     textarea {
-      background: #0f1012;
+      background: rgba(0, 0, 0, 0.3);
       color: var(--text);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--good);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1);
     }
 
     textarea {
-      min-height: 92px;
+      min-height: 120px;
       width: 100%;
-      resize: vertical
+      resize: vertical;
+      line-height: 1.5;
     }
 
     input[type="number"] {
-      width: 110px
+      width: 100px;
     }
 
     .btn {
-      background: #0f1012;
+      background: rgba(255, 255, 255, 0.05);
       color: var(--text);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 12px 18px;
       cursor: pointer;
       font-weight: 700;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
     }
 
-    .btn.primary {
-      border-color: #3a3d45;
-      background: #1d1f23
-    }
-
-    .btn.good {
-      border-color: rgba(45, 212, 191, .35);
-      background: rgba(45, 212, 191, .08)
-    }
-
-    .btn.warn {
-      border-color: rgba(245, 158, 11, .35);
-      background: rgba(245, 158, 11, .08)
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
     }
 
     .btn:active {
-      transform: translateY(1px)
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+    }
+
+    .btn.primary:hover {
+      background: #eee;
+    }
+
+    .btn.good {
+      background: rgba(45, 212, 191, 0.1);
+      border-color: rgba(45, 212, 191, 0.3);
+      color: var(--good);
+    }
+
+    .btn.good:hover {
+      background: rgba(45, 212, 191, 0.2);
+    }
+
+    .btn.warn {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--warn);
+    }
+
+    .btn.warn:hover {
+      background: rgba(245, 158, 11, 0.2);
     }
 
     .out {
-      font-size: 42px;
+      font-size: 64px;
       font-weight: 900;
-      letter-spacing: .5px;
-      padding: 10px 0;
+      letter-spacing: -2px;
+      padding: 20px 0;
       text-align: center;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
     }
 
     .smallout {
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.35
+      line-height: 1.5;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
     }
 
     .divider {
       height: 1px;
       background: var(--line);
-      margin: 12px 0
+      margin: 20px 0;
     }
 
     .pill {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--line);
       border-radius: 999px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
     }
 
     .touchpad {
       position: relative;
-      background: radial-gradient(1200px 600px at 50% 0%, rgba(255, 255, 255, .06), transparent 60%), #0f1012;
-      border: 1px dashed #3a3d45;
-      border-radius: 18px;
-      height: 320px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%),
+        #0a0a0b;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      height: 360px;
       overflow: hidden;
       touch-action: none;
-      /* clave para multi-touch */
+      transition: border-color 0.3s ease;
+    }
+
+    .touchpad:active {
+      border-color: var(--good);
     }
 
     .dot {
       position: absolute;
-      width: 52px;
-      height: 52px;
-      border-radius: 999px;
-      border: 3px solid var(--dot-color, var(--good));
-      background: radial-gradient(circle, var(--dot-bg, rgba(45, 212, 191, .2)) 0%, transparent 70%);
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 2px solid var(--dot-color, var(--good));
+      background: radial-gradient(circle, var(--dot-bg, rgba(45, 212, 191, 0.15)) 0%, transparent 80%);
       transform: translate(-50%, -50%) scale(1);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
       color: white;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       user-select: none;
       pointer-events: none;
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-      animation: pulse 2s infinite ease-in-out;
-      box-shadow: 0 0 20px var(--dot-bg);
+      z-index: 10;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 30px var(--dot-bg);
       backdrop-filter: blur(4px);
     }
 
-    .dot::after {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: 999px;
-      border: 1px solid var(--dot-color);
-      opacity: 0.3;
-      animation: orbit 4s linear infinite;
-    }
-
-    @keyframes orbit {
-      0% {
-        transform: rotate(0deg) scale(1);
-      }
-
-      50% {
-        transform: rotate(180deg) scale(1.1);
-      }
-
-      100% {
-        transform: rotate(360deg) scale(1);
-      }
-    }
-
     .dot.capturing {
-      animation: ripple 0.8s infinite;
-      transform: translate(-50%, -50%) scale(1.4);
-      border-width: 4px;
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 var(--dot-bg);
-      }
-
-      70% {
-        box-shadow: 0 0 0 15px transparent;
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 transparent;
-      }
+      animation: ripple 1s infinite cubic-bezier(0, 0, 0.2, 1);
+      transform: translate(-50%, -50%) scale(1.3);
     }
 
     @keyframes ripple {
       0% {
-        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 0 0 var(--dot-color);
         opacity: 1;
       }
 
       100% {
-        transform: translate(-50%, -50%) scale(1.5);
-        opacity: 0;
+        box-shadow: 0 0 0 40px transparent;
+        opacity: 0.5;
       }
     }
 
     .orderlist {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     .orderitem {
-      padding: 10px 12px;
+      padding: 14px 18px;
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #0f1012;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
     }
 
     .orderitem.active {
-      border-color: rgba(245, 158, 11, .5);
-      background: rgba(245, 158, 11, .08)
+      border-color: var(--warn);
+      background: rgba(245, 158, 11, 0.05);
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
     }
 
     .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.9em;
     }
 
     .hint {
       color: var(--muted);
-      font-size: 12px
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
-    .warntext {
-      color: #ffd7a0
-    }
-
-    .goodtext {
-      color: #a7f3d0
-    }
-
-    /* Roulette Styles */
+    /* Roulette Premium */
     .roulette-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 30px;
       padding: 20px 0;
     }
 
     .roulette-wrapper {
       position: relative;
-      width: 300px;
-      height: 300px;
+      width: 320px;
+      height: 320px;
+      padding: 10px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+      border-radius: 50%;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
     }
 
     #rouletteCanvas {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), 0 0 0 8px var(--panel);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
       transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
     }
 
     .roulette-arrow {
       position: absolute;
-      top: -15px;
+      top: -10px;
       left: 50%;
       transform: translateX(-50%);
-      width: 30px;
-      height: 40px;
-      background: var(--warn);
+      width: 34px;
+      height: 44px;
+      background: #fff;
       clip-path: polygon(50% 100%, 0 0, 100% 0);
-      z-index: 10;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+      z-index: 20;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
     }
 
     .roulette-center {
@@ -372,12 +453,13 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 20px;
-      height: 20px;
-      background: var(--text);
+      width: 32px;
+      height: 32px;
+      background: var(--bg);
       border-radius: 50%;
-      border: 4px solid var(--panel);
-      z-index: 5;
+      border: 6px solid #fff;
+      z-index: 15;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
     }
   </style>
 </head>
@@ -669,40 +751,67 @@ P6</textarea>
 
   <script>
     // ---------------------------
-    // RNG (crypto-backed) + utils
+    // BalancedRNG (crypto-backed + stability)
     // ---------------------------
     function hasCryptoRng() {
       return typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function";
     }
+
     const RNG = {
+      _history: new Map(), // key -> Array of last picked indices
+      _bags: new Map(),    // key -> Array of available indices
+
       u32() {
         if (!hasCryptoRng()) return (Math.random() * 0x100000000) >>> 0;
         const a = new Uint32Array(1);
         crypto.getRandomValues(a);
         return a[0] >>> 0;
       },
+
       int(min, max) {
-        // uniform int in [min, max]
         min = Math.ceil(min); max = Math.floor(max);
         if (max < min) [min, max] = [max, min];
         const range = (max - min + 1) >>> 0;
-        if (range === 0) return min; // overflow edge (unlikely)
-        // rejection sampling to avoid modulo bias
+        if (range === 0) return min;
         const limit = Math.floor(0x100000000 / range) * range;
         let x;
         do { x = RNG.u32(); } while (x >= limit);
         return min + (x % range);
       },
-      pick(arr) {
-        return arr[RNG.int(0, arr.length - 1)];
+
+      pick(arr, key = "global") {
+        if (arr.length === 0) return null;
+        if (arr.length === 1) return arr[0];
+
+        // "No-Repeat" and "Fair Distribution" Logic
+        // We use a shuffle-bag approach for small lists to ensure variety.
+        let bag = this._bags.get(key);
+        if (!bag || bag.length === 0 || bag.max_size !== arr.length) {
+          bag = Array.from({ length: arr.length }, (_, i) => i);
+          bag.max_size = arr.length;
+          // Initial shuffle
+          for (let i = bag.length - 1; i > 0; i--) {
+            const j = this.int(0, i);
+            [bag[i], bag[j]] = [bag[j], bag[i]];
+          }
+        }
+
+        const idx = bag.pop();
+        this._bags.set(key, bag);
+        return arr[idx];
       },
+
       shuffle(arr) {
         const a = arr.slice();
         for (let i = a.length - 1; i > 0; i--) {
-          const j = RNG.int(0, i);
+          const j = this.int(0, i);
           [a[i], a[j]] = [a[j], a[i]];
         }
         return a;
+      },
+
+      resetBag(key) {
+        this._bags.delete(key);
       }
     };
 
@@ -728,6 +837,7 @@ P6</textarea>
       dice: document.getElementById("tab-dice"),
       touch: document.getElementById("tab-touch"),
       picker: document.getElementById("tab-picker"),
+      roulette: document.getElementById("tab-roulette"),
       teams: document.getElementById("tab-teams")
     };
 
@@ -794,39 +904,60 @@ P6</textarea>
 
     function executeDiceFormula(formula) {
       if (!formula) return;
-      if (typeof rpgDiceRoller === "undefined") {
-        diceOut.textContent = "Cargando...";
-        diceDetail.textContent = "Esperando librería de dados...";
-        return;
+
+      function fallbackRoll(rawFormula) {
+        const normalized = String(rawFormula).replace(/\s+/g, "");
+        const match = normalized.match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+        if (!match) throw new Error("Unsupported fallback formula");
+        const qty = Math.max(1, parseInt(match[1] || "1", 10));
+        const sides = Math.max(2, parseInt(match[2], 10));
+        const mod = parseInt(match[3] || "0", 10);
+        const rolls = Array.from({ length: qty }, () => rollDiceOnce(sides));
+        const subtotal = rolls.reduce((acc, n) => acc + n, 0);
+        const total = subtotal + mod;
+        return { qty, sides, mod, rolls, total, notation: `${qty}d${sides}${mod ? (mod > 0 ? `+${mod}` : `${mod}`) : ""}` };
       }
+
       try {
-        const roller = new rpgDiceRoller.DiceRoller();
-        const roll = roller.roll(formula);
-        const total = roll.total;
+        if (typeof rpgDiceRoller !== "undefined") {
+          const roller = new rpgDiceRoller.DiceRoller();
+          const roll = roller.roll(formula);
+          const total = roll.total;
 
-        diceOut.textContent = String(total);
+          diceOut.textContent = String(total);
+          diceDetail.innerHTML = `
+            <div><span class="mono">${roll.notation}</span></div>
+            <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
+          `;
+
+          // Trigger 3D Dice if initialized
+          if (diceBox) {
+            document.getElementById("dice-box").style.pointerEvents = "auto";
+            diceBox.roll(formula).then(() => {
+              setTimeout(() => {
+                document.getElementById("dice-box").style.pointerEvents = "none";
+              }, 3000);
+            });
+          }
+
+          // Celebration for critical rolls or high values
+          if (total >= (roll.dice[0]?.sides * roll.dice[0]?.qty || 0)) {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#2dd4bf', '#f59e0b', '#f2f3f5'] });
+            vibrate([20, 50, 20]);
+          } else {
+            vibrate(12);
+          }
+          return;
+        }
+
+        // Offline/network fallback if external dice library is unavailable.
+        const fb = fallbackRoll(formula);
+        diceOut.textContent = String(fb.total);
         diceDetail.innerHTML = `
-          <div><span class="mono">${roll.notation}</span></div>
-          <div>Resultados: <span class="mono">${roll.output.split(': ')[1] || roll.toString()}</span></div>
+          <div><span class="mono">${fb.notation}</span> <span class="hint">(modo local)</span></div>
+          <div>Resultados: <span class="mono">[${fb.rolls.join(", ")}]${fb.mod ? ` ${fb.mod > 0 ? "+" : ""}${fb.mod}` : ""}</span></div>
         `;
-
-        // Trigger 3D Dice if initialized
-        if (diceBox) {
-          document.getElementById("dice-box").style.pointerEvents = "auto";
-          diceBox.roll(formula).then(() => {
-            setTimeout(() => {
-              document.getElementById("dice-box").style.pointerEvents = "none";
-            }, 3000);
-          });
-        }
-
-        // Celebration for critical rolls or high values
-        if (total >= (roll.dice[0]?.sides * roll.dice[0]?.qty || 0)) {
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#2dd4bf', '#f59e0b', '#f2f3f5'] });
-          vibrate([20, 50, 20]);
-        } else {
-          vibrate(12);
-        }
+        vibrate(12);
       } catch (e) {
         diceOut.textContent = "Err";
         diceDetail.textContent = "Fórmula inválida.";
@@ -1316,30 +1447,82 @@ P6</textarea>
       spinBtn.disabled = true;
       vibrate(20);
 
-      const spins = 5 + Math.random() * 5; // 5 to 10 full spins
-      const extraAngle = Math.random() * 2 * Math.PI;
-      const totalRotation = spins * 2 * Math.PI + extraAngle;
+      // Determine the winner BEFORE the animation for better control/balancing
+      // Use the pick function with the "roulette" key for balanced results
+      // We need to find the index of the winner in the items array
+      // But RNG.pick returns the value. Let's modify physics to land on a balanced item.
+
+      // Get a balanced index
+      let bag = RNG._bags.get("roulette");
+      if (!bag || bag.length === 0 || bag.max_size !== items.length) {
+        bag = Array.from({ length: items.length }, (_, i) => i);
+        bag.max_size = items.length;
+        RNG.shuffle(bag); // Reuse internal shuffle logic if needed or just use RNG.int
+        // Basic shuffle for the bag
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = RNG.int(0, i);
+          [bag[i], bag[j]] = [bag[j], bag[i]];
+        }
+      }
+      const winningIndex = bag.pop();
+      RNG._bags.set("roulette", bag);
+
+      const sliceAngle = (2 * Math.PI) / items.length;
+
+      // Calculate target rotation to land winningIndex at the top (1.5 * PI)
+      // currentRotation is where we are now.
+      // We want: (currentRotation + totalRotation) % 2PI = targetAngle
+      // targetAngle is such that the slice for winningIndex is under the arrow.
+      // Arrow is at 1.5 * PI.
+      // Slice i range: [i * sliceAngle, (i+1) * sliceAngle]
+      // Resulting slice is (1.5 * PI - totalRot) % 2PI
+
+      const targetSliceCenter = (winningIndex + 0.5) * sliceAngle;
+      let targetRotationEnd = (1.5 * Math.PI - targetSliceCenter);
+      while (targetRotationEnd < 0) targetRotationEnd += 2 * Math.PI;
+
+      const spins = RNG.int(4, 7);
+      const totalRotation = spins * 2 * Math.PI + (targetRotationEnd - (currentRotation % (2 * Math.PI)));
 
       currentRotation += totalRotation;
       rouletteCanvas.style.transform = `rotate(${currentRotation}rad)`;
+
+      // Tick effect (vibration as it spins)
+      const startTime = performance.now();
+      const duration = 4000;
+      let lastTickAngle = 0;
+
+      function checkTick() {
+        if (!isSpinning) return;
+        const now = performance.now();
+        const p = (now - startTime) / duration;
+        if (p < 1) {
+          // Approximate current angle based on cubic-bezier(0.1, 0, 0.1, 1)
+          // Simplified: just check the actual transform if possible or use a proxy
+          const currentAngle = currentRotation * p; // Not accurate but gives some ticks
+          if (Math.abs(currentAngle - lastTickAngle) > sliceAngle) {
+            vibrate(5);
+            lastTickAngle = currentAngle;
+          }
+          requestAnimationFrame(checkTick);
+        }
+      }
+      checkTick();
 
       // When animation ends
       setTimeout(() => {
         isSpinning = false;
         spinBtn.disabled = false;
 
-        // Calculate result
-        const normalizedRotation = (currentRotation % (2 * Math.PI));
-        const sliceAngle = (2 * Math.PI) / items.length;
-
-        let resultAngle = (1.5 * Math.PI - normalizedRotation) % (2 * Math.PI);
-        if (resultAngle < 0) resultAngle += 2 * Math.PI;
-
-        const winningIndex = Math.floor(resultAngle / sliceAngle);
         const winner = items[winningIndex];
 
         rouletteOut.textContent = winner;
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#2dd4bf', '#f59e0b', '#818cf8']
+        });
         vibrate([30, 60, 30]);
       }, 4000);
     }
