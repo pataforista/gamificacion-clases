@@ -7,6 +7,7 @@ import TouchOrder from './components/TouchOrder';
 import Picker from './components/Picker';
 import Teams from './components/Teams';
 import GroupExam from './components/GroupExam';
+import Help from './components/Help';
 import './index.css';
 
 const App = () => {
@@ -21,6 +22,7 @@ const App = () => {
     { id: 'picker', label: 'Sorteo' },
     { id: 'teams', label: 'Equipos' },
     { id: 'exam', label: 'Examen grupal' },
+    { id: 'help', label: 'Ayuda' },
   ];
 
   return (
@@ -37,8 +39,8 @@ const App = () => {
       </div>
 
       <header>
-        <div className="title">QuickRand</div>
-        <div className="pill">PREMIUM EDITION · VITE + REACT</div>
+        <div className="title">MedClass Pro</div>
+        <div className="pill">GAMIFICACIN MDICA · PREMIUM</div>
       </header>
 
       <main>
@@ -62,6 +64,7 @@ const App = () => {
           {activeTab === 'picker' && <Picker onItemsChange={setPickerItems} />}
           {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
           {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
+          {activeTab === 'help' && <Help />}
         </div>
       </main>
     </div>
