@@ -30,7 +30,7 @@ const Teams = ({ pickerItems = [] }) => {
                 <div className="divider"></div>
                 <div className="row">
                     <div>
-                        <label>Nmero de equipos</label><br />
+                        <label>Número de equipos</label><br />
                         <input
                             type="number"
                             min="2"

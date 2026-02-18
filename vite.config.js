@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'MedClass Pro: Gamificacin Mdica',
+        name: 'MedClass Pro: Gamificación Médica',
         short_name: 'MedClass Pro',
-        description: 'Herramienta de gamificacin para clases con dados 3D y RPG',
+        description: 'Herramienta de gamificación para clases con dados 3D y RPG',
         theme_color: '#060608',
         background_color: '#060608',
         display: 'standalone',

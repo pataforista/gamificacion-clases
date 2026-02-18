@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePersistence } from '../hooks/usePersistence';
 import CountUp from './CountUp';
+import confetti from 'canvas-confetti';
 
 const BADGES = [
-    { id: 'eye', name: 'Ojo Clnico', icon: '👁️', detail: 'Detectar un sntoma clave' },
-    { id: 'heart', name: 'Empata', icon: '❤️', detail: 'Resolver conflicto tico' },
+    { id: 'eye', name: 'Ojo Clínico', icon: '👁️', detail: 'Detectar un síntoma clave' },
+    { id: 'heart', name: 'Empatía', icon: '❤️', detail: 'Resolver conflicto ético' },
     { id: 'brain', name: 'Genio', icon: '🧠', detail: 'Diferencial complejo' },
-    { id: 'fast', name: 'Velocidad', icon: '⚡', detail: 'Resolver bajo presin' },
+    { id: 'fast', name: 'Velocidad', icon: '⚡', detail: 'Resolver bajo presión' },
 ];
 
 const RPGDash = () => {
     const { state, updateState, resetState } = usePersistence();
+    const [promotion, setPromotion] = useState(null);
+    const prevRankRef = useRef(null);
 
     const getRank = (xp) => {
         if (xp >= 1000) return "Jefe/a de Servicio";
@@ -19,6 +22,28 @@ const RPGDash = () => {
         if (xp >= 100) return "Residente";
         return "Interno/a";
     };
+
+    useEffect(() => {
+        const currentRank = getRank(state.xp);
+        if (prevRankRef.current && prevRankRef.current !== currentRank && state.xp > 0) {
+            // Rank promotion detected! (ignore if XP went down, though ranks are monotonic here)
+            const ranks = ["Interno/a", "Residente", "Residente Senior", "Adjunto/a", "Jefe/a de Servicio"];
+            if (ranks.indexOf(currentRank) > ranks.indexOf(prevRankRef.current)) {
+                setPromotion(currentRank);
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#6366f1', '#2dd4bf', '#f59e0b']
+                });
+
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+
+                setTimeout(() => setPromotion(null), 4000);
+            }
+        }
+        prevRankRef.current = currentRank;
+    }, [state.xp]);
 
     const handleXP = (amount) => {
         updateState({ xp: Math.max(0, state.xp + amount) });
@@ -46,60 +71,73 @@ const RPGDash = () => {
     };
 
     return (
-        <div className="grid">
-            <div className="card">
-                <h2>Jerarqua Mdica</h2>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--good)' }}>{getRank(state.xp)}</div>
-                    <div className="pill">XP: <CountUp to={state.xp} from={state.xp - 10} duration={0.5} className="mono" /></div>
+        <>
+            <div className="grid">
+                <div className="card">
+                    <h2>Jerarquía Médica</h2>
+                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--good)' }}>{getRank(state.xp)}</div>
+                        <div className="pill">XP: <CountUp to={state.xp} from={state.xp - 10} duration={0.5} className="mono" /></div>
+                    </div>
+                    <div className="divider"></div>
+                    <div className="row">
+                        <button className="btn good" onClick={() => handleXP(10)}>+10 XP (Acierto)</button>
+                        <button className="btn" onClick={() => handleXP(50)}>+50 XP (Caso Resuelto)</button>
+                    </div>
                 </div>
-                <div className="divider"></div>
-                <div className="row">
-                    <button className="btn good" onClick={() => handleXP(10)}>+10 XP (Acierto)</button>
-                    <button className="btn" onClick={() => handleXP(50)}>+50 XP (Caso Resuelto)</button>
+
+                <div className="card">
+                    <h2>Energía del Grupo</h2>
+                    <div className="health-container">
+                        <div className="health-bar" style={{ width: `${state.health}%` }}></div>
+                        <div className="health-text">{state.health} / 100</div>
+                    </div>
+                    <div className="divider"></div>
+                    <div className="row">
+                        <button className="btn warn" onClick={() => handleHealth(-10)}>Daño (Error)</button>
+                        <button className="btn good" onClick={() => handleHealth(10)}>Heal (Recuperación)</button>
+                    </div>
+                </div>
+
+                <div className="card">
+                    <h2>Logros Mdicos (Badges)</h2>
+                    <div className="badge-grid">
+                        {BADGES.map((b) => (
+                            <div
+                                key={b.id}
+                                className={`badge ${state.badges.includes(b.id) ? 'unlocked' : ''}`}
+                                onClick={() => toggleBadge(b.id)}
+                                title={b.detail}
+                            >
+                                {b.icon}
+                                <div className="badge-name">{b.name}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="card">
+                    <h2>Gestión de Datos</h2>
+                    <div className="smallout">Exporta el progreso para usarlo en otra clase o navegador.</div>
+                    <div className="divider"></div>
+                    <div className="row">
+                        <button className="btn primary" onClick={exportData}>Exportar JSON</button>
+                        <button className="btn warn" onClick={resetState}>Reset Total</button>
+                    </div>
                 </div>
             </div>
 
-            <div className="card">
-                <h2>Energa del Grupo</h2>
-                <div className="health-container">
-                    <div className="health-bar" style={{ width: `${state.health}%` }}></div>
-                    <div className="health-text">{state.health} / 100</div>
+            {promotion && (
+                <div className="promotion-overlay" onClick={() => setPromotion(null)}>
+                    <div className="promotion-content">
+                        <div className="promotion-badge">🎓</div>
+                        <div className="promotion-title">¡ASCENSO LOGRADO!</div>
+                        <div className="promotion-rank">{promotion}</div>
+                        <div className="smallout" style={{ background: 'transparent' }}>Tu prestigio médico ha crecido.</div>
+                    </div>
                 </div>
-                <div className="divider"></div>
-                <div className="row">
-                    <button className="btn warn" onClick={() => handleHealth(-10)}>Dao (Error)</button>
-                    <button className="btn good" onClick={() => handleHealth(10)}>Heal (Recuperacin)</button>
-                </div>
-            </div>
-
-            <div className="card">
-                <h2>Logros Mdicos (Badges)</h2>
-                <div className="badge-grid">
-                    {BADGES.map((b) => (
-                        <div
-                            key={b.id}
-                            className={`badge ${state.badges.includes(b.id) ? 'unlocked' : ''}`}
-                            onClick={() => toggleBadge(b.id)}
-                            title={b.detail}
-                        >
-                            {b.icon}
-                            <div className="badge-name">{b.name}</div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="card">
-                <h2>Gestin de Datos</h2>
-                <div className="smallout">Exporta el progreso para usarlo en otra clase o navegador.</div>
-                <div className="divider"></div>
-                <div className="row">
-                    <button className="btn primary" onClick={exportData}>Exportar JSON</button>
-                    <button className="btn warn" onClick={resetState}>Reset Total</button>
-                </div>
-            </div>
-        </div>
+            )}
+        </>
     );
 };
 

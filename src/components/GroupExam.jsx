@@ -8,6 +8,7 @@ const GroupExam = ({ pickerItems = [] }) => {
     const [scores, setScores] = useState({});
     const [activeTeam, setActiveTeam] = useState(null);
     const [feedback, setFeedback] = useState(null);
+    const [showGuide, setShowGuide] = useState(false);
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
@@ -58,8 +59,30 @@ const GroupExam = ({ pickerItems = [] }) => {
                 <h2>Examen Grupal</h2>
                 {!exam ? (
                     <div>
-                        <p>Importa el JSON del examen para comenzar la dinmica.</p>
-                        <input type="file" accept=".json" onChange={handleFileUpload} />
+                        <p>Importa el JSON del examen para comenzar la dinámica.</p>
+                        <div className="row" style={{ margin: '15px 0' }}>
+                            <input type="file" accept=".json" onChange={handleFileUpload} />
+                            <button className="btn" onClick={() => setShowGuide(!showGuide)}>
+                                {showGuide ? 'Ocultar Guía' : 'Ver Estructura JSON'}
+                            </button>
+                        </div>
+
+                        {showGuide && (
+                            <div className="smallout" style={{ textAlign: 'left', background: 'rgba(0,0,0,0.4)', color: 'var(--text)' }}>
+                                <strong>Estructura requerida:</strong>
+                                <pre style={{ fontSize: '12px', marginTop: '10px', color: '#2dd4bf' }}>
+                                    {`{
+  "questions": [
+    {
+      "text": "¿Pregunta?",
+      "options": ["A", "B", "C", "D"],
+      "correctIndex": 0
+    }
+  ]
+}`}
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div>

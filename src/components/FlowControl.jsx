@@ -40,18 +40,18 @@ const FlowControl = ({ pickerItems = [] }) => {
 
     const trafficLabels = {
         green: "Trabajo libre / Equipo",
-        yellow: "Transicin / Dudas",
-        red: "Explicacin (Silencio)"
+        yellow: "Transición / Dudas",
+        red: "Explicación (Silencio)"
     };
 
     return (
         <div className="grid">
             <div className={`card ${state.traffic === 'red' && isTimerRunning ? 'code-red' : ''}`}>
-                <h2>Temporizador de "Cdigo Rojo"</h2>
+                <h2>Temporizador de "Código Rojo"</h2>
                 <div className="out">{timer}</div>
                 <div className="divider"></div>
                 <div className="row">
-                    <button className="btn warn" onClick={startTimer}>⚡ INICIAR CDIGO ROJO</button>
+                    <button className="btn warn" onClick={startTimer}>⚡ INICIAR CÓDIGO ROJO</button>
                     <button className="btn" onClick={() => setIsTimerRunning(false)}>Detener</button>
                     <button className="btn" onClick={() => { setTimer(30); setIsTimerRunning(false); }}>Reset 30s</button>
                 </div>
@@ -62,7 +62,7 @@ const FlowControl = ({ pickerItems = [] }) => {
                     <Cubes gridSize={8} faceColor="#2dd4bf" borderStyle="1px solid rgba(255,255,255,0.05)" />
                 </div>
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <h2>Semforo de Atencin</h2>
+                    <h2>Semáforo de Atención</h2>
                     <div className="smallout">Controla el ruido y la fase de la clase.</div>
                     <div className="traffic-row" style={{ marginTop: '20px', gap: '0.5rem' }}>
                         <button
@@ -89,11 +89,11 @@ const FlowControl = ({ pickerItems = [] }) => {
             </div>
 
             <div className="card">
-                <h2>Lder de Guardia</h2>
+                <h2>Líder de Guardia</h2>
                 <div className="smallout">Selecciona al responsable del grupo hoy.</div>
                 <div className="divider"></div>
                 <div className="row">
-                    <button className="btn primary good" onClick={pickLeader}>Asignar Lder</button>
+                    <button className="btn primary good" onClick={pickLeader}>Asignar Líder</button>
                 </div>
                 <div className="out" style={{ fontSize: '24px' }}>{leader}</div>
             </div>

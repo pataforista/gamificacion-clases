@@ -40,7 +40,7 @@ const App = () => {
 
       <header>
         <div className="title">MedClass Pro</div>
-        <div className="pill">GAMIFICACIN MDICA · PREMIUM</div>
+        <div className="pill">GAMIFICACIÓN MÉDICA · PREMIUM</div>
       </header>
 
       <main>

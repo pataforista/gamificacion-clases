@@ -4,7 +4,7 @@ import Shuffle from './Shuffle';
 import AnimatedList from './AnimatedList';
 
 const Picker = ({ onItemsChange }) => {
-    const [inputText, setInputText] = useState("Opcin A\nOpcin B\nOpcin C\nOpcin D");
+    const [inputText, setInputText] = useState("Opción A\nOpción B\nOpción C\nOpción D");
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
 
@@ -27,7 +27,7 @@ const Picker = ({ onItemsChange }) => {
         <div className="grid">
             <div className="card">
                 <h2>Sorteo / Ruleta de nombres</h2>
-                <label>Opciones (una por lnea)</label>
+                <label>Opciones (una por línea)</label>
                 <textarea
                     value={inputText}
                     onChange={handleTextChange}
