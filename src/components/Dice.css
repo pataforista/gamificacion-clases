@@ -59,6 +59,43 @@
     animation: diceSpin 0.2s infinite linear;
 }
 
+@media (max-width: 600px) {
+
+    .scene,
+    .face {
+        width: 80px;
+        height: 80px;
+    }
+
+    .scene {
+        perspective: 500px;
+    }
+
+    .front {
+        transform: rotateY(0deg) translateZ(40px);
+    }
+
+    .back {
+        transform: rotateY(180deg) translateZ(40px);
+    }
+
+    .right {
+        transform: rotateY(90deg) translateZ(40px);
+    }
+
+    .left {
+        transform: rotateY(-90deg) translateZ(40px);
+    }
+
+    .top {
+        transform: rotateX(90deg) translateZ(40px);
+    }
+
+    .bottom {
+        transform: rotateX(-90deg) translateZ(40px);
+    }
+}
+
 @keyframes diceSpin {
     from {
         transform: rotateX(0) rotateY(0);

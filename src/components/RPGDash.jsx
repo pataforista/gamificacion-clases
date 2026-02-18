@@ -49,8 +49,8 @@ const RPGDash = () => {
         <div className="grid">
             <div className="card">
                 <h2>Jerarqua Mdica</h2>
-                <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--good)' }}>{getRank(state.xp)}</div>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--good)' }}>{getRank(state.xp)}</div>
                     <div className="pill">XP: <CountUp to={state.xp} from={state.xp - 10} duration={0.5} className="mono" /></div>
                 </div>
                 <div className="divider"></div>

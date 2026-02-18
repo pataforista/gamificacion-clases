@@ -64,7 +64,7 @@ const FlowControl = ({ pickerItems = [] }) => {
                 <div style={{ position: 'relative', zIndex: 1 }}>
                     <h2>Semforo de Atencin</h2>
                     <div className="smallout">Controla el ruido y la fase de la clase.</div>
-                    <div className="traffic-row" style={{ marginTop: '20px' }}>
+                    <div className="traffic-row" style={{ marginTop: '20px', gap: '0.5rem' }}>
                         <button
                             className={`traffic-btn ${state.traffic === 'green' ? 'active' : ''}`}
                             style={{ background: 'var(--traffic-green)', color: 'var(--traffic-green)' }}

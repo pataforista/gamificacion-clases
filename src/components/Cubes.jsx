@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import './Cubes.css';
 
 const Cubes = ({
-    gridSize = 10,
+    gridSize: initialGridSize = 10,
     cubeSize,
     maxAngle = 45,
     radius = 3,
@@ -19,6 +19,7 @@ const Cubes = ({
     rippleSpeed = 2
 }) => {
     const sceneRef = useRef(null);
+    const gridSize = window.innerWidth < 768 ? Math.min(initialGridSize, 6) : initialGridSize;
     const rafRef = useRef(null);
     const idleTimerRef = useRef(null);
     const userActiveRef = useRef(false);
