@@ -3,10 +3,11 @@ import { RNG } from '../utils/rng';
 
 const TouchOrder = () => {
     const [touches, setTouches] = useState({});
-    const [participants, setParticipants] = useState([]);
-    const [order, setOrder] = useState([]);
-    const [turnIndex, setTurnIndex] = useState(-1);
+    const [winnerId, setWinnerId] = useState(null);
+    const [countdown, setCountdown] = useState(null);
     const padRef = useRef(null);
+    const timerRef = useRef(null);
+    const countdownIntervalRef = useRef(null);
 
     const handleTouchStart = (e) => {
         e.preventDefault();
@@ -41,16 +42,56 @@ const TouchOrder = () => {
         setTouches(newTouches);
     };
 
-    const generateOrder = () => {
-        if (participants.length < 2) return alert("Coloca varios dedos en el panel para capturar participantes.");
-        const items = [...participants];
-        for (let i = items.length - 1; i > 0; i--) {
-            const j = RNG.int(0, i);
-            [items[i], items[j]] = [items[j], items[i]];
-        }
-        setOrder(items);
-        setTurnIndex(0);
+    const startCountdown = () => {
+        if (timerRef.current) return;
+
+        setWinnerId(null);
+        setCountdown(3);
+
+        let count = 3;
+        countdownIntervalRef.current = setInterval(() => {
+            count -= 1;
+            if (count > 0) {
+                setCountdown(count);
+                if (navigator.vibrate) navigator.vibrate(50);
+            } else {
+                clearInterval(countdownIntervalRef.current);
+            }
+        }, 1000);
+
+        timerRef.current = setTimeout(() => {
+            const ids = Object.keys(touches);
+            if (ids.length > 0) {
+                const winner = ids[Math.floor(Math.random() * ids.length)];
+                setWinnerId(winner);
+                setCountdown(null);
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            }
+            timerRef.current = null;
+        }, 3000);
     };
+
+    const cancelCountdown = () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+        if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+        }
+        setCountdown(null);
+        setWinnerId(null);
+    };
+
+    useEffect(() => {
+        const touchCount = Object.keys(touches).length;
+        if (touchCount >= 2 && !winnerId && !countdown) {
+            startCountdown();
+        } else if (touchCount < 2) {
+            cancelCountdown();
+        }
+    }, [touches]);
 
     useEffect(() => {
         const pad = padRef.current;
@@ -78,50 +119,54 @@ const TouchOrder = () => {
                 <div
                     ref={padRef}
                     className="touchpad"
-                    style={{ position: 'relative', background: '#0a0a0b', height: '300px', borderRadius: '24px', border: '1px dashed #444', marginTop: '20px', overflow: 'hidden' }}
+                    style={{
+                        position: 'relative',
+                        background: '#0a0a0b',
+                        height: '400px',
+                        borderRadius: '24px',
+                        border: '1px dashed #444',
+                        marginTop: '20px',
+                        overflow: 'hidden',
+                        touchAction: 'none'
+                    }}
                 >
+                    {countdown !== null && (
+                        <div className="touch-countdown">
+                            {countdown}
+                        </div>
+                    )}
+
                     {Object.entries(touches).map(([id, t]) => {
                         const rect = padRef.current?.getBoundingClientRect();
                         if (!rect) return null;
+                        const isWinner = winnerId === id;
                         return (
                             <div
                                 key={id}
-                                className="dot active"
+                                className={`dot ${isWinner ? 'winner' : 'active'}`}
                                 style={{
                                     left: t.x - rect.left,
                                     top: t.y - rect.top,
                                     position: 'absolute',
-                                    width: '60px',
-                                    height: '60px',
+                                    width: isWinner ? '120px' : '80px',
+                                    height: isWinner ? '120px' : '80px',
                                     borderRadius: '50%',
-                                    border: '2px solid var(--good)',
+                                    border: isWinner ? '4px solid var(--primary)' : '2px solid var(--good)',
                                     transform: 'translate(-50%, -50%)',
-                                    background: 'rgba(45, 212, 191, 0.2)'
+                                    background: isWinner ? 'rgba(99, 102, 241, 0.4)' : 'rgba(45, 212, 191, 0.2)',
+                                    transition: 'width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s'
                                 }}
-                            />
+                            >
+                                {isWinner && <div className="winner-label">¡ELEGIDO!</div>}
+                            </div>
                         );
                     })}
                 </div>
                 <div className="divider"></div>
-                <div className="row">
-                    <button className="btn primary good" onClick={() => setParticipants(Object.keys(touches).map(id => `Participante ${id}`))}>Capturar Actuales</button>
-                    <button className="btn" onClick={generateOrder}>Generar Orden</button>
-                    <button className="btn" onClick={() => { setOrder([]); setTurnIndex(-1); setParticipants([]); }}>Reset</button>
-                </div>
-            </div>
-
-            <div className="card">
-                <h2>Orden de Intervencin</h2>
-                <div className="orderlist">
-                    {order.map((p, i) => (
-                        <div key={i} className={`orderitem ${i === turnIndex ? 'active' : ''}`}>
-                            <span>{p}</span>
-                            <span className="pill">#{i + 1}</span>
-                        </div>
-                    ))}
-                    {order.length > 0 && turnIndex < order.length - 1 && (
-                        <button className="btn" onClick={() => setTurnIndex(prev => prev + 1)} style={{ marginTop: '10px' }}>Siguiente Turno</button>
-                    )}
+                <div className="smallout">
+                    {winnerId ? "¡Sorteo completado! Retira los dedos para reiniciar." :
+                        countdown ? "Mantén los dedos quietos..." :
+                            "Esperando al menos 2 dedos..."}
                 </div>
             </div>
         </div>

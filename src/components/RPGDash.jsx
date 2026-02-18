@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePersistence } from '../hooks/usePersistence';
+import { useNotifications } from './NotificationContext';
+import { useGSAP } from '@gsap/react';
 import CountUp from './CountUp';
 import confetti from 'canvas-confetti';
+import gsap from 'gsap';
 
 const BADGES = [
     { id: 'eye', name: 'Ojo Clínico', icon: '👁️', detail: 'Detectar un síntoma clave' },
@@ -12,6 +15,7 @@ const BADGES = [
 
 const RPGDash = () => {
     const { state, updateState, resetState } = usePersistence();
+    const { notify } = useNotifications();
     const [promotion, setPromotion] = useState(null);
     const prevRankRef = useRef(null);
 
@@ -47,6 +51,9 @@ const RPGDash = () => {
 
     const handleXP = (amount) => {
         updateState({ xp: Math.max(0, state.xp + amount) });
+        if (amount > 0) {
+            notify(`+${amount} XP ganado`, 'xp', '📈');
+        }
     };
 
     const handleHealth = (amount) => {
@@ -54,10 +61,16 @@ const RPGDash = () => {
     };
 
     const toggleBadge = (id) => {
-        const badges = state.badges.includes(id)
+        const isUnlocked = state.badges.includes(id);
+        const badges = isUnlocked
             ? state.badges.filter(b => b !== id)
             : [...state.badges, id];
         updateState({ badges });
+
+        if (!isUnlocked) {
+            const badge = BADGES.find(b => b.id === id);
+            notify(`¡Logro Desbloqueado: ${badge.name}!`, 'achievement', badge.icon);
+        }
     };
 
     const exportData = () => {
@@ -129,6 +142,7 @@ const RPGDash = () => {
 
             {promotion && (
                 <div className="promotion-overlay" onClick={() => setPromotion(null)}>
+                    <PromotionStars />
                     <div className="promotion-content">
                         <div className="promotion-badge">🎓</div>
                         <div className="promotion-title">¡ASCENSO LOGRADO!</div>
@@ -138,6 +152,40 @@ const RPGDash = () => {
                 </div>
             )}
         </>
+    );
+};
+
+const PromotionStars = () => {
+    const containerRef = useRef();
+
+    useGSAP(() => {
+        const stars = containerRef.current.querySelectorAll('.star');
+        stars.forEach((star) => {
+            gsap.set(star, {
+                x: '50%',
+                y: '50%',
+                scale: 0,
+                opacity: 1,
+            });
+            gsap.to(star, {
+                x: `${Math.random() * 100}%`,
+                y: `${Math.random() * 100}%`,
+                scale: Math.random() * 2 + 0.5,
+                duration: 2 + Math.random() * 2,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut',
+                delay: Math.random() * 2
+            });
+        });
+    }, { scope: containerRef });
+
+    return (
+        <div ref={containerRef} className="promotion-stars">
+            {Array.from({ length: 20 }).map((_, i) => (
+                <div key={i} className="star">✨</div>
+            ))}
+        </div>
     );
 };
 

@@ -7,6 +7,7 @@ const DEFAULT_STATE = {
     health: 100,
     badges: [],
     traffic: "green",
+    rollHistory: [],
     lastReset: new Date().toISOString()
 };
 
@@ -30,7 +31,7 @@ export function usePersistence() {
     };
 
     const resetState = () => {
-        if (confirm("Ests seguro de que deseas reiniciar TODO el progreso mdico?")) {
+        if (confirm("¿Estás seguro de que deseas reiniciar TODO el progreso médico?")) {
             const newState = { ...DEFAULT_STATE, lastReset: new Date().toISOString() };
             setState(newState);
             return true;
