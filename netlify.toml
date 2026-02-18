@@ -1,4 +1,7 @@
-# Configuración para Netlify
+[build]
+  command = "npm run build"
+  publish = "dist"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
