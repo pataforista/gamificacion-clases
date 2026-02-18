@@ -1,8 +1,11 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { DiceRoller, NumberGenerator } from 'rpg-dice-roller';
 import { usePersistence } from '../hooks/usePersistence';
-import { RNG } from '../utils/rng';
 import './Dice.css';
+
+// Configure the global dice roller engine to use browserCrypto for high entropy
+// in v5, NumberGenerator is a namespace/object containing engines and a default generator
+NumberGenerator.generator.engine = NumberGenerator.engines.browserCrypto;
 
 const Dice = () => {
     const { state, updateState } = usePersistence();
@@ -17,6 +20,9 @@ const Dice = () => {
     const [rollMode, setRollMode] = useState("normal"); // normal, kh1 (advantage), kl1 (disadvantage)
     const [theme, setTheme] = useState("medical"); // medical, neon, classic
     const cubeRefs = useRef([]);
+
+    // Initialize DiceRoller (v5 doesn't take a generator in constructor)
+    const roller = useMemo(() => new DiceRoller(), []);
 
     // Synthesize dice sound (Web Audio API)
     const playDiceSound = (type = 'roll') => {
@@ -50,16 +56,6 @@ const Dice = () => {
         }
     };
 
-    // Custom RNG to ensure high entropy results
-    const customGen = new NumberGenerator();
-    customGen.next = () => {
-        // NumberGenerator.next expects a float [0, 1)
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return array[0] / (0xffffffff + 1);
-    };
-    const roller = new DiceRoller(customGen);
-
     const getRotation = (val) => {
         const rotations = {
             1: 'rotateX(0deg) rotateY(0deg)',
@@ -84,16 +80,29 @@ const Dice = () => {
             if (rollMode !== "normal" && diceCount > 1) {
                 f += rollMode; // e.g., 2d20kh1
             }
-            f += `${diceMod >= 0 ? "+" : ""}${diceMod}`;
+            if (diceMod !== 0) {
+                f += `${diceMod >= 0 ? "+" : ""}${diceMod}`;
+            }
 
             try {
+                // In v5, roller.roll() returns a DiceRoll object or array
                 const rollResult = roller.roll(f);
-                setResult(rollResult.total);
-                setDetail(rollResult.toString());
+                const total = rollResult.total;
+                const output = rollResult.toString();
+
+                setResult(total);
+                setDetail(output);
 
                 // Get individual dice results
-                // rpg-dice-roller result object can be complex when using modifiers
-                const rolls = rollResult.rolls[0].rolls.map(r => r.value);
+                // In v5, rollResult.rolls is an array of ResultGroup/RollResults
+                let rolls = [];
+                if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
+                    // Extract values from RollResults
+                    rolls = rollResult.rolls[0].results
+                        .filter(r => typeof r.value === 'number')
+                        .map(r => r.value);
+                }
+
                 setIndividualRolls(rolls);
                 playDiceSound('hit');
 
@@ -102,7 +111,7 @@ const Dice = () => {
                     {
                         id: Date.now(),
                         formula: f,
-                        total: rollResult.total,
+                        total: total,
                         time: new Date().toLocaleTimeString()
                     },
                     ...(state.rollHistory || [])
@@ -120,6 +129,7 @@ const Dice = () => {
                     });
                 }
             } catch (e) {
+                console.error("Roll error:", e);
                 setResult("Error");
                 setDetail("Parámetros inválidos");
                 setIsRolling(false);
@@ -138,8 +148,11 @@ const Dice = () => {
         setTimeout(() => {
             try {
                 const rollResult = roller.roll(formula);
-                setResult(rollResult.total);
-                setDetail(rollResult.toString());
+                const total = rollResult.total;
+                const output = rollResult.toString();
+
+                setResult(total);
+                setDetail(output);
                 playDiceSound('hit');
 
                 // Update Persistence History
@@ -147,7 +160,7 @@ const Dice = () => {
                     {
                         id: Date.now(),
                         formula: formula,
-                        total: rollResult.total,
+                        total: total,
                         time: new Date().toLocaleTimeString()
                     },
                     ...(state.rollHistory || [])
@@ -155,21 +168,26 @@ const Dice = () => {
                 updateState({ rollHistory: newHistory });
 
                 // Try to extract individual rolls if possible
-                if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].rolls) {
-                    setIndividualRolls(rollResult.rolls[0].rolls.map(r => r.value));
+                if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
+                    const rolls = rollResult.rolls[0].results
+                        .filter(r => typeof r.value === 'number')
+                        .map(r => r.value);
+
+                    setIndividualRolls(rolls);
 
                     if (formula.toLowerCase().includes("d6") && !formula.includes("+") && !formula.includes("-")) {
                         // Attempt animation if it's a simple d6 roll
                         setTimeout(() => {
-                            rollResult.rolls[0].rolls.forEach((r, idx) => {
+                            rolls.forEach((val, idx) => {
                                 if (cubeRefs.current[idx]) {
-                                    cubeRefs.current[idx].style.transform = getRotation(r.value);
+                                    cubeRefs.current[idx].style.transform = getRotation(val);
                                 }
                             });
                         }, 50);
                     }
                 }
             } catch (e) {
+                console.error("Formula roll error:", e);
                 setResult("Error");
                 setDetail("Fórmula inválida");
             }
