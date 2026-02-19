@@ -1,8 +1,77 @@
+/* Dice Container */
+.dice-tray-container {
+    background: var(--dark-bg, rgba(0, 0, 0, 0.2));
+    border-radius: 16px;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 20px;
+}
+
+.poly-dice-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+}
+
+.poly-dice-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.poly-dice-face {
+    fill: var(--dice-bg);
+    stroke: var(--dice-stroke);
+    stroke-width: 2;
+    transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.poly-dice-lines {
+    stroke: var(--dice-stroke-faint);
+    stroke-width: 1;
+    fill: none;
+}
+
+.poly-dice-text {
+    fill: var(--dice-text);
+    font-size: 24px;
+    font-weight: 900;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Themes */
+.theme-medical {
+    --dice-bg: rgba(45, 212, 191, 0.8);
+    --dice-stroke: #ffffff;
+    --dice-stroke-faint: rgba(255, 255, 255, 0.4);
+    --dice-text: #ffffff;
+}
+
+.theme-neon {
+    --dice-bg: rgba(15, 15, 20, 0.9);
+    --dice-stroke: #bc13fe;
+    --dice-stroke-faint: rgba(188, 19, 254, 0.4);
+    --dice-text: #bc13fe;
+}
+
+.theme-classic {
+    --dice-bg: #ffffff;
+    --dice-stroke: #333333;
+    --dice-stroke-faint: rgba(0, 0, 0, 0.1);
+    --dice-text: #333333;
+}
+
+/* Original 3D Cube Styles (fallback/specific) */
 .scene {
     width: 100px;
     height: 100px;
     perspective: 600px;
-    margin: 30px auto;
 }
 
 .cube {
@@ -24,34 +93,19 @@
     justify-content: center;
     font-size: 2.5rem;
     font-weight: 900;
-    background: rgba(45, 212, 191, 0.4);
-    backdrop-filter: blur(5px);
-    color: white;
-    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
     border-radius: 12px;
 }
 
-/* Themes */
-.theme-medical .face {
-    background: rgba(45, 212, 191, 0.4);
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    color: white;
-    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
-}
-
 .theme-neon .face {
-    background: rgba(15, 15, 20, 0.8);
-    border: 2px solid #ff00ff;
+    border-color: #ff00ff;
     color: #ff00ff;
     text-shadow: 0 0 10px #ff00ff;
-    box-shadow: inset 0 0 15px #ff00ff, 0 0 10px #ff00ff;
 }
 
 .theme-classic .face {
     background: #fdfdfd;
-    border: 2px solid #ddd;
+    border-color: #ddd;
     color: #111;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1), 3px 3px 5px rgba(0, 0, 0, 0.1);
 }
 
 .front {
@@ -78,82 +132,8 @@
     transform: rotateX(-90deg) translateZ(50px);
 }
 
-.rolling {
-    animation: diceSpin 0.2s infinite linear;
-}
-
-.dice-result-pill {
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 10px 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 60px;
-    animation: fadeIn 0.3s ease;
-}
-
-.dice-shape {
-    font-size: 0.6rem;
-    font-weight: 800;
-    color: var(--primary);
-    text-transform: uppercase;
-    margin-bottom: 2px;
-}
-
-.dice-value {
-    font-size: 1.5rem;
-    font-weight: 900;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-@media (max-width: 600px) {
-
-    .scene,
-    .face {
-        width: 80px;
-        height: 80px;
-    }
-
-    .scene {
-        perspective: 500px;
-    }
-
-    .front {
-        transform: rotateY(0deg) translateZ(40px);
-    }
-
-    .back {
-        transform: rotateY(180deg) translateZ(40px);
-    }
-
-    .right {
-        transform: rotateY(90deg) translateZ(40px);
-    }
-
-    .left {
-        transform: rotateY(-90deg) translateZ(40px);
-    }
-
-    .top {
-        transform: rotateX(90deg) translateZ(40px);
-    }
-
-    .bottom {
-        transform: rotateX(-90deg) translateZ(40px);
-    }
+.rolling-3d {
+    animation: diceSpin 0.3s infinite linear;
 }
 
 @keyframes diceSpin {
@@ -163,5 +143,60 @@
 
     to {
         transform: rotateX(360deg) rotateY(360deg);
+    }
+}
+
+.dice-result-pill {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dice-shape {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.7;
+}
+
+.dice-value {
+    font-size: 1.8rem;
+    font-weight: 900;
+}
+
+/* History */
+.history-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.history-item {
+    transition: background 0.2s;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 600px) {
+
+    .scene,
+    .face,
+    .poly-dice-container {
+        width: 70px;
+        height: 70px;
+    }
+
+    .poly-dice-text {
+        font-size: 20px;
     }
 }

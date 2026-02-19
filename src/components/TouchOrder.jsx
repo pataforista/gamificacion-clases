@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RNG } from '../utils/rng';
 
 const TouchOrder = () => {
     const [touches, setTouches] = useState({});
-    const [winnerId, setWinnerId] = useState(null);
+    const [results, setResults] = useState({}); // { id: orderNumber }
     const [countdown, setCountdown] = useState(null);
     const padRef = useRef(null);
     const timerRef = useRef(null);
@@ -45,7 +44,7 @@ const TouchOrder = () => {
     const startCountdown = () => {
         if (timerRef.current) return;
 
-        setWinnerId(null);
+        setResults({});
         setCountdown(3);
 
         let count = 3;
@@ -62,8 +61,14 @@ const TouchOrder = () => {
         timerRef.current = setTimeout(() => {
             const ids = Object.keys(touches);
             if (ids.length > 0) {
-                const winner = ids[Math.floor(Math.random() * ids.length)];
-                setWinnerId(winner);
+                // Shuffle logic
+                const shuffled = [...ids].sort(() => Math.random() - 0.5);
+                const orderResults = {};
+                shuffled.forEach((id, index) => {
+                    orderResults[id] = index + 1;
+                });
+
+                setResults(orderResults);
                 setCountdown(null);
                 if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
             }
@@ -81,14 +86,16 @@ const TouchOrder = () => {
             countdownIntervalRef.current = null;
         }
         setCountdown(null);
-        setWinnerId(null);
+        setResults({});
     };
 
     useEffect(() => {
         const touchCount = Object.keys(touches).length;
-        if (touchCount >= 2 && !winnerId && !countdown) {
+        const resultCount = Object.keys(results).length;
+
+        if (touchCount >= 2 && resultCount === 0 && !countdown) {
             startCountdown();
-        } else if (touchCount < 2) {
+        } else if (touchCount < 2 && !resultCount) {
             cancelCountdown();
         }
     }, [touches]);
@@ -108,14 +115,11 @@ const TouchOrder = () => {
         };
     }, [touches]);
 
-    // Logic to "capture" participants if they hold for > 600ms (simplified for React)
-    // In a real app we'd use a timer per touch, but for MVP we'll just show markers
-
     return (
         <div className="grid">
             <div className="card">
                 <h2>Orden por Multi-Touch</h2>
-                <div className="smallout">Coloca varios dedos en el panel y mantenlos para capturarlos.</div>
+                <div className="smallout">Coloca varios dedos y obtén un orden aleatorio para todos.</div>
                 <div
                     ref={padRef}
                     className="touchpad"
@@ -139,32 +143,47 @@ const TouchOrder = () => {
                     {Object.entries(touches).map(([id, t]) => {
                         const rect = padRef.current?.getBoundingClientRect();
                         if (!rect) return null;
-                        const isWinner = winnerId === id;
+                        const order = results[id];
+                        const isWinner = order === 1; // Highlight the first one
+                        const hasResult = order !== undefined;
+
                         return (
                             <div
                                 key={id}
-                                className={`dot ${isWinner ? 'winner' : 'active'}`}
+                                className={`dot ${hasResult ? 'active' : ''}`}
                                 style={{
                                     left: t.x - rect.left,
                                     top: t.y - rect.top,
                                     position: 'absolute',
-                                    width: isWinner ? '120px' : '80px',
-                                    height: isWinner ? '120px' : '80px',
+                                    width: hasResult ? '100px' : '80px',
+                                    height: hasResult ? '100px' : '80px',
                                     borderRadius: '50%',
-                                    border: isWinner ? '4px solid var(--primary)' : '2px solid var(--good)',
+                                    border: isWinner ? '4px solid var(--primary)' : hasResult ? '2px solid var(--good)' : '2px solid rgba(255,255,255,0.2)',
                                     transform: 'translate(-50%, -50%)',
-                                    background: isWinner ? 'rgba(99, 102, 241, 0.4)' : 'rgba(45, 212, 191, 0.2)',
-                                    transition: 'width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s'
+                                    background: isWinner ? 'rgba(99, 102, 241, 0.4)' : hasResult ? 'rgba(45, 212, 191, 0.2)' : 'rgba(255,255,255,0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
                                 }}
                             >
-                                {isWinner && <div className="winner-label">¡ELEGIDO!</div>}
+                                {hasResult && (
+                                    <div style={{
+                                        color: '#fff',
+                                        fontWeight: 900,
+                                        fontSize: isWinner ? '2rem' : '1.5rem',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                                    }}>
+                                        {order}º
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
                 <div className="divider"></div>
                 <div className="smallout">
-                    {winnerId ? "¡Sorteo completado! Retira los dedos para reiniciar." :
+                    {Object.keys(results).length > 0 ? "¡Orden asignado! Retira los dedos para reiniciar." :
                         countdown ? "Mantén los dedos quietos..." :
                             "Esperando al menos 2 dedos..."}
                 </div>

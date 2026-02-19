@@ -1,11 +1,79 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { DiceRoller, NumberGenerator } from 'rpg-dice-roller';
+import { motion, AnimatePresence } from 'motion/react';
 import { usePersistence } from '../hooks/usePersistence';
 import './Dice.css';
 
-// Configure the global dice roller engine to use browserCrypto for high entropy
-// in v5, NumberGenerator is a namespace/object containing engines and a default generator
+// Configure the global dice roller engine
 NumberGenerator.generator.engine = NumberGenerator.engines.browserCrypto;
+
+const PolyhedralDice = ({ value, type, isRolling, theme }) => {
+    const getShape = (type) => {
+        switch (type) {
+            case '4': return {
+                path: "M 50,15 L 90,85 L 10,85 Z",
+                lines: "M 50,15 L 50,85 M 90,85 L 50,55 M 10,85 L 50,55"
+            };
+            case '8': return {
+                path: "M 50,10 L 85,50 L 50,90 L 15,50 Z",
+                lines: "M 50,10 L 50,90 M 15,50 L 85,50 M 50,10 L 15,50 M 50,10 L 85,50 M 50,90 L 15,50 M 50,90 L 85,50"
+            };
+            case '10': return {
+                path: "M 50,5 L 90,40 L 50,95 L 10,40 Z",
+                lines: "M 50,5 L 50,95 M 10,40 L 90,40 M 50,5 L 10,40 M 50,5 L 90,40 M 50,95 L 10,40 M 50,95 L 90,40"
+            };
+            case '12': return {
+                path: "M 50,5 L 92,35 L 76,85 L 24,85 L 8,35 Z",
+                lines: "M 50,5 L 24,85 M 50,5 L 76,85 M 92,35 L 8,35"
+            };
+            case '20': return {
+                path: "M 50,5 L 90,25 L 90,75 L 50,95 L 10,75 L 10,25 Z",
+                lines: "M 50,5 L 50,95 M 10,25 L 90,75 M 10,75 L 90,25 M 50,5 L 10,25 M 50,5 L 90,25 M 10,25 L 10,75 M 90,25 L 90,75 M 10,75 L 50,95 M 90,75 L 50,95"
+            };
+            default: // D6
+                return {
+                    path: "M 20,20 L 80,20 L 80,80 L 20,80 Z",
+                    lines: ""
+                };
+        }
+    };
+
+    const shape = getShape(type);
+
+    return (
+        <motion.div
+            className={`poly-dice-container theme-${theme}`}
+            animate={isRolling ? {
+                rotate: [0, 90, 180, 270, 360],
+                scale: [1, 1.2, 0.9, 1.1, 1],
+                x: [0, 5, -5, 5, 0],
+                y: [0, -10, 0, -5, 0]
+            } : {
+                rotate: 0,
+                scale: 1,
+                x: 0,
+                y: 0
+            }}
+            transition={isRolling ? {
+                duration: 0.5,
+                repeat: Infinity,
+                ease: "linear"
+            } : {
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+            }}
+        >
+            <svg viewBox="0 0 100 100" className="poly-dice-svg">
+                <path d={shape.path} className="poly-dice-face" />
+                {shape.lines && <path d={shape.lines} className="poly-dice-lines" />}
+                <text x="50" y="55" className="poly-dice-text">
+                    {isRolling ? "?" : value}
+                </text>
+            </svg>
+        </motion.div>
+    );
+};
 
 const Dice = () => {
     const { state, updateState } = usePersistence();
@@ -17,14 +85,11 @@ const Dice = () => {
     const [diceCount, setDiceCount] = useState(1);
     const [diceMod, setDiceMod] = useState(0);
     const [formula, setFormula] = useState("");
-    const [rollMode, setRollMode] = useState("normal"); // normal, kh1 (advantage), kl1 (disadvantage)
-    const [theme, setTheme] = useState("medical"); // medical, neon, classic
-    const cubeRefs = useRef([]);
+    const [rollMode, setRollMode] = useState("normal");
+    const [theme, setTheme] = useState("medical");
 
-    // Initialize DiceRoller (v5 doesn't take a generator in constructor)
     const roller = useMemo(() => new DiceRoller(), []);
 
-    // Synthesize dice sound (Web Audio API)
     const playDiceSound = (type = 'roll') => {
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -39,7 +104,6 @@ const Dice = () => {
                 gain.gain.setValueAtTime(0.05, ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
             } else {
-                // 'hit' sound
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(300, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
@@ -56,18 +120,6 @@ const Dice = () => {
         }
     };
 
-    const getRotation = (val) => {
-        const rotations = {
-            1: 'rotateX(0deg) rotateY(0deg)',
-            2: 'rotateX(-180deg) rotateY(0deg)',
-            3: 'rotateX(0deg) rotateY(-90deg)',
-            4: 'rotateX(0deg) rotateY(90deg)',
-            5: 'rotateX(-90deg) rotateY(0deg)',
-            6: 'rotateX(90deg) rotateY(0deg)'
-        };
-        return rotations[val] || rotations[1];
-    };
-
     const roll = () => {
         setIsRolling(true);
         setResult("...");
@@ -78,14 +130,13 @@ const Dice = () => {
         setTimeout(() => {
             let f = `${diceCount}d${diceType}`;
             if (rollMode !== "normal" && diceCount > 1) {
-                f += rollMode; // e.g., 2d20kh1
+                f += rollMode;
             }
             if (diceMod !== 0) {
                 f += `${diceMod >= 0 ? "+" : ""}${diceMod}`;
             }
 
             try {
-                // In v5, roller.roll() returns a DiceRoll object or array
                 const rollResult = roller.roll(f);
                 const total = rollResult.total;
                 const output = rollResult.toString();
@@ -93,11 +144,8 @@ const Dice = () => {
                 setResult(total);
                 setDetail(output);
 
-                // Get individual dice results
-                // In v5, rollResult.rolls is an array of ResultGroup/RollResults
                 let rolls = [];
                 if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
-                    // Extract values from RollResults
                     rolls = rollResult.rolls[0].results
                         .filter(r => typeof r.value === 'number')
                         .map(r => r.value);
@@ -106,7 +154,6 @@ const Dice = () => {
                 setIndividualRolls(rolls);
                 playDiceSound('hit');
 
-                // Update Persistence History
                 const newHistory = [
                     {
                         id: Date.now(),
@@ -119,15 +166,6 @@ const Dice = () => {
                 updateState({ rollHistory: newHistory });
 
                 setIsRolling(false);
-
-                // Update rotations for d6 cubes
-                if (diceType === "6") {
-                    rolls.forEach((val, idx) => {
-                        if (cubeRefs.current[idx]) {
-                            cubeRefs.current[idx].style.transform = getRotation(val);
-                        }
-                    });
-                }
             } catch (e) {
                 console.error("Roll error:", e);
                 setResult("Error");
@@ -136,7 +174,7 @@ const Dice = () => {
             }
 
             if (navigator.vibrate) navigator.vibrate(15);
-        }, 600);
+        }, 1000);
     };
 
     const rollFormula = () => {
@@ -144,6 +182,7 @@ const Dice = () => {
         setIsRolling(true);
         setResult("...");
         setIndividualRolls([]);
+        playDiceSound('roll');
 
         setTimeout(() => {
             try {
@@ -155,7 +194,6 @@ const Dice = () => {
                 setDetail(output);
                 playDiceSound('hit');
 
-                // Update Persistence History
                 const newHistory = [
                     {
                         id: Date.now(),
@@ -167,24 +205,11 @@ const Dice = () => {
                 ].slice(0, 10);
                 updateState({ rollHistory: newHistory });
 
-                // Try to extract individual rolls if possible
                 if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
                     const rolls = rollResult.rolls[0].results
                         .filter(r => typeof r.value === 'number')
                         .map(r => r.value);
-
                     setIndividualRolls(rolls);
-
-                    if (formula.toLowerCase().includes("d6") && !formula.includes("+") && !formula.includes("-")) {
-                        // Attempt animation if it's a simple d6 roll
-                        setTimeout(() => {
-                            rolls.forEach((val, idx) => {
-                                if (cubeRefs.current[idx]) {
-                                    cubeRefs.current[idx].style.transform = getRotation(val);
-                                }
-                            });
-                        }, 50);
-                    }
                 }
             } catch (e) {
                 console.error("Formula roll error:", e);
@@ -193,7 +218,7 @@ const Dice = () => {
             }
             setIsRolling(false);
             if (navigator.vibrate) navigator.vibrate(20);
-        }, 600);
+        }, 1000);
     };
 
     return (
@@ -206,36 +231,47 @@ const Dice = () => {
                         flexWrap: 'wrap',
                         gap: '20px',
                         justifyContent: 'center',
-                        minHeight: diceType === "6" ? '180px' : '100px',
-                        padding: '30px'
+                        minHeight: '180px',
+                        padding: '30px',
+                        alignItems: 'center'
                     }}>
-                        {diceType === "6" ? (
-                            Array.from({ length: diceCount }).map((_, i) => (
-                                <div key={i} className="scene" style={{ margin: '0' }}>
-                                    <div
-                                        ref={el => cubeRefs.current[i] = el}
-                                        className={`cube ${isRolling ? 'rolling' : ''}`}
+                        <AnimatePresence mode="popLayout">
+                            {individualRolls.length > 0 ? (
+                                individualRolls.map((val, i) => (
+                                    <motion.div
+                                        key={`${i}-${val}`}
+                                        initial={{ scale: 0, opacity: 0, rotate: -45 }}
+                                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 25, delay: i * 0.05 }}
                                     >
-                                        <div className="face front">1</div>
-                                        <div className="face back">2</div>
-                                        <div className="face right">3</div>
-                                        <div className="face left">4</div>
-                                        <div className="face top">5</div>
-                                        <div className="face bottom">6</div>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            individualRolls.map((val, i) => (
-                                <div key={i} className="dice-result-pill">
-                                    <span className="dice-shape">{diceType}</span>
-                                    <span className="dice-value">{val}</span>
-                                </div>
-                            ))
-                        )}
-                        {individualRolls.length === 0 && !isRolling && (
-                            <div className="muted" style={{ opacity: 0.5 }}>Tira los dados para ver el resultado</div>
-                        )}
+                                        <PolyhedralDice
+                                            value={val}
+                                            type={diceType}
+                                            isRolling={isRolling}
+                                            theme={theme}
+                                        />
+                                    </motion.div>
+                                ))
+                            ) : isRolling ? (
+                                Array.from({ length: diceCount }).map((_, i) => (
+                                    <PolyhedralDice
+                                        key={i}
+                                        type={diceType}
+                                        isRolling={true}
+                                        theme={theme}
+                                    />
+                                ))
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 0.5 }}
+                                    className="muted"
+                                >
+                                    Tira los dados para ver el resultado
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
@@ -293,7 +329,7 @@ const Dice = () => {
                 <div className="row" style={{ marginTop: '15px' }}>
                     <button className="btn primary good" onClick={roll} disabled={isRolling}>Tirar</button>
                     <button className="btn" onClick={() => { setDiceType("10"); setDiceCount(2); setDiceMod(0); setRollMode("normal"); }}>Dificultad (2d10)</button>
-                    <button className="btn" onClick={() => { updateState({ rollHistory: [] }); setResult(null); }}>Limpiar Todo</button>
+                    <button className="btn" onClick={() => { updateState({ rollHistory: [] }); setResult(null); setIndividualRolls([]); }}>Limpiar Todo</button>
                 </div>
             </div>
 

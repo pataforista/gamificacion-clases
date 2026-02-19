@@ -122,7 +122,12 @@ h2 {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  outline: none;
+}
+
+.btn:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
 }
 
 .btn:active {

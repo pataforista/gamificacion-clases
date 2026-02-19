@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import Dialog from './Dialog';
 import './Notifications.css';
 
 const NotificationContext = createContext();
@@ -9,25 +10,46 @@ export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
+    const [dialog, setDialog] = useState({ isOpen: false });
 
     const notify = useCallback((msg, type = 'xp', icon = '⭐') => {
         const id = Date.now();
         setNotifications((prev) => [...prev, { id, msg, type, icon }]);
 
-        // Auto-remove after 4s
         setTimeout(() => {
             setNotifications((prev) => prev.filter((n) => n.id !== id));
         }, 4000);
     }, []);
 
+    const showDialog = useCallback((config) => {
+        return new Promise((resolve) => {
+            setDialog({
+                ...config,
+                isOpen: true,
+                onConfirm: () => {
+                    setDialog({ isOpen: false });
+                    resolve(true);
+                },
+                onCancel: () => {
+                    setDialog({ isOpen: false });
+                    resolve(false);
+                }
+            });
+        });
+    }, []);
+
+    const alert = (title, message) => showDialog({ title, message, type: 'alert' });
+    const confirm = (title, message) => showDialog({ title, message, type: 'confirm' });
+
     return (
-        <NotificationContext.Provider value={{ notify }}>
+        <NotificationContext.Provider value={{ notify, alert, confirm }}>
             {children}
             <div className="notification-container">
                 {notifications.map((n) => (
                     <NotificationItem key={n.id} notification={n} />
                 ))}
             </div>
+            <Dialog {...dialog} />
         </NotificationContext.Provider>
     );
 };
