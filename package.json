@@ -15,6 +15,7 @@
     "gsap": "^3.14.2",
     "motion": "^12.34.1",
     "react": "^19.2.0",
+    "react-3d-dice": "^0.1.0",
     "react-dom": "^19.2.0",
     "rpg-dice-roller": "^5.0.0",
     "three": "^0.182.0"

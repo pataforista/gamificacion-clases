@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { DiceRoller, NumberGenerator } from 'rpg-dice-roller';
+import { Dice3D } from 'react-3d-dice';
 import { usePersistence } from '../hooks/usePersistence';
 import './Dice.css';
 
@@ -11,7 +12,6 @@ const Dice = () => {
     const { state, updateState } = usePersistence();
     const [result, setResult] = useState(null);
     const [detail, setDetail] = useState("");
-    const [individualRolls, setIndividualRolls] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
     const [diceType, setDiceType] = useState("6");
     const [diceCount, setDiceCount] = useState(1);
@@ -19,10 +19,9 @@ const Dice = () => {
     const [formula, setFormula] = useState("");
     const [rollMode, setRollMode] = useState("normal"); // normal, kh1 (advantage), kl1 (disadvantage)
     const [theme, setTheme] = useState("medical"); // medical, neon, classic
+    const [individualRolls, setIndividualRolls] = useState([]);
+    const [rollTrigger, setRollTrigger] = useState(0);
     const cubeRefs = useRef([]);
-
-    // Initialize DiceRoller (v5 doesn't take a generator in constructor)
-    const roller = useMemo(() => new DiceRoller(), []);
 
     // Synthesize dice sound (Web Audio API)
     const playDiceSound = (type = 'roll') => {
@@ -68,43 +67,61 @@ const Dice = () => {
         return rotations[val] || rotations[1];
     };
 
-    const roll = () => {
-        setIsRolling(true);
-        setResult("...");
-        setDetail("Lanzando dados...");
-        setIndividualRolls([]);
-        playDiceSound('roll');
 
-        setTimeout(() => {
-            let f = `${diceCount}d${diceType}`;
-            if (rollMode !== "normal" && diceCount > 1) {
-                f += rollMode; // e.g., 2d20kh1
+    // Initialize DiceRoller
+    const roller = useMemo(() => new DiceRoller(), []);
+
+    // Extract all numeric dice results from any complexity/formula
+    const extractRolls = (rollResult) => {
+        let rolls = [];
+        try {
+            // Traverse the roll tree for all dice results
+            rollResult.rolls.forEach(group => {
+                if (group.results) {
+                    group.results.forEach(r => {
+                        if (typeof r.value === 'number') rolls.push(r.value);
+                    });
+                }
+            });
+        } catch (e) {
+            console.warn("Could not extract individual rolls", e);
+        }
+        return rolls;
+    };
+
+    const runRoll = (f) => {
+        try {
+            // 1. Generate result logically first
+            const rollResult = roller.roll(f);
+            const total = rollResult.total;
+            const output = rollResult.toString();
+            const rolls = extractRolls(rollResult);
+
+            // 2. Start Animation
+            setIsRolling(true);
+            setResult("...");
+            setDetail("Lanzando...");
+            setIndividualRolls(rolls);
+            setRollTrigger(prev => prev + 1);
+            playDiceSound('roll');
+
+            // 3. Update 3D Cubes (if d6)
+            if (diceType === "6") {
+                setTimeout(() => {
+                    rolls.forEach((val, idx) => {
+                        if (cubeRefs.current[idx]) {
+                            cubeRefs.current[idx].style.transform = getRotation(val);
+                        }
+                    });
+                }, 100);
             }
-            if (diceMod !== 0) {
-                f += `${diceMod >= 0 ? "+" : ""}${diceMod}`;
-            }
 
-            try {
-                // In v5, roller.roll() returns a DiceRoll object or array
-                const rollResult = roller.roll(f);
-                const total = rollResult.total;
-                const output = rollResult.toString();
-
+            // 4. Finalize after animation delay
+            setTimeout(() => {
                 setResult(total);
                 setDetail(output);
-
-                // Get individual dice results
-                // In v5, rollResult.rolls is an array of ResultGroup/RollResults
-                let rolls = [];
-                if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
-                    // Extract values from RollResults
-                    rolls = rollResult.rolls[0].results
-                        .filter(r => typeof r.value === 'number')
-                        .map(r => r.value);
-                }
-
-                setIndividualRolls(rolls);
                 playDiceSound('hit');
+                setIsRolling(false);
 
                 // Update Persistence History
                 const newHistory = [
@@ -118,82 +135,31 @@ const Dice = () => {
                 ].slice(0, 10);
                 updateState({ rollHistory: newHistory });
 
-                setIsRolling(false);
+                if (navigator.vibrate) navigator.vibrate(15);
+            }, diceType === "6" ? 1200 : 1800);
 
-                // Update rotations for d6 cubes
-                if (diceType === "6") {
-                    rolls.forEach((val, idx) => {
-                        if (cubeRefs.current[idx]) {
-                            cubeRefs.current[idx].style.transform = getRotation(val);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error("Roll error:", e);
-                setResult("Error");
-                setDetail("Parámetros inválidos");
-                setIsRolling(false);
-            }
+        } catch (e) {
+            console.error("Roll error:", e);
+            setResult("Error");
+            setDetail("Parámetros inválidos");
+            setIsRolling(false);
+        }
+    };
 
-            if (navigator.vibrate) navigator.vibrate(15);
-        }, 600);
+    const roll = () => {
+        let f = `${diceCount}d${diceType}`;
+        if (rollMode !== "normal" && diceCount > 1) {
+            f += rollMode;
+        }
+        if (diceMod !== 0) {
+            f += `${diceMod >= 0 ? "+" : ""}${diceMod}`;
+        }
+        runRoll(f);
     };
 
     const rollFormula = () => {
         if (!formula.trim()) return;
-        setIsRolling(true);
-        setResult("...");
-        setIndividualRolls([]);
-
-        setTimeout(() => {
-            try {
-                const rollResult = roller.roll(formula);
-                const total = rollResult.total;
-                const output = rollResult.toString();
-
-                setResult(total);
-                setDetail(output);
-                playDiceSound('hit');
-
-                // Update Persistence History
-                const newHistory = [
-                    {
-                        id: Date.now(),
-                        formula: formula,
-                        total: total,
-                        time: new Date().toLocaleTimeString()
-                    },
-                    ...(state.rollHistory || [])
-                ].slice(0, 10);
-                updateState({ rollHistory: newHistory });
-
-                // Try to extract individual rolls if possible
-                if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
-                    const rolls = rollResult.rolls[0].results
-                        .filter(r => typeof r.value === 'number')
-                        .map(r => r.value);
-
-                    setIndividualRolls(rolls);
-
-                    if (formula.toLowerCase().includes("d6") && !formula.includes("+") && !formula.includes("-")) {
-                        // Attempt animation if it's a simple d6 roll
-                        setTimeout(() => {
-                            rolls.forEach((val, idx) => {
-                                if (cubeRefs.current[idx]) {
-                                    cubeRefs.current[idx].style.transform = getRotation(val);
-                                }
-                            });
-                        }, 50);
-                    }
-                }
-            } catch (e) {
-                console.error("Formula roll error:", e);
-                setResult("Error");
-                setDetail("Fórmula inválida");
-            }
-            setIsRolling(false);
-            if (navigator.vibrate) navigator.vibrate(20);
-        }, 600);
+        runRoll(formula);
     };
 
     return (
@@ -206,15 +172,21 @@ const Dice = () => {
                         flexWrap: 'wrap',
                         gap: '20px',
                         justifyContent: 'center',
-                        minHeight: diceType === "6" ? '180px' : '100px',
-                        padding: '30px'
+                        minHeight: diceType === "6" ? '200px' : '250px',
+                        padding: '40px',
+                        perspective: '1200px',
+                        background: 'rgba(0,0,0,0.03)',
+                        borderRadius: '24px',
+                        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.05)',
+                        position: 'relative',
+                        overflow: 'hidden'
                     }}>
                         {diceType === "6" ? (
                             Array.from({ length: diceCount }).map((_, i) => (
-                                <div key={i} className="scene" style={{ margin: '0' }}>
+                                <div key={i} className="scene" style={{ margin: '10px' }}>
                                     <div
                                         ref={el => cubeRefs.current[i] = el}
-                                        className={`cube ${isRolling ? 'rolling' : ''}`}
+                                        className={`cube ${isRolling ? `anim-${i % 4}` : ''}`}
                                     >
                                         <div className="face front">1</div>
                                         <div className="face back">2</div>
@@ -226,15 +198,21 @@ const Dice = () => {
                                 </div>
                             ))
                         ) : (
-                            individualRolls.map((val, i) => (
-                                <div key={i} className="dice-result-pill">
-                                    <span className="dice-shape">{diceType}</span>
-                                    <span className="dice-value">{val}</span>
-                                </div>
-                            ))
+                            <div style={{ width: '100%', height: '200px' }}>
+                                <Dice3D
+                                    sides={parseInt(diceType)}
+                                    isRolling={isRolling}
+                                    results={individualRolls}
+                                    rollTrigger={rollTrigger}
+                                    color={theme === 'neon' ? '#ff00ff' : theme === 'classic' ? '#333333' : '#2dd4bf'}
+                                    height={200}
+                                />
+                            </div>
                         )}
-                        {individualRolls.length === 0 && !isRolling && (
-                            <div className="muted" style={{ opacity: 0.5 }}>Tira los dados para ver el resultado</div>
+                        {individualRolls.length === 0 && !isRolling && diceType === "6" && (
+                            <div className="muted" style={{ opacity: 0.5, textAlign: 'center', width: '100%' }}>
+                                Tira los dados para ver la animación 3D
+                            </div>
                         )}
                     </div>
                 </div>
@@ -255,14 +233,14 @@ const Dice = () => {
                     </div>
                     <div>
                         <label>Cantidad</label><br />
-                        <input type="number" min="1" max="20" value={diceCount} onChange={e => setDiceCount(parseInt(e.target.value))} />
+                        <input type="number" min="1" max="10" value={diceCount} onChange={e => setDiceCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} />
                     </div>
                     <div>
-                        <label>Mod (+/-)</label><br />
-                        <input type="number" value={diceMod} onChange={e => setDiceMod(parseInt(e.target.value))} />
+                        <label>Modificador (+/-)</label><br />
+                        <input type="number" value={diceMod} onChange={e => setDiceMod(parseInt(e.target.value) || 0)} />
                     </div>
                     <div>
-                        <label>Modo Especial</label><br />
+                        <label>Regla Especial</label><br />
                         <select value={rollMode} onChange={e => setRollMode(e.target.value)}>
                             <option value="normal">Normal</option>
                             <option value="kh1">Ventaja (Mejor)</option>
