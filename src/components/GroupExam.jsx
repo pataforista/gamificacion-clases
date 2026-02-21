@@ -29,7 +29,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                 const initialScores = {};
                 pickerItems.forEach(item => initialScores[item] = 0);
                 setScores(initialScores);
-            } catch (err) {
+            } catch {
                 await alert("Error de Archivo", "El archivo JSON no es válido o tiene un formato incorrecto.");
             }
         };
