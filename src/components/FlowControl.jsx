@@ -14,16 +14,24 @@ const FlowControl = ({ pickerItems = [] }) => {
     const timerIntervalRef = useRef(null);
 
     useEffect(() => {
-        if (isTimerRunning && timer > 0) {
-            timerIntervalRef.current = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        } else {
+        if (!isTimerRunning) {
             clearInterval(timerIntervalRef.current);
-            if (timer === 0) setIsTimerRunning(false);
+            return;
         }
+
+        timerIntervalRef.current = setInterval(() => {
+            setTimer((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timerIntervalRef.current);
+                    setIsTimerRunning(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
         return () => clearInterval(timerIntervalRef.current);
-    }, [isTimerRunning, timer]);
+    }, [isTimerRunning]);
 
     const startTimer = () => {
         setTimer(duration);
