@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { RNG, cleanLines } from '../utils/rng';
+import { useNotifications } from './NotificationContext';
 import Shuffle from './Shuffle';
 import AnimatedList from './AnimatedList';
 
-const Picker = ({ onItemsChange }) => {
-    const [inputText, setInputText] = useState("Opción A\nOpción B\nOpción C\nOpción D");
+const Picker = ({ onItemsChange, items = [] }) => {
+    const { alert } = useNotifications();
+    const [inputText, setInputText] = useState(items.join('\n') || "Opción A\nOpción B\nOpción C\nOpción D");
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
 
@@ -14,11 +16,13 @@ const Picker = ({ onItemsChange }) => {
         if (onItemsChange) onItemsChange(cleanLines(text));
     };
 
-    const pickOne = () => {
-        const items = cleanLines(inputText);
-        if (items.length === 0) return;
-        const key = RNG.keyFromItems("picker", items);
-        const chosen = RNG.pick(items, key);
+    const pickOne = async () => {
+        const cleaned = cleanLines(inputText);
+        if (cleaned.length === 0) {
+            return await alert("Faltan Datos", "Escribe algunos nombres o términos primero para poder sortear.");
+        }
+        const key = RNG.keyFromItems("picker", cleaned);
+        const chosen = RNG.pick(cleaned, key);
         setResult(chosen);
         setHistory((prev) => [chosen, ...prev].slice(0, 10));
     };

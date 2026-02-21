@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { usePersistence } from './hooks/usePersistence';
 import Ballpit from './components/Ballpit';
 import RPGDash from './components/RPGDash';
 import FlowControl from './components/FlowControl';
@@ -11,8 +13,11 @@ import Help from './components/Help';
 import './index.css';
 
 const App = () => {
+  const { state, updateState } = usePersistence();
   const [activeTab, setActiveTab] = useState('progreso');
-  const [pickerItems, setPickerItems] = useState([]);
+
+  const pickerItems = state.pickerItems || [];
+  const setPickerItems = (items) => updateState({ pickerItems: items });
 
   const tabs = [
     { id: 'progreso', label: 'Progreso RPG' },
@@ -57,14 +62,24 @@ const App = () => {
         </div>
 
         <div className="content">
-          {activeTab === 'progreso' && <RPGDash />}
-          {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
-          {activeTab === 'dice' && <Dice />}
-          {activeTab === 'touch' && <TouchOrder />}
-          {activeTab === 'picker' && <Picker onItemsChange={setPickerItems} />}
-          {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
-          {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
-          {activeTab === 'help' && <Help />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+            >
+              {activeTab === 'progreso' && <RPGDash />}
+              {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
+              {activeTab === 'dice' && <Dice />}
+              {activeTab === 'touch' && <TouchOrder />}
+              {activeTab === 'picker' && <Picker items={pickerItems} onItemsChange={setPickerItems} />}
+              {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
+              {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
+              {activeTab === 'help' && <Help />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

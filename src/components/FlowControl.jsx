@@ -1,29 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePersistence } from '../hooks/usePersistence';
+import { useNotifications } from './NotificationContext';
 import { RNG } from '../utils/rng';
 import Cubes from './Cubes';
 
 const FlowControl = ({ pickerItems = [] }) => {
     const { state, updateState } = usePersistence();
+    const { alert } = useNotifications();
+    const [duration, setDuration] = useState(30);
     const [timer, setTimer] = useState(30);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [leader, setLeader] = useState("—");
     const timerIntervalRef = useRef(null);
 
     useEffect(() => {
-        if (isTimerRunning && timer > 0) {
-            timerIntervalRef.current = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        } else {
+        if (!isTimerRunning) {
             clearInterval(timerIntervalRef.current);
-            if (timer === 0) setIsTimerRunning(false);
+            return;
         }
+
+        timerIntervalRef.current = setInterval(() => {
+            setTimer((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timerIntervalRef.current);
+                    setIsTimerRunning(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
         return () => clearInterval(timerIntervalRef.current);
-    }, [isTimerRunning, timer]);
+    }, [isTimerRunning]);
 
     const startTimer = () => {
-        setTimer(30);
+        setTimer(duration);
         setIsTimerRunning(true);
         updateState({ traffic: "red" });
     };
@@ -32,8 +43,10 @@ const FlowControl = ({ pickerItems = [] }) => {
         updateState({ traffic: color });
     };
 
-    const pickLeader = () => {
-        if (pickerItems.length === 0) return alert("Primero ingresa nombres en la pestaña Sorteo");
+    const pickLeader = async () => {
+        if (pickerItems.length === 0) {
+            return await alert("Sin Alumnos", "Primero ingresa nombres en la pestaña Sorteo.");
+        }
         const chosen = RNG.pick(pickerItems, "leader");
         setLeader(chosen);
     };
@@ -48,12 +61,30 @@ const FlowControl = ({ pickerItems = [] }) => {
         <div className="grid">
             <div className={`card ${state.traffic === 'red' && isTimerRunning ? 'code-red' : ''}`}>
                 <h2>Temporizador de "Código Rojo"</h2>
-                <div className="out">{timer}</div>
+                <div className="out">{timer}s</div>
                 <div className="divider"></div>
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '8px' }}>
+                        Duración: {duration}s
+                    </label>
+                    <input
+                        type="range"
+                        min="10"
+                        max="120"
+                        step="5"
+                        value={duration}
+                        onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setDuration(val);
+                            if (!isTimerRunning) setTimer(val);
+                        }}
+                        style={{ width: '100%' }}
+                    />
+                </div>
                 <div className="row">
-                    <button className="btn warn" onClick={startTimer}>⚡ INICIAR CÓDIGO ROJO</button>
+                    <button className="btn warn" onClick={startTimer}>⚡ INICIAR</button>
                     <button className="btn" onClick={() => setIsTimerRunning(false)}>Detener</button>
-                    <button className="btn" onClick={() => { setTimer(30); setIsTimerRunning(false); }}>Reset 30s</button>
+                    <button className="btn" onClick={() => { setTimer(duration); setIsTimerRunning(false); }}>Reset</button>
                 </div>
             </div>
 

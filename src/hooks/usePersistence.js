@@ -8,6 +8,7 @@ const DEFAULT_STATE = {
     badges: [],
     traffic: "green",
     rollHistory: [],
+    pickerItems: ["Opción A", "Opción B", "Opción C", "Opción D"],
     lastReset: new Date().toISOString()
 };
 
@@ -31,12 +32,8 @@ export function usePersistence() {
     };
 
     const resetState = () => {
-        if (confirm("¿Estás seguro de que deseas reiniciar TODO el progreso médico?")) {
-            const newState = { ...DEFAULT_STATE, lastReset: new Date().toISOString() };
-            setState(newState);
-            return true;
-        }
-        return false;
+        const newState = { ...DEFAULT_STATE, lastReset: new Date().toISOString() };
+        setState(newState);
     };
 
     return { state, updateState, resetState };

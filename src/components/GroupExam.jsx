@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNotifications } from './NotificationContext';
 import { RNG } from '../utils/rng';
 import confetti from 'canvas-confetti';
 
 const GroupExam = ({ pickerItems = [] }) => {
+    const { alert } = useNotifications();
     const [exam, setExam] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [scores, setScores] = useState({});
@@ -14,32 +16,39 @@ const GroupExam = ({ pickerItems = [] }) => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             try {
                 const data = JSON.parse(evt.target.result);
+                if (!data.questions || !Array.isArray(data.questions)) {
+                    throw new Error("Formato inválido: falta array 'questions'");
+                }
                 setExam(data);
                 setCurrentQuestion(0);
                 setFeedback(null);
-                // Initialize scores for picker items if they are "teams"
+
                 const initialScores = {};
                 pickerItems.forEach(item => initialScores[item] = 0);
                 setScores(initialScores);
-            } catch (err) {
-                alert("Error al leer el JSON del examen.");
+            } catch {
+                await alert("Error de Archivo", "El archivo JSON no es válido o tiene un formato incorrecto.");
             }
         };
         reader.readAsText(file);
     };
 
-    const nextTurn = () => {
-        if (pickerItems.length === 0) return alert("Ingresa nombres/equipos en Sorteo para asignar turnos.");
+    const nextTurn = async () => {
+        if (pickerItems.length === 0) {
+            return await alert("Sin Equipos", "Ingresa nombres o equipos en la pestaña Sorteo para asignar turnos.");
+        }
         const chosen = RNG.pick(pickerItems, "exam_turn");
         setActiveTeam(chosen);
         setFeedback(null);
     };
 
-    const answer = (isCorrect) => {
-        if (!activeTeam) return alert("Primero asigna un turno a un equipo.");
+    const answer = async (isCorrect) => {
+        if (!activeTeam) {
+            return await alert("Turno Requerido", "Primero asigna un turno a un equipo antes de responder.");
+        }
 
         if (isCorrect) {
             setScores(prev => ({ ...prev, [activeTeam]: (prev[activeTeam] || 0) + 10 }));

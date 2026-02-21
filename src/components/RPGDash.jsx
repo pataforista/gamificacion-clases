@@ -15,7 +15,7 @@ const BADGES = [
 
 const RPGDash = () => {
     const { state, updateState, resetState } = usePersistence();
-    const { notify } = useNotifications();
+    const { notify, confirm } = useNotifications();
     const [promotion, setPromotion] = useState(null);
     const prevRankRef = useRef(null);
 
@@ -30,7 +30,6 @@ const RPGDash = () => {
     useEffect(() => {
         const currentRank = getRank(state.xp);
         if (prevRankRef.current && prevRankRef.current !== currentRank && state.xp > 0) {
-            // Rank promotion detected! (ignore if XP went down, though ranks are monotonic here)
             const ranks = ["Interno/a", "Residente", "Residente Senior", "Adjunto/a", "Jefe/a de Servicio"];
             if (ranks.indexOf(currentRank) > ranks.indexOf(prevRankRef.current)) {
                 setPromotion(currentRank);
@@ -83,6 +82,16 @@ const RPGDash = () => {
         downloadAnchorNode.remove();
     };
 
+    const handleReset = async () => {
+        const confirmed = await confirm(
+            "Reiniciar Todo",
+            "¿Estás seguro de que deseas reiniciar TODO el progreso médico? Esta acción no se puede deshacer."
+        );
+        if (confirmed) {
+            resetState();
+        }
+    };
+
     return (
         <>
             <div className="grid">
@@ -113,7 +122,7 @@ const RPGDash = () => {
                 </div>
 
                 <div className="card">
-                    <h2>Logros Mdicos (Badges)</h2>
+                    <h2>Logros Médicos (Badges)</h2>
                     <div className="badge-grid">
                         {BADGES.map((b) => (
                             <div
@@ -135,7 +144,7 @@ const RPGDash = () => {
                     <div className="divider"></div>
                     <div className="row">
                         <button className="btn primary" onClick={exportData}>Exportar JSON</button>
-                        <button className="btn warn" onClick={resetState}>Reset Total</button>
+                        <button className="btn warn" onClick={handleReset}>Reset Total</button>
                     </div>
                 </div>
             </div>
