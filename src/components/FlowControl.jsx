@@ -1,22 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePersistence } from '../hooks/usePersistence';
 import { useNotifications } from './NotificationContext';
+import { useAudio } from './AudioContext';
 import { RNG } from '../utils/rng';
 import Cubes from './Cubes';
 
 const FlowControl = ({ pickerItems = [] }) => {
     const { state, updateState } = usePersistence();
     const { alert } = useNotifications();
+    const audio = useAudio();
     const [duration, setDuration] = useState(30);
     const [timer, setTimer] = useState(30);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [leader, setLeader] = useState("—");
+    const [enableAudio, setEnableAudio] = useState(false);
     const timerIntervalRef = useRef(null);
 
     useEffect(() => {
         if (!isTimerRunning) {
             clearInterval(timerIntervalRef.current);
+            if (enableAudio) audio.stop();
             return;
+        }
+
+        // Play music if code red is active and audio is enabled
+        if (state.traffic === 'red' && enableAudio) {
+            audio.play('thinking');
         }
 
         timerIntervalRef.current = setInterval(() => {
@@ -24,6 +33,7 @@ const FlowControl = ({ pickerItems = [] }) => {
                 if (prev <= 1) {
                     clearInterval(timerIntervalRef.current);
                     setIsTimerRunning(false);
+                    if (enableAudio) audio.stop();
                     return 0;
                 }
                 return prev - 1;
@@ -31,7 +41,7 @@ const FlowControl = ({ pickerItems = [] }) => {
         }, 1000);
 
         return () => clearInterval(timerIntervalRef.current);
-    }, [isTimerRunning]);
+    }, [isTimerRunning, state.traffic, enableAudio, audio]);
 
     const startTimer = () => {
         setTimer(duration);
@@ -115,6 +125,17 @@ const FlowControl = ({ pickerItems = [] }) => {
                     <div className="divider"></div>
                     <div style={{ textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', color: `var(--traffic-${state.traffic})` }}>
                         {trafficLabels[state.traffic] || "Libre"}
+                    </div>
+                    <div className="divider"></div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>🎵 Música en Código Rojo</span>
+                        <button
+                            className={`btn ${enableAudio ? 'primary' : ''}`}
+                            onClick={() => setEnableAudio(!enableAudio)}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                        >
+                            {enableAudio ? 'ON' : 'OFF'}
+                        </button>
                     </div>
                 </div>
             </div>
