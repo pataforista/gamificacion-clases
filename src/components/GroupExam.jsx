@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNotifications } from './NotificationContext';
+import { useAudio, WAITING_TRACKS } from './AudioContext';
 import { RNG } from '../utils/rng';
 import confetti from 'canvas-confetti';
 
 const GroupExam = ({ pickerItems = [] }) => {
     const { alert } = useNotifications();
+    const audio = useAudio();
     const [exam, setExam] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [scores, setScores] = useState({});
     const [activeTeam, setActiveTeam] = useState(null);
     const [feedback, setFeedback] = useState(null);
     const [showGuide, setShowGuide] = useState(false);
+    const [selectedTrack, setSelectedTrack] = useState('jeopardy');
+
+    // Cleanup audio when exam closes
+    useEffect(() => {
+        return () => {
+            if (!exam) audio.stop();
+        };
+    }, [exam, audio]);
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
@@ -40,6 +50,8 @@ const GroupExam = ({ pickerItems = [] }) => {
         if (pickerItems.length === 0) {
             return await alert("Sin Equipos", "Ingresa nombres o equipos en la pestaña Sorteo para asignar turnos.");
         }
+        // Play waiting music
+        audio.play(selectedTrack);
         const chosen = RNG.pick(pickerItems, "exam_turn");
         setActiveTeam(chosen);
         setFeedback(null);
@@ -49,6 +61,9 @@ const GroupExam = ({ pickerItems = [] }) => {
         if (!activeTeam) {
             return await alert("Turno Requerido", "Primero asigna un turno a un equipo antes de responder.");
         }
+
+        // Stop waiting music
+        audio.stop();
 
         if (isCorrect) {
             setScores(prev => ({ ...prev, [activeTeam]: (prev[activeTeam] || 0) + 10 }));
@@ -150,6 +165,34 @@ const GroupExam = ({ pickerItems = [] }) => {
                     ))}
                 </div>
             </div>
+
+            {exam && (
+                <div className="card">
+                    <h2>🎵 Música de Espera</h2>
+                    <div className="smallout" style={{ marginBottom: '1rem' }}>Selecciona la música que suena mientras los equipos piensan.</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        {Object.entries(WAITING_TRACKS).map(([key, track]) => (
+                            <button
+                                key={key}
+                                className={`btn ${selectedTrack === key ? 'primary' : ''}`}
+                                onClick={() => setSelectedTrack(key)}
+                                style={{
+                                    background: selectedTrack === key ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                                    borderColor: selectedTrack === key ? 'transparent' : 'var(--line)',
+                                }}
+                            >
+                                {track.name}
+                            </button>
+                        ))}
+                    </div>
+                    {audio.isPlaying && (
+                        <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(45,212,191,0.1)', borderRadius: '8px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--good)' }}>
+                            🎵 {WAITING_TRACKS[audio.currentTrack]?.name || 'Reproduciendo...'} en curso
+                        </div>
+                    )}
+                </div>
+            )}
+
         </div>
     );
 };

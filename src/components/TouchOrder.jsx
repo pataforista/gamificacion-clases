@@ -259,6 +259,12 @@ const TouchOrder = () => {
                         const posInRound = hasTurn ? sortedTurns.indexOf(turn) : -1;
                         const styles     = hasTurn ? posStyle(posInRound) : null;
 
+                        // Increase size for winner (first position)
+                        const isWinner = posInRound === 0;
+                        const circleSize = hasTurn
+                          ? (isWinner ? '160px' : '124px')
+                          : '78px';
+
                         return (
                             <div
                                 key={id}
@@ -266,33 +272,36 @@ const TouchOrder = () => {
                                     position:     'absolute',
                                     left:         t.x - rect.left,
                                     top:          t.y - rect.top,
-                                    width:        hasTurn ? '112px' : '78px',
-                                    height:       hasTurn ? '112px' : '78px',
+                                    width:        circleSize,
+                                    height:       circleSize,
                                     borderRadius: '50%',
                                     border:       hasTurn
-                                                    ? `3px solid ${styles.border}`
+                                                    ? `${isWinner ? '4px' : '3px'} solid ${styles.border}`
                                                     : '2px solid rgba(255,255,255,0.28)',
                                     transform:    'translate(-50%, -50%)',
                                     background:   hasTurn ? styles.bg : 'rgba(255,255,255,0.07)',
-                                    boxShadow:    hasTurn ? `0 0 28px ${styles.glow}` : 'none',
+                                    boxShadow:    hasTurn
+                                                    ? `0 0 ${isWinner ? '40px' : '28px'} ${styles.glow}${isWinner ? ', inset 0 0 20px rgba(255,255,255,0.1)' : ''}`
+                                                    : 'none',
                                     display:      'flex',
                                     flexDirection:'column',
                                     alignItems:   'center',
                                     justifyContent:'center',
-                                    gap:          '2px',
-                                    transition:   'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                    gap:          '4px',
+                                    transition:   'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                                     pointerEvents:'none',
-                                    zIndex:       2,
+                                    zIndex:       isWinner ? 3 : 2,
+                                    animation:    isWinner ? 'pulse-winner 1.5s ease-in-out infinite' : 'none',
                                 }}
                             >
                                 {hasTurn ? (
                                     <>
-                                        <span style={{ fontSize: posInRound === 0 ? '1.8rem' : '1.3rem', lineHeight: 1 }}>
+                                        <span style={{ fontSize: isWinner ? '2.2rem' : posInRound === 1 ? '1.6rem' : '1.3rem', lineHeight: 1 }}>
                                             {posInRound < 3 ? MEDALS[posInRound] : '🎯'}
                                         </span>
                                         <span style={{
                                             color: '#fff', fontWeight: 900,
-                                            fontSize: posInRound === 0 ? '1.5rem' : '1.1rem',
+                                            fontSize: isWinner ? '1.8rem' : posInRound === 1 ? '1.3rem' : '1.1rem',
                                             lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.6)',
                                         }}>
                                             #{turn}
