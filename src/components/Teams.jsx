@@ -41,7 +41,7 @@ const Teams = ({ pickerItems = [] }) => {
                             min="2"
                             max="10"
                             value={teamCount}
-                            onChange={e => setTeamCount(parseInt(e.target.value))}
+                            onChange={e => setTeamCount(Math.max(2, parseInt(e.target.value) || 2))}
                             style={{ width: '80px', marginTop: '5px' }}
                         />
                     </div>

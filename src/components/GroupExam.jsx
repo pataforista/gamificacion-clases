@@ -15,11 +15,9 @@ const GroupExam = ({ pickerItems = [] }) => {
     const [showGuide, setShowGuide] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState('jeopardy');
 
-    // Cleanup audio when exam closes
+    // Stop audio when exam closes or component unmounts
     useEffect(() => {
-        return () => {
-            if (!exam) audio.stop();
-        };
+        if (!exam) audio.stop();
     }, [exam, audio]);
 
     const handleFileUpload = (e) => {
