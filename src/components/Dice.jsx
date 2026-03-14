@@ -291,11 +291,11 @@ const Dice = () => {
                     </div>
                     <div>
                         <label>Cantidad</label><br />
-                        <input type="number" min="1" max="20" value={diceCount} onChange={e => setDiceCount(parseInt(e.target.value))} />
+                        <input type="number" min="1" max="20" value={diceCount} onChange={e => setDiceCount(parseInt(e.target.value) || 1)} />
                     </div>
                     <div>
                         <label>Mod (+/-)</label><br />
-                        <input type="number" value={diceMod} onChange={e => setDiceMod(parseInt(e.target.value))} />
+                        <input type="number" value={diceMod} onChange={e => setDiceMod(parseInt(e.target.value) || 0)} />
                     </div>
                     <div>
                         <label>Modo Especial</label><br />
