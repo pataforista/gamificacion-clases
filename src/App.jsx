@@ -10,6 +10,9 @@ import TouchOrder from './components/TouchOrder';
 import Picker from './components/Picker';
 import Teams from './components/Teams';
 import GroupExam from './components/GroupExam';
+import Ruleta from './components/Ruleta';
+import Bingo from './components/Bingo';
+import Trivia from './components/Trivia';
 import Help from './components/Help';
 import './index.css';
 
@@ -28,6 +31,9 @@ const App = () => {
     { id: 'picker', label: 'Sorteo' },
     { id: 'teams', label: 'Equipos' },
     { id: 'exam', label: 'Examen grupal' },
+    { id: 'ruleta', label: 'Ruleta' },
+    { id: 'bingo', label: 'Bingo' },
+    { id: 'trivia', label: 'Trivia ⚡' },
     { id: 'help', label: 'Ayuda' },
   ];
 
@@ -79,6 +85,9 @@ const App = () => {
                 {activeTab === 'picker' && <Picker items={pickerItems} onItemsChange={setPickerItems} />}
                 {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
                 {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
+                {activeTab === 'ruleta' && <Ruleta items={pickerItems} />}
+                {activeTab === 'bingo' && <Bingo />}
+                {activeTab === 'trivia' && <Trivia pickerItems={pickerItems} />}
                 {activeTab === 'help' && <Help />}
               </motion.div>
             </AnimatePresence>
