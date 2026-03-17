@@ -22,18 +22,22 @@
 }
 
 .item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   padding: 15px;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+}
+
+.item:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
 }
 
 .item.selected {
-  background: rgba(129, 140, 248, 0.2);
-  border-color: rgba(129, 140, 248, 0.5);
-  box-shadow: 0 0 20px rgba(129, 140, 248, 0.2);
+  background: rgba(0, 255, 255, 0.15);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
 }
 
 .item-text {
