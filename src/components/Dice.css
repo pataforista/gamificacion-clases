@@ -1,9 +1,9 @@
 /* Dice Container */
 .dice-tray-container {
-    background: var(--dark-bg, rgba(0, 0, 0, 0.2));
+    background: var(--bg-secondary, rgba(26, 0, 51, 0.8));
     border-radius: 16px;
-    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.1);
+    border: 2px solid var(--glass-border);
     margin-bottom: 20px;
 }
 
@@ -45,26 +45,26 @@
     font-family: 'Inter', sans-serif;
 }
 
-/* Themes */
+/* Themes - Retro 90s Neon */
 .theme-medical {
-    --dice-bg: rgba(45, 212, 191, 0.8);
-    --dice-stroke: #ffffff;
+    --dice-bg: rgba(255, 102, 0, 0.8);
+    --dice-stroke: #FFFFFF;
     --dice-stroke-faint: rgba(255, 255, 255, 0.4);
-    --dice-text: #ffffff;
+    --dice-text: #FFFFFF;
 }
 
 .theme-neon {
-    --dice-bg: rgba(15, 15, 20, 0.9);
-    --dice-stroke: #bc13fe;
-    --dice-stroke-faint: rgba(188, 19, 254, 0.4);
-    --dice-text: #bc13fe;
+    --dice-bg: rgba(0, 255, 255, 0.9);
+    --dice-stroke: #00FFFF;
+    --dice-stroke-faint: rgba(0, 255, 255, 0.5);
+    --dice-text: #000000;
 }
 
 .theme-classic {
-    --dice-bg: #ffffff;
-    --dice-stroke: #333333;
-    --dice-stroke-faint: rgba(0, 0, 0, 0.1);
-    --dice-text: #333333;
+    --dice-bg: #FFFF00;
+    --dice-stroke: #FF00FF;
+    --dice-stroke-faint: rgba(255, 0, 255, 0.5);
+    --dice-text: #000000;
 }
 
 /* Original 3D Cube Styles (fallback/specific) */
@@ -97,15 +97,19 @@
 }
 
 .theme-neon .face {
-    border-color: #ff00ff;
-    color: #ff00ff;
-    text-shadow: 0 0 10px #ff00ff;
+    border-color: #00FFFF;
+    color: #000000;
+    text-shadow: 0 0 10px #00FFFF;
+    background: rgba(0, 255, 255, 0.8);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
 }
 
 .theme-classic .face {
-    background: #fdfdfd;
-    border-color: #ddd;
-    color: #111;
+    background: #FFFF00;
+    border-color: #FF00FF;
+    color: #000000;
+    text-shadow: 0 0 10px #FF00FF;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
 }
 
 .front {
@@ -147,15 +151,15 @@
 }
 
 .dice-result-pill {
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-secondary);
+    border: 2px solid var(--neon-magenta);
     border-radius: 16px;
     padding: 12px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-width: 80px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
 }
 
 .dice-shape {
