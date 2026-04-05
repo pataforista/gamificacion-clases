@@ -125,9 +125,9 @@ const Trivia = ({ pickerItems = [] }) => {
 
   const timerPct = timeLeft != null && seconds > 0 ? (timeLeft / seconds) * 100 : 100;
   const timerColor =
-    timerPct > 50 ? 'var(--neon-cyan)' :
-    timerPct > 25 ? 'var(--neon-yellow)' :
-    'var(--neon-magenta)';
+    timerPct > 50 ? 'var(--memphis-cyan)' :
+    timerPct > 25 ? 'var(--memphis-yellow)' :
+    'var(--memphis-magenta)';
 
   const total = score.correct + score.wrong;
 
@@ -139,10 +139,10 @@ const Trivia = ({ pickerItems = [] }) => {
 
         {/* Score bar */}
         <div className="row" style={{ marginBottom: '1rem', gap: '0.5rem' }}>
-          <span className="pill" style={{ borderColor: 'var(--neon-lime)', color: 'var(--neon-lime)', background: 'rgba(0,255,0,0.08)' }}>
+          <span className="pill" style={{ borderColor: 'var(--memphis-lime)', color: 'var(--text)', background: 'rgba(204,255,0,0.12)', fontWeight: 700 }}>
             ✓ {score.correct}
           </span>
-          <span className="pill" style={{ borderColor: 'var(--neon-magenta)', color: 'var(--neon-magenta)', background: 'rgba(255,0,255,0.08)' }}>
+          <span className="pill" style={{ borderColor: 'var(--memphis-magenta)', color: 'var(--text)', background: 'rgba(255,0,110,0.12)', fontWeight: 700 }}>
             ✗ {score.wrong}
           </span>
           {total > 0 && (
@@ -182,11 +182,12 @@ const Trivia = ({ pickerItems = [] }) => {
                   style={{
                     display: 'inline-block',
                     alignSelf: 'flex-start',
-                    borderColor: 'var(--neon-yellow)',
-                    color: 'var(--neon-yellow)',
-                    background: 'rgba(255,255,0,0.08)',
+                    borderColor: 'var(--memphis-yellow)',
+                    color: 'var(--text)',
+                    background: 'rgba(255,213,10,0.12)',
                     fontSize: '0.9rem',
                     padding: '0.3rem 0.8rem',
+                    fontWeight: 700,
                   }}
                 >
                   👤 {student}
@@ -199,13 +200,9 @@ const Trivia = ({ pickerItems = [] }) => {
 
               {showAnswer ? (
                 <div
-                  className="smallout"
+                  className="smallout correct"
                   style={{
-                    background: 'rgba(255,102,0,0.1)',
-                    border: '2px solid var(--good)',
-                    color: 'var(--good)',
                     fontSize: '1.1rem',
-                    fontWeight: 700,
                     textAlign: 'center',
                     padding: '1rem',
                   }}
@@ -278,7 +275,7 @@ const Trivia = ({ pickerItems = [] }) => {
       <div className="card">
         <h2>Banco de preguntas ({questions.length})</h2>
         <div className="smallout" style={{ marginBottom: '0.75rem' }}>
-          Formato: <code style={{ color: 'var(--neon-cyan)' }}>pregunta|respuesta</code> (una por línea)
+          Formato: <code style={{ color: 'var(--memphis-magenta)', fontWeight: 700 }}>pregunta|respuesta</code> (una por línea)
         </div>
         <textarea
           value={inputQA}

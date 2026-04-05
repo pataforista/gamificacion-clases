@@ -23,7 +23,7 @@ const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' })
                         style={{
                             position: 'absolute',
                             inset: 0,
-                            background: 'rgba(0, 0, 0, 0.6)',
+                            background: 'rgba(45, 45, 45, 0.5)',
                             backdropFilter: 'blur(8px)',
                             pointerEvents: 'auto'
                         }}
@@ -38,11 +38,11 @@ const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' })
                             position: 'relative',
                             width: '100%',
                             maxWidth: '400px',
-                            background: 'rgba(20, 20, 25, 0.95)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            background: '#FFFFFF',
+                            border: '3px solid var(--memphis-magenta)',
                             borderRadius: '28px',
                             padding: '30px',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                            boxShadow: '8px 8px 0px rgba(255, 0, 110, 0.3)',
                             pointerEvents: 'auto',
                             textAlign: 'center'
                         }}

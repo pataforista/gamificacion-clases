@@ -96,10 +96,8 @@ const Bingo = () => {
             style={{
               fontSize: 'clamp(5rem, 18vw, 8rem)',
               fontWeight: 900,
-              color: rolling ? 'var(--neon-magenta)' : (current ? 'var(--neon-cyan)' : 'var(--muted)'),
-              textShadow: current
-                ? '0 0 40px rgba(0,255,255,0.8), 0 0 80px rgba(0,255,255,0.4)'
-                : 'none',
+              color: rolling ? 'var(--memphis-magenta)' : (current ? 'var(--memphis-cyan)' : 'var(--muted)'),
+              textShadow: 'none',
               transition: 'color 0.15s ease',
               userSelect: 'none',
             }}
@@ -129,7 +127,7 @@ const Bingo = () => {
           style={{ marginTop: '1rem', textAlign: 'center' }}
         >
           {called.length} de {maxNum} números sacados &nbsp;·&nbsp;
-          <span style={{ color: 'var(--neon-cyan)' }}>{remaining.length} restantes</span>
+          <span style={{ color: 'var(--memphis-cyan)', fontWeight: 700 }}>{remaining.length} restantes</span>
         </div>
 
         {/* Progress bar */}
@@ -171,14 +169,14 @@ const Bingo = () => {
                   fontWeight: 800,
                   fontSize: maxNum > 50 ? '0.75rem' : '0.9rem',
                   background: isCalled
-                    ? (isCurrent ? 'var(--neon-magenta)' : 'var(--neon-cyan)')
-                    : 'rgba(255,255,255,0.04)',
-                  color: isCalled ? '#000' : 'var(--muted)',
-                  border: isCurrent ? '3px solid var(--neon-yellow)' : '2px solid transparent',
+                    ? (isCurrent ? 'var(--memphis-magenta)' : 'var(--memphis-cyan)')
+                    : '#FFFFFF',
+                  color: isCalled ? '#FFFFFF' : 'var(--muted)',
+                  border: isCurrent ? '3px solid var(--memphis-yellow)' : '2px solid var(--memphis-magenta)',
                   boxShadow: isCurrent
-                    ? '0 0 18px rgba(255,255,0,0.8)'
+                    ? '4px 4px 0px rgba(255,213,10,0.4)'
                     : isCalled
-                    ? '0 0 8px rgba(0,255,255,0.5)'
+                    ? 'none'
                     : 'none',
                   transition: 'all 0.25s ease',
                   userSelect: 'none',
