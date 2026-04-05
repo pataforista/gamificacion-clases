@@ -10,29 +10,29 @@
 }
 
 .notification {
-    background: var(--bg-secondary);
-    border: 2px solid var(--neon-cyan);
-    border-radius: 16px;
+    background: #FFFFFF;
+    border: 3px solid var(--memphis-cyan);
+    border-radius: 20px;
     padding: 12px 20px;
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+    box-shadow: 4px 4px 0px rgba(0, 217, 255, 0.3);
     min-width: 200px;
     pointer-events: auto;
 }
 
 .notification.xp {
-    border-left: 4px solid var(--neon-orange);
-    border-top-color: var(--neon-orange);
-    box-shadow: 0 0 25px rgba(255, 102, 0, 0.3);
+    border-left: 5px solid var(--memphis-orange);
+    border-top-color: var(--memphis-orange);
+    box-shadow: 4px 4px 0px rgba(255, 149, 0, 0.3);
 }
 
 .notification.achievement {
-    border-left: 4px solid var(--neon-yellow);
-    border-top-color: var(--neon-yellow);
-    background: rgba(255, 255, 0, 0.08);
-    box-shadow: 0 0 25px rgba(255, 255, 0, 0.2);
+    border-left: 5px solid var(--memphis-yellow);
+    border-top-color: var(--memphis-yellow);
+    background: rgba(255, 213, 10, 0.1);
+    box-shadow: 4px 4px 0px rgba(255, 213, 10, 0.3);
 }
 
 .notification-icon {
@@ -67,8 +67,7 @@
 
 .star {
     position: absolute;
-    color: var(--neon-yellow);
+    color: var(--memphis-yellow);
     font-size: 1.5rem;
     opacity: 0;
-    text-shadow: 0 0 10px var(--neon-yellow);
 }

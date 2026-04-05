@@ -4,9 +4,9 @@ import { cleanLines } from '../utils/rng';
 import { useNotifications } from './NotificationContext';
 
 const COLORS = [
-  '#00FFFF', '#FF00FF', '#FFFF00', '#FF6600', '#00FF00',
-  '#FF0066', '#6666FF', '#00CCFF', '#FF9900', '#99FF00',
-  '#CC00FF', '#00FFCC',
+  '#00D9FF', '#FF006E', '#FFD60A', '#FF9500', '#CCFF00',
+  '#FF6B9D', '#8338EC', '#38B6A8', '#FF9500', '#CCFF00',
+  '#8338EC', '#00D9FF',
 ];
 
 const POINTER_ANGLE = -Math.PI / 2; // 12 o'clock
@@ -49,7 +49,7 @@ const Ruleta = ({ items = [] }) => {
     // Outer glow ring
     ctx.beginPath();
     ctx.arc(cx, cy, r + 10, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(0,255,255,0.3)';
+    ctx.strokeStyle = 'rgba(255, 0, 110, 0.3)';
     ctx.lineWidth = 4;
     ctx.stroke();
 
@@ -87,9 +87,9 @@ const Ruleta = ({ items = [] }) => {
     // Center hub
     ctx.beginPath();
     ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
-    ctx.fillStyle = '#1a0033';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fill();
-    ctx.strokeStyle = '#00FFFF';
+    ctx.strokeStyle = '#FF006E';
     ctx.lineWidth = 3;
     ctx.stroke();
 
@@ -108,9 +108,9 @@ const Ruleta = ({ items = [] }) => {
       py + 22 * Math.sin(angle + 0.4)
     );
     ctx.closePath();
-    ctx.fillStyle = '#FF00FF';
+    ctx.fillStyle = '#FF006E';
     ctx.fill();
-    ctx.strokeStyle = '#FFFF00';
+    ctx.strokeStyle = '#FFD60A';
     ctx.lineWidth = 2;
     ctx.stroke();
   }, [options]);
@@ -195,11 +195,11 @@ const Ruleta = ({ items = [] }) => {
           <div
             className="out"
             style={{
-              color: 'var(--good)',
+              color: 'var(--memphis-magenta)',
               marginTop: '1rem',
               textAlign: 'center',
               fontSize: '2.5rem',
-              textShadow: '0 0 20px rgba(255,102,0,0.7)',
+              fontWeight: 700,
             }}
           >
             🎉 {winner}
