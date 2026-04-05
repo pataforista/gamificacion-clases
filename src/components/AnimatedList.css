@@ -22,28 +22,29 @@
 }
 
 .item {
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  background: #FFFFFF;
+  border: 2px solid var(--memphis-magenta);
+  border-radius: 14px;
   padding: 15px;
   transition: all 0.3s ease;
 }
 
 .item:hover {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+  border-color: var(--memphis-cyan);
+  box-shadow: 3px 3px 0px rgba(0, 217, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 .item.selected {
-  background: rgba(0, 255, 255, 0.15);
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+  background: rgba(0, 217, 255, 0.12);
+  border-color: var(--memphis-cyan);
+  box-shadow: 4px 4px 0px rgba(0, 217, 255, 0.3);
 }
 
 .item-text {
   margin: 0;
   font-size: 16px;
-  color: #fff;
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -60,10 +61,10 @@
 
 .top-gradient {
   top: 0;
-  background: linear-gradient(to bottom, var(--bg, #060010) 0%, transparent 100%);
+  background: linear-gradient(to bottom, var(--bg, #FFF8F3) 0%, transparent 100%);
 }
 
 .bottom-gradient {
   bottom: 0;
-  background: linear-gradient(to top, var(--bg, #060010) 0%, transparent 100%);
+  background: linear-gradient(to top, var(--bg, #FFF8F3) 0%, transparent 100%);
 }

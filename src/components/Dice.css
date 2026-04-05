@@ -1,10 +1,10 @@
 /* Dice Container */
 .dice-tray-container {
-    background: var(--bg-secondary, rgba(26, 0, 51, 0.8));
-    border-radius: 16px;
-    box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.1);
-    border: 2px solid var(--glass-border);
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 3px solid var(--glass-border);
     margin-bottom: 20px;
+    box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.2);
 }
 
 .poly-dice-container {
@@ -45,26 +45,26 @@
     font-family: 'Inter', sans-serif;
 }
 
-/* Themes - Retro 90s Neon */
+/* Themes - Memphis Design */
 .theme-medical {
-    --dice-bg: rgba(255, 102, 0, 0.8);
+    --dice-bg: rgba(255, 149, 0, 0.85);
     --dice-stroke: #FFFFFF;
     --dice-stroke-faint: rgba(255, 255, 255, 0.4);
     --dice-text: #FFFFFF;
 }
 
 .theme-neon {
-    --dice-bg: rgba(0, 255, 255, 0.9);
-    --dice-stroke: #00FFFF;
-    --dice-stroke-faint: rgba(0, 255, 255, 0.5);
-    --dice-text: #000000;
+    --dice-bg: rgba(0, 217, 255, 0.85);
+    --dice-stroke: #00D9FF;
+    --dice-stroke-faint: rgba(0, 217, 255, 0.5);
+    --dice-text: #2D2D2D;
 }
 
 .theme-classic {
-    --dice-bg: #FFFF00;
-    --dice-stroke: #FF00FF;
-    --dice-stroke-faint: rgba(255, 0, 255, 0.5);
-    --dice-text: #000000;
+    --dice-bg: #FFD60A;
+    --dice-stroke: #FF006E;
+    --dice-stroke-faint: rgba(255, 0, 110, 0.5);
+    --dice-text: #2D2D2D;
 }
 
 /* Original 3D Cube Styles (fallback/specific) */
@@ -97,19 +97,17 @@
 }
 
 .theme-neon .face {
-    border-color: #00FFFF;
-    color: #000000;
-    text-shadow: 0 0 10px #00FFFF;
-    background: rgba(0, 255, 255, 0.8);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    border-color: #00D9FF;
+    color: #2D2D2D;
+    background: rgba(0, 217, 255, 0.85);
+    box-shadow: 4px 4px 0px rgba(0, 217, 255, 0.4);
 }
 
 .theme-classic .face {
-    background: #FFFF00;
-    border-color: #FF00FF;
-    color: #000000;
-    text-shadow: 0 0 10px #FF00FF;
-    box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+    background: #FFD60A;
+    border-color: #FF006E;
+    color: #2D2D2D;
+    box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.3);
 }
 
 .front {
@@ -151,15 +149,15 @@
 }
 
 .dice-result-pill {
-    background: var(--bg-secondary);
-    border: 2px solid var(--neon-magenta);
-    border-radius: 16px;
+    background: #FFFFFF;
+    border: 3px solid var(--memphis-magenta);
+    border-radius: 20px;
     padding: 12px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-width: 80px;
-    box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+    box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.3);
 }
 
 .dice-shape {
@@ -188,7 +186,7 @@
 }
 
 .history-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 0, 110, 0.08);
 }
 
 @media (max-width: 600px) {
