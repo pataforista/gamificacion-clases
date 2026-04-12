@@ -1,9 +1,13 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { RNG } from '../utils/rng';
+import { useAudio } from './AudioContext';
 
 const RANGES = [20, 30, 50, 75, 90];
 
 const Bingo = () => {
+  const { playSFX } = useAudio();
   const [maxNum, setMaxNum] = useState(30);
   const [called, setCalled] = useState([]);
   const [current, setCurrent] = useState(null);
@@ -24,17 +28,18 @@ const Bingo = () => {
       // Show random flicker during animation
       const pool = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !called.includes(n));
       if (pool.length === 0) { clearInterval(timerRef.current); setRolling(false); return; }
-      setCurrent(pool[Math.floor(Math.random() * pool.length)]);
+      setCurrent(pool[RNG.int(0, pool.length - 1)]);
       ticks++;
 
       if (ticks >= total) {
         clearInterval(timerRef.current);
         // Final pick
         const finalPool = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !called.includes(n));
-        const chosen = finalPool[Math.floor(Math.random() * finalPool.length)];
+        const chosen = finalPool[RNG.int(0, finalPool.length - 1)];
         setCurrent(chosen);
         setCalled(prev => [...prev, chosen]);
         setRolling(false);
+        playSFX('boing');
 
         if (navigator.vibrate) navigator.vibrate(120);
         if (finalPool.length === 1) {
@@ -64,6 +69,7 @@ const Bingo = () => {
       {/* Left: caller panel */}
       <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
         <h2>Bingo — Cantador</h2>
+        <p className="muted" style={{ marginBottom: '1rem' }}>Genera números al azar sin repeticiones para dinámicas de bingo en clase.</p>
 
         <div className="row" style={{ marginBottom: '1rem' }}>
           <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Rango:</span>
@@ -81,7 +87,6 @@ const Bingo = () => {
 
         <div className="divider" />
 
-        {/* Big number display */}
         <div
           style={{
             flex: 1,
@@ -91,19 +96,32 @@ const Bingo = () => {
             minHeight: '160px',
           }}
         >
-          <div
-            className="mono"
-            style={{
-              fontSize: 'clamp(5rem, 18vw, 8rem)',
-              fontWeight: 900,
-              color: rolling ? 'var(--memphis-magenta)' : (current ? 'var(--memphis-cyan)' : 'var(--muted)'),
-              textShadow: 'none',
-              transition: 'color 0.15s ease',
-              userSelect: 'none',
-            }}
-          >
-            {current ?? '—'}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={current || 'none'}
+              initial={{ scale: 0.5, opacity: 0, rotate: rolling ? -10 : 0 }}
+              animate={{ 
+                scale: rolling ? [1, 1.1, 1] : 1, 
+                opacity: 1, 
+                rotate: rolling ? [0, 5, -5, 0] : 0 
+              }}
+              transition={{ 
+                duration: rolling ? 0.2 : 0.5, 
+                type: "spring",
+                repeat: rolling ? Infinity : 0
+              }}
+              className="mono"
+              style={{
+                fontSize: 'clamp(5rem, 18vw, 8rem)',
+                fontWeight: 900,
+                color: rolling ? 'var(--memphis-magenta)' : (current ? 'var(--memphis-cyan)' : 'var(--muted)'),
+                textShadow: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {current ?? '—'}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="divider" />

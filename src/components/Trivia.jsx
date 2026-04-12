@@ -88,6 +88,7 @@ const Trivia = ({ pickerItems = [] }) => {
     setScore(s => ({ ...s, correct: s.correct + 1 }));
     confetti({ particleCount: 80, spread: 50, origin: { x: 0.5, y: 0.4 } });
     if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+    alert("¡Eso!", RNG.getFlavor('correct'));
   };
 
   const handleWrong = () => {
@@ -96,6 +97,7 @@ const Trivia = ({ pickerItems = [] }) => {
     setShowAnswer(true);
     setScore(s => ({ ...s, wrong: s.wrong + 1 }));
     if (navigator.vibrate) navigator.vibrate([200]);
+    alert("¡Ay!", RNG.getFlavor('wrong'));
   };
 
   const resetAll = () => {
@@ -136,6 +138,7 @@ const Trivia = ({ pickerItems = [] }) => {
       {/* Left: active question */}
       <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
         <h2>Trivia Relámpago ⚡</h2>
+        <p className="muted" style={{ marginBottom: '1rem' }}>Desafío de preguntas rápidas con temporizador para dinamizar la participación individual.</p>
 
         {/* Score bar */}
         <div className="row" style={{ marginBottom: '1rem', gap: '0.5rem' }}>
@@ -274,6 +277,7 @@ const Trivia = ({ pickerItems = [] }) => {
       {/* Right: question bank editor */}
       <div className="card">
         <h2>Banco de preguntas ({questions.length})</h2>
+        <p className="muted" style={{ marginBottom: '1rem' }}>Gestiona el contenido del juego editando la lista de preguntas y respuestas.</p>
         <div className="smallout" style={{ marginBottom: '0.75rem' }}>
           Formato: <code style={{ color: 'var(--memphis-magenta)', fontWeight: 700 }}>pregunta|respuesta</code> (una por línea)
         </div>

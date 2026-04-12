@@ -2,6 +2,8 @@ import React, { useState, useRef, useMemo } from 'react';
 import { DiceRoller, NumberGenerator } from 'rpg-dice-roller';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePersistence } from '../hooks/usePersistence';
+import { useAudio } from './AudioContext';
+import { RNG } from '../utils/rng';
 import './Dice.css';
 
 // Configure the global dice roller engine
@@ -45,23 +47,23 @@ const PolyhedralDice = ({ value, type, isRolling, theme }) => {
             className={`poly-dice-container theme-${theme}`}
             animate={isRolling ? {
                 rotate: [0, 90, 180, 270, 360],
-                scale: [1, 1.2, 0.9, 1.1, 1],
-                x: [0, 5, -5, 5, 0],
-                y: [0, -10, 0, -5, 0]
+                scale: [1, 1.3, 0.7, 1.2, 1], // Squash and stretch
+                x: [0, 10, -10, 10, 0],
+                y: [0, -20, 0, -10, 0]
             } : {
-                rotate: 0,
-                scale: 1,
+                rotate: [0, 15, -15, 0], // Small wobble on stop
+                scale: [1, 1.1, 1],
                 x: 0,
                 y: 0
             }}
             transition={isRolling ? {
-                duration: 0.5,
+                duration: 0.4,
                 repeat: Infinity,
-                ease: "linear"
+                ease: "easeInOut"
             } : {
                 type: "spring",
-                stiffness: 300,
-                damping: 20
+                stiffness: 400,
+                damping: 15
             }}
         >
             <svg viewBox="0 0 100 100" className="poly-dice-svg">
@@ -76,6 +78,7 @@ const PolyhedralDice = ({ value, type, isRolling, theme }) => {
 };
 
 const Dice = () => {
+    const { playSFX } = useAudio();
     const { state, updateState } = usePersistence();
     const [result, setResult] = useState(null);
     const [detail, setDetail] = useState("");
@@ -90,59 +93,29 @@ const Dice = () => {
 
     const roller = useMemo(() => new DiceRoller(), []);
 
-    const playDiceSound = (type = 'roll') => {
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            if (type === 'roll') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.05, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
-            } else {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(300, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-            }
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-        } catch (e) {
-            console.warn("Audio unavailable", e);
-        }
-    };
-
     const roll = () => {
         setIsRolling(true);
         setResult("...");
         setDetail("Lanzando dados...");
         setIndividualRolls([]);
-        playDiceSound('roll');
+        playSFX('click');
 
         setTimeout(() => {
             let f = `${diceCount}d${diceType}`;
-            if (rollMode !== "normal" && diceCount > 1) {
-                f += rollMode;
-            }
-            if (diceMod !== 0) {
-                f += `${diceMod >= 0 ? "+" : ""}${diceMod}`;
-            }
-
             try {
                 const rollResult = roller.roll(f);
                 const total = rollResult.total;
-                const output = rollResult.toString();
-
+                
                 setResult(total);
-                setDetail(output);
+                
+                // CRIT / FUMBLE LOGIC
+                if (diceCount === 1 && diceType === "20") {
+                    if (total === 20) setDetail("🏆 ¡ESO, CUATE! ¡CRÍTICO NATAL!");
+                    else if (total === 1) setDetail("💀 ¡PERDISTE CUATE! ¡PIFIA TOTAL!");
+                    else setDetail(`Resultado: ${total}`);
+                } else {
+                    setDetail(`Total: ${total}`);
+                }
 
                 let rolls = [];
                 if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
@@ -152,7 +125,18 @@ const Dice = () => {
                 }
 
                 setIndividualRolls(rolls);
-                playDiceSound('hit');
+                playSFX('boing');
+
+                // VIBRATION
+                if (navigator.vibrate) {
+                    if (diceCount === 1 && diceType === "20") {
+                        if (total === 20) navigator.vibrate([100, 50, 100, 50, 100]);
+                        else if (total === 1) navigator.vibrate(400);
+                        else navigator.vibrate(40);
+                    } else {
+                        navigator.vibrate(40);
+                    }
+                }
 
                 const newHistory = [
                     {
@@ -172,9 +156,7 @@ const Dice = () => {
                 setDetail("Parámetros inválidos");
                 setIsRolling(false);
             }
-
-            if (navigator.vibrate) navigator.vibrate(15);
-        }, 1000);
+        }, 800);
     };
 
     const rollFormula = () => {
@@ -182,7 +164,7 @@ const Dice = () => {
         setIsRolling(true);
         setResult("...");
         setIndividualRolls([]);
-        playDiceSound('roll');
+        playSFX('click');
 
         setTimeout(() => {
             try {
@@ -192,7 +174,7 @@ const Dice = () => {
 
                 setResult(total);
                 setDetail(output);
-                playDiceSound('hit');
+                playSFX('boing');
 
                 const newHistory = [
                     {
@@ -225,6 +207,7 @@ const Dice = () => {
         <div className="grid">
             <div className={`card theme-${theme}`}>
                 <h2>Mesa de Dados</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>Lanza dados virtuales con física divertida para decidir puntos o eventos.</p>
                 <div className="dice-tray-container">
                     <div className="dice-tray" style={{
                         display: 'flex',
@@ -240,10 +223,11 @@ const Dice = () => {
                                 individualRolls.map((val, i) => (
                                     <motion.div
                                         key={`${i}-${val}`}
-                                        initial={{ scale: 0, opacity: 0, rotate: -45 }}
-                                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                        initial={{ scale: 0, opacity: 0, rotate: -180, x: RNG.int(-50, 50), y: RNG.int(-50, 50) }}
+                                        animate={{ scale: 1, opacity: 1, rotate: RNG.int(-15, 15), x: 0, y: 0 }}
                                         exit={{ scale: 0, opacity: 0 }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 25, delay: i * 0.05 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 20, delay: i * 0.1 }}
+                                        style={{ margin: '10px' }}
                                     >
                                         <PolyhedralDice
                                             value={val}
@@ -333,8 +317,9 @@ const Dice = () => {
                 </div>
             </div>
 
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'auto' }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <h2>Récords y Log</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>Sigue el historial de tus lanzamientos y fórmulas recientes.</p>
                 <div className="out" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>{result || "—"}</div>
                 <div className="smallout" style={{ marginBottom: '20px' }}>{detail || "Esperando tirada..."}</div>
 

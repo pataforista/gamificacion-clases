@@ -30,7 +30,26 @@ const Picker = ({ onItemsChange, items = [] }) => {
     return (
         <div className="grid">
             <div className="card">
-                <h2>Sorteo / Ruleta de nombres</h2>
+                <h2>Sorteo de Participación</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>Ingresa los nombres de los alumnos o equipos para rifar turnos de forma justa.</p>
+                
+                <div className="row" style={{ marginBottom: '1rem' }}>
+                    <button className="btn" onClick={() => {
+                        const demoNames = ['Ana García', 'Luis Pérez', 'María Rodríguez', 'Juan C.', 'Elena S.', 'Dr. House'];
+                        setInputText(demoNames.join('\n'));
+                        if (onItemsChange) onItemsChange(demoNames);
+                    }}>
+                        ✨ Cargar Demo
+                    </button>
+                    <button className="btn" onClick={() => {
+                        setInputText('');
+                        if (onItemsChange) onItemsChange([]);
+                        setResult(null);
+                    }}>
+                        🗑️ Limpiar Todo
+                    </button>
+                </div>
+
                 <label>Opciones (una por línea)</label>
                 <textarea
                     value={inputText}

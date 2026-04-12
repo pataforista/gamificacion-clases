@@ -37,7 +37,9 @@ const GroupExam = ({ pickerItems = [] }) => {
                 const initialScores = {};
                 pickerItems.forEach(item => initialScores[item] = 0);
                 setScores(initialScores);
+                audio.playSFX('intro');
             } catch {
+                audio.playSFX('incorrect');
                 await alert("Error de Archivo", "El archivo JSON no es válido o tiene un formato incorrecto.");
             }
         };
@@ -53,6 +55,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         const chosen = RNG.pick(pickerItems, "exam_turn");
         setActiveTeam(chosen);
         setFeedback(null);
+        if (navigator.vibrate) navigator.vibrate(80);
     };
 
     const answer = async (isCorrect) => {
@@ -65,11 +68,22 @@ const GroupExam = ({ pickerItems = [] }) => {
 
         if (isCorrect) {
             setScores(prev => ({ ...prev, [activeTeam]: (prev[activeTeam] || 0) + 10 }));
+            if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            setFeedback({ type: 'correct', msg: '¡Correcto! +10 puntos.' });
+            audio.playSFX('correct');
+            audio.playSFX('applause');
+            setFeedback({ type: 'correct', msg: RNG.getFlavor('correct') + ' +10 XP.' });
         } else {
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            setFeedback({ type: 'incorrect', msg: 'Incorrecto.' });
+            if (navigator.vibrate) navigator.vibrate(200);
+            audio.playSFX('incorrect');
+            setFeedback({ type: 'incorrect', msg: RNG.getFlavor('wrong') });
+        }
+
+        // Si es la última pregunta, sonar "lose" o "fin" si se equivocaron o terminó el juego
+        if (currentQuestion === exam.questions.length - 1) {
+            if (!isCorrect) {
+                 setTimeout(() => audio.playSFX('lose'), 1000);
+            }
         }
     };
 
@@ -79,6 +93,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         <div className="grid">
             <div className="card">
                 <h2>Examen Grupal</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>Sube un archivo JSON para gamificar evaluaciones por equipos con música y efectos.</p>
                 {!exam ? (
                     <div>
                         <p>Importa el JSON del examen para comenzar la dinámica.</p>
@@ -86,6 +101,21 @@ const GroupExam = ({ pickerItems = [] }) => {
                             <input type="file" accept=".json" onChange={handleFileUpload} />
                             <button className="btn" onClick={() => setShowGuide(!showGuide)}>
                                 {showGuide ? 'Ocultar Guía' : 'Ver Estructura JSON'}
+                            </button>
+                            <button className="btn" onClick={() => {
+                                const template = {
+                                    questions: [
+                                        {
+                                            text: "¿Pregunta de ejemplo?",
+                                            options: ["A", "B", "C", "D"],
+                                            correctIndex: 0
+                                        }
+                                    ]
+                                };
+                                navigator.clipboard.writeText(JSON.stringify(template, null, 2));
+                                alert("Copiado al portapapeles", "Pega el código en un archivo .json");
+                            }}>
+                                📋 Copiar Plantilla
                             </button>
                         </div>
 
@@ -136,13 +166,49 @@ const GroupExam = ({ pickerItems = [] }) => {
                                 {feedback.msg}
                                 <div className="row" style={{ marginTop: '10px' }}>
                                     <button className="btn" onClick={() => {
-                                        setCurrentQuestion(prev => Math.min(prev + 1, exam.questions.length - 1));
-                                        setFeedback(null);
-                                        setActiveTeam(null);
-                                    }}>Siguiente Pregunta</button>
+                                        if (currentQuestion >= exam.questions.length - 1) {
+                                            // Final!
+                                            setCurrentQuestion(-1); // Use -1 to flag results screen
+                                            setFeedback(null);
+                                            setActiveTeam(null);
+                                            audio.playSFX('intro');
+                                        } else {
+                                            setCurrentQuestion(prev => prev + 1);
+                                            setFeedback(null);
+                                            setActiveTeam(null);
+                                        }
+                                    }}>
+                                        {currentQuestion >= exam.questions.length - 1 ? '¡Ver Gran Final!' : 'Siguiente Pregunta'}
+                                    </button>
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {exam && currentQuestion === -1 && (
+                    <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <h2 style={{ fontSize: '2.5rem', color: 'var(--memphis-yellow)' }}>🏆 {RNG.getFlavor('final')}</h2>
+                        <div className="podium" style={{ marginTop: '2rem' }}>
+                            {Object.entries(scores)
+                                .sort((a, b) => b[1] - a[1])
+                                .map(([team, val], i) => (
+                                    <div key={team} className="card" style={{ 
+                                        margin: '10px 0', 
+                                        padding: '1rem',
+                                        background: i === 0 ? 'rgba(255,213,10,0.1)' : 'transparent',
+                                        borderColor: i === 0 ? 'var(--memphis-yellow)' : 'var(--line)'
+                                    }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>
+                                            {i === 0 ? '🥇 Ganador Absoluto' : i === 1 ? '🥈 Segundo Lugar' : i === 2 ? '🥉 Tercer Lugar' : `#${i+1}`}
+                                        </div>
+                                        <div style={{ fontSize: '1.5rem' }}>{team}</div>
+                                        <div className="pill" style={{ display: 'inline-block', marginTop: '5px' }}>{val} XP</div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                        <button className="btn primary" style={{ marginTop: '2rem' }} onClick={() => setExam(null)}>Reiniciar Juego</button>
                     </div>
                 )}
             </div>

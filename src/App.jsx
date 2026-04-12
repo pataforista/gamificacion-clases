@@ -20,7 +20,10 @@ const App = () => {
   const { state, updateState } = usePersistence();
   const [activeTab, setActiveTab] = useState('progreso');
 
-  const pickerItems = state.pickerItems || [];
+  const pickerItems = state.pickerItems && state.pickerItems.length > 0 
+    ? state.pickerItems 
+    : ['Estudiante de Medicina A', 'Estudiante de Medicina B', 'Residente R1', 'Interno de Pregrado', 'Jefe de Servicio'];
+
   const setPickerItems = (items) => updateState({ pickerItems: items });
 
   const tabs = [

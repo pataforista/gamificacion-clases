@@ -16,18 +16,22 @@ export const WAITING_TRACKS = {
         name: 'Jeopardy',
         url: 'https://assets.mixkit.co/active_storage/music/38-38-200bpm-pop-synth-rock.mp3',
     },
-    cien_mexicanos: {
-        name: '100 Mexicanos Dijeron',
-        url: 'https://assets.mixkit.co/active_storage/music/32-classic-game-show-loop-32-bars.mp3',
-    },
-    game_show: {
-        name: 'Game Show',
-        url: 'https://assets.mixkit.co/active_storage/music/29-fun-game-show-synth-loop-1-bar.mp3',
-    },
-    thinking: {
-        name: 'Tiempo para Pensar',
-        url: 'https://assets.mixkit.co/active_storage/music/43-dramatic-synth-loop.mp3',
-    },
+    cien_mexicanos: { id: '100mex', name: '100 Mexicanos', url: 'https://assets.mixkit.co/active_storage/music/32-classic-game-show-loop-32-bars.mp3' },
+    fun: { id: 'fun', name: 'Showbiz Fun', url: 'https://assets.mixkit.co/active_storage/music/29-fun-game-show-synth-loop-1-bar.mp3' },
+    tension: { id: 'tension', name: 'Tensión Máxima', url: 'https://assets.mixkit.co/active_storage/music/43-dramatic-synth-loop.mp3' },
+    karma: { id: 'karma', name: 'Karma (High Energy)', url: 'https://assets.mixkit.co/active_storage/music/38-38-200bpm-pop-synth-rock.mp3' },
+    dance: { id: 'dance', name: 'Cena de Gala', url: 'https://assets.mixkit.co/active_storage/music/28-fun-game-show-circus-loop.mp3' },
+    chill: { id: 'chill', name: 'Relajado', url: 'https://assets.mixkit.co/active_storage/music/26-retro-game-disco-loop.mp3' },
+};
+
+export const GAME_SFX = {
+  intro: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3',
+  correct: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
+  incorrect: 'https://assets.mixkit.co/active_storage/sfx/132/132-preview.mp3',
+  lose: 'https://assets.mixkit.co/active_storage/sfx/123/123-preview.mp3',
+  click: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
+  boing: 'https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3',
+  applause: 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3',
 };
 
 export const AudioProvider = ({ children }) => {
@@ -88,11 +92,23 @@ export const AudioProvider = ({ children }) => {
         audioRef.current.volume = vol;
     }, []);
 
+    const playSFX = useCallback((sfxKey) => {
+        const url = GAME_SFX[sfxKey];
+        if (!url) {
+            console.warn(`SFX not found: ${sfxKey}`);
+            return;
+        }
+        const sfx = new Audio(url);
+        sfx.volume = volume;
+        sfx.play().catch(err => console.warn('SFX play error:', err));
+    }, [volume]);
+
     const value = {
         isPlaying,
         currentTrack,
         volume,
         play,
+        playSFX,
         stop,
         pause,
         resume,

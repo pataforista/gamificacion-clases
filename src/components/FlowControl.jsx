@@ -34,6 +34,7 @@ const FlowControl = ({ pickerItems = [] }) => {
                     clearInterval(timerIntervalRef.current);
                     setIsTimerRunning(false);
                     if (enableAudio) audio.stop();
+                    if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
                     return 0;
                 }
                 return prev - 1;
@@ -47,10 +48,12 @@ const FlowControl = ({ pickerItems = [] }) => {
         setTimer(duration);
         setIsTimerRunning(true);
         updateState({ traffic: "red" });
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     };
 
     const setTraffic = (color) => {
         updateState({ traffic: color });
+        if (navigator.vibrate) navigator.vibrate(50);
     };
 
     const pickLeader = async () => {
@@ -141,7 +144,8 @@ const FlowControl = ({ pickerItems = [] }) => {
             </div>
 
             <div className="card">
-                <h2>Líder de Guardia</h2>
+                <h2>Gestión de Aula</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>Controla el ruido y las transiciones mediante el semáforo y la señal de silencio.</p>
                 <div className="smallout">Selecciona al responsable del grupo hoy.</div>
                 <div className="divider"></div>
                 <div className="row">
