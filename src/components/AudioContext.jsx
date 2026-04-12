@@ -32,6 +32,9 @@ export const GAME_SFX = {
   click: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
   boing: 'https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3',
   applause: 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3',
+  buzzer: 'https://assets.mixkit.co/active_storage/sfx/1073/1073-preview.mp3',
+  drumroll: 'https://assets.mixkit.co/active_storage/sfx/147/147-preview.mp3',
+  tick: 'https://assets.mixkit.co/active_storage/sfx/612/612-preview.mp3',
 };
 
 export const AudioProvider = ({ children }) => {

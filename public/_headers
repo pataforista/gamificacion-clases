@@ -1,0 +1,12 @@
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-XSS-Protection: 1; mode=block
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.mixkit.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://assets.mixkit.co; media-src 'self' https://assets.mixkit.co; connect-src 'self' https://assets.mixkit.co;
+
+# Cache control for PWA assets and icons
+/icon-*.png
+  Cache-Control: public, max-age=31536000, immutable
+/manifest.webmanifest
+  Cache-Control: public, max-age=0, must-revalidate
