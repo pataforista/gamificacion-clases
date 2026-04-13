@@ -664,31 +664,31 @@ h2 {
 }
 
 .exam-question {
-  font-size: 1.1rem;
+  font-size: clamp(0.85rem, 1.5vw, 1.1rem);
   font-weight: 700;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  line-height: 1.5;
+  margin-bottom: clamp(0.5rem, 1vh, 1.5rem);
+  padding: clamp(0.6rem, 1.2vw, 1rem);
   background: var(--bg-secondary);
-  border-radius: 16px;
+  border-radius: 14px;
   border-left: 5px solid var(--primary);
-  box-shadow: 6px 6px 0px var(--line);
+  box-shadow: 4px 4px 0px var(--line);
 }
 
 .exam-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: clamp(5px, 0.7vh, 0.75rem);
 }
 
 .exam-option {
-  padding: 0.9rem 1rem;
+  padding: clamp(0.5rem, 1vh, 0.9rem) clamp(0.6rem, 1vw, 1rem);
   text-align: left;
   height: auto;
   white-space: normal;
   line-height: 1.4;
   border: 2px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--bg);
   transition: all 0.2s ease;
   cursor: pointer;
@@ -735,5 +735,21 @@ h2 {
 @media (max-width: 480px) {
   .exam-options {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Compact layout for iPad landscape and projectors (short viewport height) */
+@media (max-height: 820px) {
+  main {
+    padding: 1rem 2rem;
+  }
+  header {
+    padding: 1rem 0;
+  }
+  .tabs {
+    margin-bottom: 1rem;
+  }
+  .card {
+    padding: 1rem;
   }
 }
