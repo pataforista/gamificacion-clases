@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import React from 'react';
 
-const TILE_COLORS = ['#FFFFFF', '#00D9FF', '#CCFF00', '#FFD60A'];
+const TILE_COLORS = ['var(--bg)', 'var(--secondary)', 'var(--good)', 'var(--warn)'];
 
 const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, activeTeam = null }) => {
   const gridSize = 10;
@@ -18,18 +18,17 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
   };
 
   return (
-    <div style={{
+    <div className="card" style={{
       width: '100%',
-      maxWidth: '500px', // More compact
+      maxWidth: '480px', // Slightly smaller for safety
       margin: '0 auto',
       aspectRatio: '1',
       background: 'var(--bg-secondary)',
-      border: '4px solid var(--line)',
       borderRadius: '20px',
       position: 'relative',
       padding: '2px',
-      boxShadow: '8px 8px 0px var(--line)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      border: '4px solid var(--line)'
     }}>
       {/* Grid Tiles */}
       {tiles.map((t) => {

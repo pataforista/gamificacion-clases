@@ -127,9 +127,9 @@ const Trivia = ({ pickerItems = [] }) => {
 
   const timerPct = timeLeft != null && seconds > 0 ? (timeLeft / seconds) * 100 : 100;
   const timerColor =
-    timerPct > 50 ? 'var(--memphis-cyan)' :
-    timerPct > 25 ? 'var(--memphis-yellow)' :
-    'var(--memphis-magenta)';
+    timerPct > 50 ? 'var(--secondary)' :
+    timerPct > 25 ? 'var(--warn)' :
+    'var(--primary)';
 
   const total = score.correct + score.wrong;
 
@@ -142,10 +142,10 @@ const Trivia = ({ pickerItems = [] }) => {
 
         {/* Score bar */}
         <div className="row" style={{ marginBottom: '1rem', gap: '0.5rem' }}>
-          <span className="pill" style={{ borderColor: 'var(--memphis-lime)', color: 'var(--text)', background: 'rgba(204,255,0,0.12)', fontWeight: 700 }}>
+          <span className="pill" style={{ borderColor: 'var(--good)', color: 'var(--text)', background: 'transparent', fontWeight: 700 }}>
             ✓ {score.correct}
           </span>
-          <span className="pill" style={{ borderColor: 'var(--memphis-magenta)', color: 'var(--text)', background: 'rgba(255,0,110,0.12)', fontWeight: 700 }}>
+          <span className="pill" style={{ borderColor: 'var(--primary)', color: 'var(--text)', background: 'transparent', fontWeight: 700 }}>
             ✗ {score.wrong}
           </span>
           {total > 0 && (
@@ -185,9 +185,9 @@ const Trivia = ({ pickerItems = [] }) => {
                   style={{
                     display: 'inline-block',
                     alignSelf: 'flex-start',
-                    borderColor: 'var(--memphis-yellow)',
+                    borderColor: 'var(--warn)',
                     color: 'var(--text)',
-                    background: 'rgba(255,213,10,0.12)',
+                    background: 'transparent',
                     fontSize: '0.9rem',
                     padding: '0.3rem 0.8rem',
                     fontWeight: 700,
@@ -279,7 +279,7 @@ const Trivia = ({ pickerItems = [] }) => {
         <h2>Banco de preguntas ({questions.length})</h2>
         <p className="muted" style={{ marginBottom: '1rem' }}>Gestiona el contenido del juego editando la lista de preguntas y respuestas.</p>
         <div className="smallout" style={{ marginBottom: '0.75rem' }}>
-          Formato: <code style={{ color: 'var(--memphis-magenta)', fontWeight: 700 }}>pregunta|respuesta</code> (una por línea)
+          Formato: <code style={{ color: 'var(--primary)', fontWeight: 700 }}>pregunta|respuesta</code> (una por línea)
         </div>
         <textarea
           value={inputQA}

@@ -16,7 +16,7 @@ export const RNG = {
 
     pick(arr, key = "default") {
         if (!arr || arr.length === 0) return null;
-        const idx = this.pickBalancedIndex(key, arr.length);
+        const idx = this.pickBalancedIndex(arr.length, key);
         return arr[idx];
     },
 

@@ -52,9 +52,11 @@ const Ruleta = ({ items = [] }) => {
     // Outer glow ring
     ctx.beginPath();
     ctx.arc(cx, cy, r + 10, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(255, 0, 110, 0.3)';
+    ctx.strokeStyle = 'var(--secondary)';
+    ctx.globalAlpha = 0.3;
     ctx.lineWidth = 4;
     ctx.stroke();
+    ctx.globalAlpha = 1.0;
 
     // Draw segments
     opts.forEach((opt, i) => {
@@ -213,12 +215,12 @@ const Ruleta = ({ items = [] }) => {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                background: 'rgba(255,213,10,0.95)',
-                color: '#000',
+                background: 'var(--bg)',
+                color: 'var(--text)',
                 padding: '2rem 3rem',
                 borderRadius: '30px',
-                border: '5px solid #000',
-                boxShadow: '0 0 50px var(--memphis-yellow)',
+                border: '5px solid var(--primary)',
+                boxShadow: '0 0 50px var(--primary)',
                 zIndex: 10,
                 textAlign: 'center',
                 minWidth: '280px',

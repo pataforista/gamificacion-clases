@@ -38,11 +38,11 @@ const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' })
                             position: 'relative',
                             width: '100%',
                             maxWidth: '400px',
-                            background: '#FFFFFF',
-                            border: '3px solid var(--memphis-magenta)',
+                            background: 'var(--bg-secondary)',
+                            border: '3px solid var(--line)',
                             borderRadius: '28px',
                             padding: '30px',
-                            boxShadow: '8px 8px 0px rgba(255, 0, 110, 0.3)',
+                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
                             pointerEvents: 'auto',
                             textAlign: 'center'
                         }}
