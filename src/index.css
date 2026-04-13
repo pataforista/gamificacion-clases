@@ -35,8 +35,8 @@
 
 /* THEMES */
 .theme-lipari {
-  --bg: #001d3d;
-  --bg-secondary: #003566;
+  --bg: #010c1a;
+  --bg-secondary: #001d3d;
   --text: #fdf0d5;
   --text-secondary: #ffc300;
   --muted: #ffb703;
@@ -50,8 +50,8 @@
 }
 
 .theme-tokyo {
-  --bg: #1a1b26;
-  --bg-secondary: #24283b;
+  --bg: #0f111a;
+  --bg-secondary: #1a1b26;
   --text: #c0caf5;
   --text-secondary: #7aa2f7;
   --muted: #565f89;
@@ -98,10 +98,6 @@ body {
   position: relative;
   z-index: 1;
   min-height: 100vh;
-}
-
-.ballpit-bg {
-  display: none;
 }
 
 main {

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePersistence } from './hooks/usePersistence';
 import { AudioProvider } from './components/AudioContext';
-import Ballpit from './components/Ballpit';
 import RPGDash from './components/RPGDash';
 import FlowControl from './components/FlowControl';
 import Dice from './components/Dice';
@@ -25,6 +24,10 @@ const App = () => {
     setTheme(newTheme);
     localStorage.setItem('app-theme', newTheme);
   };
+
+  React.useEffect(() => {
+    document.body.className = theme;
+  }, [theme]);
 
   const pickerItems = state.pickerItems && state.pickerItems.length > 0 
     ? state.pickerItems 
@@ -49,16 +52,7 @@ const App = () => {
   return (
     <AudioProvider>
       <div className={`app-container ${theme}`}>
-        <div className="ballpit-bg">
-          <Ballpit
-            count={50}
-            gravity={0.1}
-            friction={0.99}
-            wallBounce={0.9}
-            followCursor={true}
-            colors={[0x6366f1, 0x2dd4bf, 0xf59e0b]}
-          />
-        </div>
+
 
         <header>
           <div className="title">MedClass Pro</div>

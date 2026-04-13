@@ -209,14 +209,26 @@ const GroupExam = ({ pickerItems = [] }) => {
             <div className={`card full-width`} style={{ gridColumn: 'span 2' }}>
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: '1rem' }}>
                     <h2>Examen Grupal</h2>
-                    {setupPhase === 'game' && (
-                        <button className="btn" onClick={() => {
-                            if(window.confirm('¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
-                                setExam(null);
-                                setSetupPhase('upload');
-                            }
-                        }}>🛑 Cerrar Examen</button>
-                    )}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button 
+                            className="btn" 
+                            style={{ background: 'var(--bg-secondary)', border: '2px solid var(--primary)', color: 'var(--primary)', fontWeight: 900 }}
+                            onClick={() => {
+                                audio.resume();
+                                audio.playSFX('click');
+                            }}
+                        >
+                            📻 Sintonizar Audio
+                        </button>
+                        {setupPhase === 'game' && (
+                            <button className="btn" onClick={() => {
+                                if(window.confirm('¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
+                                    setExam(null);
+                                    setSetupPhase('upload');
+                                }
+                            }}>🛑 Cerrar Examen</button>
+                        )}
+                    </div>
                 </div>
 
                 {setupPhase === 'upload' && (
@@ -306,10 +318,11 @@ const GroupExam = ({ pickerItems = [] }) => {
                 {setupPhase === 'game' && exam && currentQuestion >= 0 && (
                     <div className="game-dashboard" style={{ 
                         display: 'grid', 
-                        gridTemplateColumns: 'minmax(180px, 200px) 1fr minmax(300px, 380px)', 
+                        gridTemplateColumns: '1fr 2fr 1.5fr', 
                         gap: '1.5rem',
                         height: 'auto',
-                        minHeight: '600px'
+                        minHeight: '600px',
+                        alignItems: 'start'
                     }}>
                         {/* LEFT COLUMN: RANKING */}
                         <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', border: '3px solid var(--line)' }}>
@@ -347,17 +360,19 @@ const GroupExam = ({ pickerItems = [] }) => {
                         </div>
 
                         {/* CENTER COLUMN: BOARD */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <BoardGame 
-                                teams={pickerItems} 
-                                totalSteps={100} 
-                                scores={visualScores} 
-                                avatars={teamAvatars} 
-                                activeTeam={roboTeam || activeTeam}
-                            />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '400px' }}>
+                            <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '24px', border: '4px solid var(--line)', boxShadow: '0 15px 35px rgba(0,0,0,0.2)' }}>
+                                <BoardGame 
+                                    teams={pickerItems} 
+                                    totalSteps={100} 
+                                    scores={visualScores} 
+                                    avatars={teamAvatars} 
+                                    activeTeam={roboTeam || activeTeam}
+                                />
+                            </div>
                             <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text)', fontWeight: 'bold', fontSize: '0.9rem', padding: '0 0.5rem' }}>
                                 <span>📺 Pregunta {currentQuestion + 1} / {exam.questions.length}</span>
-                                <span style={{ color: 'var(--primary)' }}>{Math.round(((currentQuestion + 1) / exam.questions.length) * 100)}%</span>
+                                <span style={{ color: 'var(--primary)' }}>{Math.round(((currentQuestion + 1) / exam.questions.length) * 100)}% Completado</span>
                             </div>
                         </div>
 
