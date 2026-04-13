@@ -312,12 +312,13 @@ const GroupExam = ({ pickerItems = [] }) => {
                         justifyContent: 'center'
                     }}>
                         {/* LEFT PANEL: BOARD */}
-                        <div style={{ flex: '1 1 500px', maxWidth: '650px' }}>
+                        <div style={{ flex: '1 1 400px', maxWidth: '500px' }}>
                             <BoardGame 
                                 teams={pickerItems} 
                                 totalSteps={100} 
                                 scores={visualScores} 
                                 avatars={teamAvatars} 
+                                activeTeam={roboTeam || activeTeam}
                             />
                         </div>
 
@@ -325,30 +326,35 @@ const GroupExam = ({ pickerItems = [] }) => {
                         <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {/* NEW MINI SCOREBOARD */}
                             <div className="card" style={{ padding: '1rem', border: '3px solid var(--line)', marginBottom: 0 }}>
-                                <h4 style={{ margin: '0 0 1rem 0', textTransform: 'uppercase', fontSize: '0.8rem', opacity: 0.7 }}>🏆 Clasificación</h4>
+                                <h4 style={{ margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontSize: '0.7rem', opacity: 0.7 }}>🏆 Clasificación</h4>
                                 <div style={{ 
                                     display: 'grid', 
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                                    gap: '8px'
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                                    gap: '6px'
                                 }}>
-                                    {Object.entries(scores).map(([team, val]) => (
-                                        <div key={team} style={{ 
-                                            padding: '6px 10px',
-                                            background: activeTeam === team ? 'var(--primary)' : 'rgba(255,255,255,0.05)', 
-                                            color: activeTeam === team ? '#fff' : 'var(--text)', 
-                                            border: '2px solid var(--line)', 
-                                            borderRadius: '10px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '0.85rem'
-                                        }}>
-                                            <span>{teamAvatars[team]}</span>
-                                            <div style={{ overflow: 'hidden' }}>
+                                    {Object.entries(scores).map(([team, val]) => {
+                                        const isActive = (roboTeam || activeTeam) === team;
+                                        return (
+                                            <div key={team} style={{ 
+                                                padding: '4px 8px',
+                                                background: isActive ? 'var(--primary)' : 'var(--bg-secondary)', 
+                                                color: isActive ? 'white' : 'var(--text)', 
+                                                border: isActive ? '2px solid var(--text)' : '2px solid var(--line)', 
+                                                borderRadius: '8px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px',
+                                                fontSize: '0.75rem',
+                                                boxShadow: isActive ? '0 0 10px var(--primary)' : 'none',
+                                                transform: isActive ? 'scale(1.05)' : 'none',
+                                                transition: 'all 0.3s ease'
+                                            }}>
+                                                <span style={{ fontSize: '1rem' }}>{teamAvatars[team]}</span>
                                                 <div style={{ fontWeight: 900 }}>{val} XP</div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -396,7 +402,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                                     <div className="exam-question" style={{ background: 'var(--bg-secondary)', color: 'var(--text)', border: '4px solid var(--line)', boxShadow: '6px 6px 0px var(--line)' }}>
                                         {question.text}
                                     </div>
-                                    <div className="exam-options" style={{ gridTemplateColumns: '1fr' }}>
+                                    <div className="exam-options" style={{ gridTemplateColumns: '1fr', gap: '8px' }}>
                                         {question.options.map((opt, i) => (
                                             <button
                                                 key={i}
@@ -408,7 +414,12 @@ const GroupExam = ({ pickerItems = [] }) => {
                                                     border: '3px solid var(--line)',
                                                     background: 'var(--bg)',
                                                     color: 'var(--text)',
-                                                    marginBottom: '0.5rem'
+                                                    padding: '12px',
+                                                    fontSize: '1rem',
+                                                    fontWeight: '700',
+                                                    cursor: 'pointer',
+                                                    position: 'relative',
+                                                    zIndex: 10
                                                 }}
                                                 onClick={() => answer(i === question.correctIndex, !!roboTeam)}
                                             >

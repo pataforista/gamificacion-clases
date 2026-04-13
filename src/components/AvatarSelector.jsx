@@ -22,12 +22,12 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
 
   return (
     <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h2 style={{ textAlign: 'center', color: 'var(--memphis-magenta)' }}>🎬 ¡Elige tu Avatar!</h2>
+      <h2 style={{ textAlign: 'center', color: 'var(--primary)' }}>🎭 ¡Elige tu Avatar!</h2>
       <div className="divider"></div>
       
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
         <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          Equipo: <span style={{ color: 'var(--memphis-cyan)', fontSize: '1.5rem' }}>{currentTeam}</span>
+          Equipo: <span style={{ color: 'var(--primary)', fontSize: '1.5rem' }}>{currentTeam}</span>
         </div>
         <div className="pill">Paso {activeTeamIdx + 1} de {teams.length}</div>
       </div>
@@ -56,7 +56,8 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
             style={{ 
               padding: '0.5rem', 
               fontSize: '1.2rem', 
-              background: 'white',
+              background: 'var(--bg)',
+              color: 'var(--text)',
               height: '45px'
             }}
             onClick={() => handleSelect(k)}

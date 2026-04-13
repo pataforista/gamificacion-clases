@@ -1,10 +1,10 @@
 /* Dice Container */
 .dice-tray-container {
-    background: #FFFFFF;
+    background: var(--bg-secondary);
     border-radius: 20px;
-    border: 3px solid var(--glass-border);
+    border: 3px solid var(--line);
     margin-bottom: 20px;
-    box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.2);
+    box-shadow: 4px 4px 0px var(--line);
 }
 
 .poly-dice-container {
@@ -46,25 +46,26 @@
 }
 
 /* Themes - Memphis Design */
+/* Themes - Integrated into Global Themes */
 .theme-medical {
-    --dice-bg: rgba(255, 149, 0, 0.85);
-    --dice-stroke: #FFFFFF;
-    --dice-stroke-faint: rgba(255, 255, 255, 0.4);
-    --dice-text: #FFFFFF;
+    --dice-bg: var(--bg-secondary);
+    --dice-stroke: var(--primary);
+    --dice-stroke-faint: var(--muted);
+    --dice-text: var(--text);
 }
 
 .theme-neon {
-    --dice-bg: rgba(0, 217, 255, 0.85);
-    --dice-stroke: #00D9FF;
-    --dice-stroke-faint: rgba(0, 217, 255, 0.5);
-    --dice-text: #2D2D2D;
+    --dice-bg: var(--bg-secondary);
+    --dice-stroke: var(--secondary);
+    --dice-stroke-faint: var(--muted);
+    --dice-text: var(--text);
 }
 
 .theme-classic {
-    --dice-bg: #FFD60A;
-    --dice-stroke: #FF006E;
-    --dice-stroke-faint: rgba(255, 0, 110, 0.5);
-    --dice-text: #2D2D2D;
+    --dice-bg: var(--bg-secondary);
+    --dice-stroke: var(--primary);
+    --dice-stroke-faint: var(--muted);
+    --dice-text: var(--text);
 }
 
 /* Original 3D Cube Styles (fallback/specific) */
@@ -97,17 +98,17 @@
 }
 
 .theme-neon .face {
-    border-color: #00D9FF;
-    color: #2D2D2D;
-    background: rgba(0, 217, 255, 0.85);
-    box-shadow: 4px 4px 0px rgba(0, 217, 255, 0.4);
+    border-color: var(--secondary);
+    color: var(--text);
+    background: var(--bg-secondary);
+    box-shadow: 4px 4px 0px var(--line);
 }
 
 .theme-classic .face {
-    background: #FFD60A;
-    border-color: #FF006E;
-    color: #2D2D2D;
-    box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.3);
+    background: var(--bg-secondary);
+    border-color: var(--primary);
+    color: var(--text);
+    box-shadow: 4px 4px 0px var(--line);
 }
 
 .front {
@@ -149,15 +150,15 @@
 }
 
 .dice-result-pill {
-    background: #FFFFFF;
-    border: 3px solid var(--memphis-magenta);
+    background: var(--bg-secondary);
+    border: 3px solid var(--line);
     border-radius: 20px;
     padding: 12px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-width: 80px;
-    box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.3);
+    box-shadow: 4px 4px 0px var(--line);
 }
 
 .dice-shape {

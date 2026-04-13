@@ -6,9 +6,8 @@ import { useAudio } from './AudioContext';
 import { useNotifications } from './NotificationContext';
 
 const COLORS = [
-  '#00D9FF', '#FF006E', '#FFD60A', '#FF9500', '#CCFF00',
-  '#FF6B9D', '#8338EC', '#38B6A8', '#FF9500', '#CCFF00',
-  '#8338EC', '#00D9FF',
+  'var(--primary)', 'var(--secondary)', 'var(--good)', 'var(--warn)', 'var(--error)',
+  'var(--primary)', 'var(--secondary)', 'var(--good)', 'var(--warn)', 'var(--error)'
 ];
 
 const POINTER_ANGLE = -Math.PI / 2; // 12 o'clock
@@ -79,7 +78,7 @@ const Ruleta = ({ items = [] }) => {
       ctx.textAlign = 'right';
       const fontSize = Math.max(9, Math.min(14, 120 / n));
       ctx.font = `bold ${fontSize}px Outfit, sans-serif`;
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = 'var(--line)';
       const maxChars = Math.max(6, Math.floor(180 / n));
       const label = opt.length > maxChars ? opt.slice(0, maxChars - 1) + '…' : opt;
       ctx.shadowColor = 'rgba(255,255,255,0.5)';
@@ -91,9 +90,9 @@ const Ruleta = ({ items = [] }) => {
     // Center hub
     ctx.beginPath();
     ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = 'var(--bg)';
     ctx.fill();
-    ctx.strokeStyle = '#FF006E';
+    ctx.strokeStyle = 'var(--primary)';
     ctx.lineWidth = 3;
     ctx.stroke();
 
@@ -112,9 +111,9 @@ const Ruleta = ({ items = [] }) => {
       py + 22 * Math.sin(angle + 0.4)
     );
     ctx.closePath();
-    ctx.fillStyle = '#FF006E';
+    ctx.fillStyle = 'var(--primary)';
     ctx.fill();
-    ctx.strokeStyle = '#FFD60A';
+    ctx.strokeStyle = 'var(--line)';
     ctx.lineWidth = 2;
     ctx.stroke();
   }, [options]);

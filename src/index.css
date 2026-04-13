@@ -118,14 +118,12 @@ header {
 .title {
   font-size: clamp(2rem, 8vw, 3.5rem);
   font-weight: 900;
-  background: linear-gradient(135deg, var(--memphis-magenta), var(--memphis-cyan), var(--memphis-yellow));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary);
   margin-bottom: 0.5rem;
   line-height: 1.1;
   letter-spacing: 0.03em;
   position: relative;
+  text-transform: uppercase;
 }
 
 .card {
@@ -204,10 +202,10 @@ h2 {
 }
 
 .btn.primary {
-  background: var(--memphis-magenta);
-  border-color: var(--memphis-magenta);
-  color: #FFFFFF;
-  box-shadow: 4px 4px 0px rgba(255, 0, 110, 0.4);
+  background: var(--primary);
+  border-color: var(--line);
+  color: white;
+  box-shadow: 4px 4px 0px var(--line);
 }
 
 .btn.primary:hover {
@@ -259,10 +257,10 @@ h2 {
 
 .smallout {
   font-size: 0.9rem;
-  color: #000;
+  color: var(--text);
   padding: 1rem;
-  background: #f0f0f0;
-  border: 2px solid #000;
+  background: var(--bg-secondary);
+  border: 2px solid var(--line);
   border-radius: 12px;
   font-weight: 500;
 }
@@ -640,10 +638,10 @@ h2 {
   line-height: 1.6;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: #FFFFFF;
+  background: var(--bg-secondary);
   border-radius: 16px;
-  border-left: 5px solid var(--memphis-cyan);
-  box-shadow: 4px 4px 0px rgba(0, 217, 255, 0.2);
+  border-left: 5px solid var(--primary);
+  box-shadow: 6px 6px 0px var(--line);
 }
 
 .exam-options {
@@ -658,12 +656,13 @@ h2 {
   height: auto;
   white-space: normal;
   line-height: 1.4;
-  border: 2px solid var(--memphis-magenta);
+  border: 2px solid var(--line);
   border-radius: 14px;
-  background: #FFFFFF;
+  background: var(--bg);
   transition: all 0.2s ease;
   cursor: pointer;
   font-weight: 600;
+  color: var(--text);
 }
 
 .exam-option:hover {
