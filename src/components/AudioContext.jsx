@@ -12,8 +12,8 @@ export const useAudio = () => {
 
 // Colección de canciones de espera/transición estables
 export const WAITING_TRACKS = {
-    jeopardy: { name: 'Suspenso', url: 'https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3' },
-    cien_mexicanos: { name: 'Dinámico', url: 'https://assets.mixkit.co/music/preview/mixkit-cbpd-400.mp3' },
+    jeopardy: { name: 'Jeopardy', url: 'https://www.soundjay.com/misc/game-show-bells-a11.mp3' },
+    cien_mexicanos: { name: '100 Mexicanos Dijeron', url: 'https://www.soundjay.com/button/sounds/button-30.mp3' },
     fun: { name: 'Divertido', url: 'https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3' },
     tension: { name: 'Tensión Máxima', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
     dance: { name: 'Energía', url: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3' },
@@ -21,12 +21,12 @@ export const WAITING_TRACKS = {
 
 export const GAME_SFX = {
   intro: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-changing-tab-206.mp3',
-  correct: 'https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3',
-  incorrect: 'https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3',
+  correct: '/sounds/buena.mp3',
+  incorrect: '/sounds/error.mp3',
   lose: 'https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-game-over-470.mp3',
   click: 'https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3',
   boing: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-toy-whistle-316.mp3',
-  applause: 'https://assets.mixkit.co/sfx/preview/mixkit-small-group-cheer-and-applause-518.mp3',
+  applause: '/sounds/aplausos.mp3',
   buzzer: 'https://assets.mixkit.co/sfx/preview/mixkit-classic-alarm-995.mp3',
   drumroll: 'https://assets.mixkit.co/sfx/preview/mixkit-drum-roll-566.mp3',
   tick: 'https://assets.mixkit.co/sfx/preview/mixkit-tick-tock-clock-timer-1045.mp3',
