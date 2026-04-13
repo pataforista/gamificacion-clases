@@ -340,7 +340,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                 {setupPhase === 'game' && exam && currentQuestion >= 0 && (
                     <div className="game-dashboard" style={{ 
                         display: 'grid', 
-                        gridTemplateColumns: '1fr 2fr 1.5fr', 
+                        gridTemplateColumns: 'minmax(140px, 0.8fr) 2.5fr 1.3fr', 
                         gap: '1.5rem',
                         height: 'auto',
                         minHeight: '600px',
@@ -358,22 +358,22 @@ const GroupExam = ({ pickerItems = [] }) => {
                                         const isActive = (roboTeam || activeTeam) === team;
                                         return (
                                             <motion.div key={team} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ 
-                                                padding: '8px 12px',
+                                                padding: '6px 8px',
                                                 background: isActive ? 'var(--primary)' : 'var(--bg-secondary)', 
                                                 color: isActive ? 'white' : 'var(--text)', 
                                                 border: isActive ? '2px solid var(--text)' : '2px solid var(--line)', 
                                                 borderRadius: '12px',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: '10px',
-                                                fontSize: '0.85rem',
+                                                gap: '6px',
+                                                fontSize: '0.75rem',
                                                 boxShadow: isActive ? '0 10px 15px rgba(0,0,0,0.2)' : 'none',
                                                 transition: 'background 0.3s ease, box-shadow 0.3s ease',
                                                 position: 'relative'
                                             }}>
-                                                <span style={{ fontSize: '1.2rem' }}>{teamAvatars[team] || '👤'}</span>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: '0.6rem', opacity: 0.7, fontWeight: 900 }}>RANK {idx + 1}</div>
+                                                <span style={{ fontSize: '1rem' }}>{teamAvatars[team] || '👤'}</span>
+                                                <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    <div style={{ fontSize: '0.55rem', opacity: 0.7, fontWeight: 900 }}>RANK {idx + 1}</div>
                                                     <div style={{ fontWeight: 900 }}>{val} XP</div>
                                                 </div>
                                                 {isActive && <div className="pulse" style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }}></div>}
@@ -385,8 +385,8 @@ const GroupExam = ({ pickerItems = [] }) => {
                         </div>
 
                         {/* CENTER COLUMN: BOARD */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '400px' }}>
-                            <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '24px', border: '4px solid var(--line)', boxShadow: '0 15px 35px rgba(0,0,0,0.2)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '350px' }}>
+                            <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '24px', border: '4px solid var(--line)', boxShadow: '0 15px 35px rgba(0,0,0,0.2)', width: '100%' }}>
                                 <BoardGame 
                                     teams={pickerItems} 
                                     totalSteps={100} 

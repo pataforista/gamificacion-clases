@@ -20,7 +20,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
   return (
     <div className="card" style={{
       width: '100%',
-      maxWidth: '480px', // Slightly smaller for safety
+      maxWidth: '100%', // Allow expanding entirely into the center column
       margin: '0 auto',
       aspectRatio: '1',
       background: 'var(--bg-secondary)',
@@ -105,8 +105,8 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
               animate={isActive ? { scale: [1, 1.1, 1] } : {}} 
               transition={{ repeat: Infinity, duration: 1.5 }}
               style={{
-                width: '32px',
-                height: '32px',
+                width: '24px',
+                height: '24px',
                 background: isActive ? 'var(--primary)' : 'var(--bg)',
                 border: `3px solid ${isActive ? 'var(--text)' : 'var(--line)'}`,
                 borderRadius: '50%',
@@ -114,7 +114,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: isActive ? '0 0 15px var(--primary)' : '2px 2px 0px var(--line)',
-                fontSize: '1rem',
+                fontSize: '0.8rem',
                 position: 'relative'
               }}
             >
