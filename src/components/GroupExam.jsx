@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from './NotificationContext';
 import { useAudio, WAITING_TRACKS } from './AudioContext';
 import { RNG } from '../utils/rng';
@@ -16,6 +17,7 @@ const GroupExam = ({ pickerItems = [] }) => {
     const [activeTeam, setActiveTeam] = useState(null);
     const [feedback, setFeedback] = useState(null);
     const [showGuide, setShowGuide] = useState(false);
+    const [showMusicMenu, setShowMusicMenu] = useState(false);
     
     // NEW GAME SHOW FEATURES
     const [settings, setSettings] = useState({
@@ -210,16 +212,36 @@ const GroupExam = ({ pickerItems = [] }) => {
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: '1rem' }}>
                     <h2>Examen Grupal</h2>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <button 
-                            className="btn" 
-                            style={{ background: 'var(--bg-secondary)', border: '2px solid var(--primary)', color: 'var(--primary)', fontWeight: 900 }}
-                            onClick={() => {
-                                audio.resume();
-                                audio.playSFX('click');
-                            }}
-                        >
-                            📻 Sintonizar Audio
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <button 
+                                className="btn" 
+                                style={{ background: 'var(--bg-secondary)', border: '2px solid var(--primary)', color: 'var(--primary)', fontWeight: 900 }}
+                                onClick={() => {
+                                    audio.unlock();
+                                    audio.playSFX('click');
+                                    setShowMusicMenu(!showMusicMenu);
+                                }}
+                            >
+                                📻 Configurar Audio
+                            </button>
+                            <AnimatePresence>
+                                {showMusicMenu && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: -10 }} 
+                                        animate={{ opacity: 1, y: 0 }} 
+                                        exit={{ opacity: 0, y: -10 }}
+                                        style={{ position: 'absolute', top: '100%', right: 0, marginTop: '10px', background: 'var(--bg)', border: '3px solid var(--line)', padding: '10px', borderRadius: '16px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '5px', minWidth: '200px', boxShadow: '0 15px 30px rgba(0,0,0,0.3)' }}
+                                    >
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '5px', color: 'var(--muted)' }}>Elegir Pista:</div>
+                                        {Object.entries(WAITING_TRACKS).map(([key, track]) => (
+                                            <button key={key} style={{ padding: '8px', background: selectedTrack === key ? 'var(--primary)' : 'transparent', color: selectedTrack === key ? 'white' : 'var(--text)', border: 'none', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: selectedTrack === key ? 'bold' : 'normal' }} onClick={() => { setSelectedTrack(key); setShowMusicMenu(false); audio.play(key); }}>
+                                                {track.name}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                         {setupPhase === 'game' && (
                             <button className="btn" onClick={() => {
                                 if(window.confirm('¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
@@ -296,7 +318,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                         </div>
                         {settings.timer && (
                             <input 
-                                type="range" min="5" max="60" step="5" 
+                                type="range" min="5" max="120" step="5" 
                                 value={settings.duration} 
                                 onChange={e => setSettings({...settings, duration: parseInt(e.target.value)})}
                                 style={{ width: '100%', marginTop: '10px' }}
@@ -328,12 +350,14 @@ const GroupExam = ({ pickerItems = [] }) => {
                         <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', border: '3px solid var(--line)' }}>
                             <h4 style={{ margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontSize: '0.7rem', opacity: 0.7 }}>🏆 Clasificación</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {Object.entries(scores)
-                                    .sort((a, b) => b[1] - a[1]) // Sort by Score
-                                    .map(([team, val], idx) => {
+                                <AnimatePresence>
+                                {Object.entries(visualScores)
+                                    .sort((a, b) => b[1] - a[1]) // Sort by visual position on board
+                                    .map(([team, vScore], idx) => {
+                                        const val = scores[team] || 0; // Show actual XP
                                         const isActive = (roboTeam || activeTeam) === team;
                                         return (
-                                            <div key={team} style={{ 
+                                            <motion.div key={team} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ 
                                                 padding: '8px 12px',
                                                 background: isActive ? 'var(--primary)' : 'var(--bg-secondary)', 
                                                 color: isActive ? 'white' : 'var(--text)', 
@@ -344,7 +368,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                                                 gap: '10px',
                                                 fontSize: '0.85rem',
                                                 boxShadow: isActive ? '0 10px 15px rgba(0,0,0,0.2)' : 'none',
-                                                transition: 'all 0.3s ease',
+                                                transition: 'background 0.3s ease, box-shadow 0.3s ease',
                                                 position: 'relative'
                                             }}>
                                                 <span style={{ fontSize: '1.2rem' }}>{teamAvatars[team] || '👤'}</span>
@@ -353,9 +377,10 @@ const GroupExam = ({ pickerItems = [] }) => {
                                                     <div style={{ fontWeight: 900 }}>{val} XP</div>
                                                 </div>
                                                 {isActive && <div className="pulse" style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }}></div>}
-                                            </div>
+                                            </motion.div>
                                         );
                                     })}
+                                </AnimatePresence>
                             </div>
                         </div>
 
@@ -379,13 +404,23 @@ const GroupExam = ({ pickerItems = [] }) => {
                         {/* RIGHT COLUMN: QUESTIONS & CONTROLS */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {settings.timer && (
-                                <div className="timer-bar-container" style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.1)', border: '2px solid var(--line)', borderRadius: '8px', overflow: 'hidden' }}>
-                                    <div className="timer-bar" style={{ 
-                                        width: isTimerActive ? `${(timeLeft / settings.duration) * 100}%` : '0%', 
-                                        height: '100%', 
-                                        background: timeLeft <= 5 ? 'var(--error)' : 'var(--good)',
-                                        transition: 'width 1s linear'
-                                    }}></div>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                    <div className="timer-bar-container" style={{ flex: 1, height: '14px', background: 'rgba(0,0,0,0.1)', border: '2px solid var(--line)', borderRadius: '8px', overflow: 'hidden' }}>
+                                        <div className="timer-bar" style={{ 
+                                            width: isTimerActive ? `${(timeLeft / settings.duration) * 100}%` : '0%', 
+                                            height: '100%', 
+                                            background: timeLeft <= 5 ? 'var(--error)' : 'var(--good)',
+                                            transition: 'width 1s linear'
+                                        }}></div>
+                                    </div>
+                                    {isTimerActive && ( // Show only when timer is running
+                                        <button className="btn" style={{ padding: '4px 12px', fontSize: '0.8rem', fontWeight: 900, background: 'var(--bg-secondary)', borderColor: 'var(--primary)', color: 'var(--primary)' }} onClick={() => {
+                                            audio.playSFX('click');
+                                            setTimeLeft(prev => prev + 15);
+                                        }}>
+                                            +15s
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -500,32 +535,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                 )}
             </div>
 
-            {exam && (
-                <div className="card" style={{ marginTop: '2rem' }}>
-                    <h2>🎵 Música de Espera</h2>
-                    <div className="smallout" style={{ marginBottom: '1rem' }}>Selecciona la música que suena mientras los equipos piensan.</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                        {Object.entries(WAITING_TRACKS).map(([key, track]) => (
-                            <button
-                                key={key}
-                                className={`btn ${selectedTrack === key ? 'primary' : ''}`}
-                                onClick={() => setSelectedTrack(key)}
-                                style={{
-                                    background: selectedTrack === key ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                                    borderColor: selectedTrack === key ? 'transparent' : 'var(--line)',
-                                }}
-                            >
-                                {track.name}
-                            </button>
-                        ))}
-                    </div>
-                    {audio.isPlaying && (
-                        <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(45,212,191,0.1)', borderRadius: '8px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--good)' }}>
-                            🎵 {WAITING_TRACKS[audio.currentTrack]?.name || 'Reproduciendo...'} en curso
-                        </div>
-                    )}
-                </div>
-            )}
+
 
         </div>
     );

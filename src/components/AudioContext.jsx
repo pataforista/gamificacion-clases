@@ -107,6 +107,16 @@ export const AudioProvider = ({ children }) => {
         sfx.play().catch(err => console.warn('SFX play error:', err));
     }, [volume]);
 
+    const unlock = useCallback(() => {
+        // Reproducir un buffer silencioso minúsculo para activar AudioContext
+        const silentAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+        silentAudio.play().then(() => console.log("Audio desbloqueado")).catch(() => {});
+        if (currentTrack) {
+            audioRef.current.play().catch(() => {});
+            setIsPlaying(true);
+        }
+    }, [currentTrack]);
+
     const value = {
         isPlaying,
         currentTrack,
@@ -116,6 +126,7 @@ export const AudioProvider = ({ children }) => {
         stop,
         pause,
         resume,
+        unlock,
         changeVolume,
     };
 
