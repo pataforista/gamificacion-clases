@@ -10,37 +10,32 @@ export const useAudio = () => {
     return context;
 };
 
-// Colección de canciones de espera/transición
+// Colección de canciones de espera/transición estables
 export const WAITING_TRACKS = {
-    jeopardy: {
-        name: 'Jeopardy',
-        url: 'https://assets.mixkit.co/active_storage/music/38-38-200bpm-pop-synth-rock.mp3',
-    },
-    cien_mexicanos: { id: '100mex', name: '100 Mexicanos', url: 'https://assets.mixkit.co/active_storage/music/32-classic-game-show-loop-32-bars.mp3' },
-    fun: { id: 'fun', name: 'Showbiz Fun', url: 'https://assets.mixkit.co/active_storage/music/29-fun-game-show-synth-loop-1-bar.mp3' },
-    tension: { id: 'tension', name: 'Tensión Máxima', url: 'https://assets.mixkit.co/active_storage/music/43-dramatic-synth-loop.mp3' },
-    karma: { id: 'karma', name: 'Karma (High Energy)', url: 'https://assets.mixkit.co/active_storage/music/38-38-200bpm-pop-synth-rock.mp3' },
-    dance: { id: 'dance', name: 'Cena de Gala', url: 'https://assets.mixkit.co/active_storage/music/28-fun-game-show-circus-loop.mp3' },
-    chill: { id: 'chill', name: 'Relajado', url: 'https://assets.mixkit.co/active_storage/music/26-retro-game-disco-loop.mp3' },
+    jeopardy: { name: 'Suspenso', url: 'https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3' },
+    cien_mexicanos: { name: 'Dinámico', url: 'https://assets.mixkit.co/music/preview/mixkit-cbpd-400.mp3' },
+    fun: { name: 'Divertido', url: 'https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3' },
+    tension: { name: 'Tensión Máxima', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
+    dance: { name: 'Energía', url: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3' },
 };
 
 export const GAME_SFX = {
-  intro: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3',
-  correct: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
-  incorrect: 'https://assets.mixkit.co/active_storage/sfx/132/132-preview.mp3',
-  lose: 'https://assets.mixkit.co/active_storage/sfx/123/123-preview.mp3',
-  click: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
-  boing: 'https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3',
-  applause: 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3',
-  buzzer: 'https://assets.mixkit.co/active_storage/sfx/1073/1073-preview.mp3',
-  drumroll: 'https://assets.mixkit.co/active_storage/sfx/147/147-preview.mp3',
-  tick: 'https://assets.mixkit.co/active_storage/sfx/612/612-preview.mp3',
+  intro: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-changing-tab-206.mp3',
+  correct: 'https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3',
+  incorrect: 'https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3',
+  lose: 'https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-game-over-470.mp3',
+  click: 'https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3',
+  boing: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-toy-whistle-316.mp3',
+  applause: 'https://assets.mixkit.co/sfx/preview/mixkit-small-group-cheer-and-applause-518.mp3',
+  buzzer: 'https://assets.mixkit.co/sfx/preview/mixkit-classic-alarm-995.mp3',
+  drumroll: 'https://assets.mixkit.co/sfx/preview/mixkit-drum-roll-566.mp3',
+  tick: 'https://assets.mixkit.co/sfx/preview/mixkit-tick-tock-clock-timer-1045.mp3',
 };
 
 export const AudioProvider = ({ children }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTrack, setCurrentTrack] = useState(null);
-    const [volume, setVolume] = useState(0.3);
+    const [volume, setVolume] = useState(0.7);
     const audioRef = useRef(new Audio());
 
     const play = useCallback((trackKey, loop = true) => {
@@ -64,15 +59,21 @@ export const AudioProvider = ({ children }) => {
         audio.volume = volume;
         audio.loop = loop;
 
-        audio.play().catch(err => console.warn('Audio play error:', err));
+        let playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(err => console.warn('Audio play error:', err));
+        }
 
         setCurrentTrack(trackKey);
         setIsPlaying(true);
     }, [isPlaying, currentTrack, volume]);
 
     const stop = useCallback(() => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        const audio = audioRef.current;
+        if (!audio.paused) {
+            audio.pause();
+        }
+        audio.currentTime = 0;
         setIsPlaying(false);
         setCurrentTrack(null);
     }, []);

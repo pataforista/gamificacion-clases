@@ -13,29 +13,70 @@
   --memphis-coral: #FF6B9D;
   --memphis-mint: #38B6A8;
 
-  /* Text colors */
-  --text: #2D2D2D;
-  --text-secondary: #5C5C5C;
-  --muted: #8C8C8C;
+  /* Text colors - Pure Black for high contrast */
+  --text: #000000;
+  --text-secondary: #222222;
+  --muted: #444444;
 
-  /* Primary colors mapping to Memphis palette */
+  /* Primary colors mapping */
   --primary: #FF006E;
   --secondary: #00D9FF;
   --good: #CCFF00;
   --warn: #FFD60A;
   --error: #FF6B9D;
 
-  /* Traffic lights Memphis style */
-  --traffic-green: #CCFF00;
-  --traffic-yellow: #FFD60A;
-  --traffic-red: #FF6B9D;
-
-  /* Borders and lines */
-  --line: rgba(255, 0, 110, 0.2);
-  --glass: rgba(255, 229, 204, 0.8);
-  --glass-border: #FF006E;
+  /* Borders and lines - Solid & Bold */
+  --line: #000000;
+  --glass: rgba(255, 255, 255, 0.95);
+  --glass-border: #000000;
 
   font-family: 'Poppins', 'Fredoka', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* THEMES */
+.theme-lipari {
+  --bg: #001d3d;
+  --bg-secondary: #003566;
+  --text: #fdf0d5;
+  --text-secondary: #ffc300;
+  --muted: #ffb703;
+  --primary: #fb8500;
+  --secondary: #219ebc;
+  --good: #8ecae6;
+  --warn: #ffb703;
+  --error: #fb8500;
+  --line: #ffc300;
+  --glass: rgba(0, 53, 102, 0.9);
+}
+
+.theme-tokyo {
+  --bg: #1a1b26;
+  --bg-secondary: #24283b;
+  --text: #c0caf5;
+  --text-secondary: #7aa2f7;
+  --muted: #565f89;
+  --primary: #bb9af7;
+  --secondary: #7dcfff;
+  --good: #9ece6a;
+  --warn: #e0af68;
+  --error: #f7768e;
+  --line: #7aa2f7;
+  --glass: rgba(36, 40, 59, 0.9);
+}
+
+.theme-lisbon {
+  --bg: #f8f9fa;
+  --bg-secondary: #e9ecef;
+  --text: #212529;
+  --text-secondary: #495057;
+  --muted: #6c757d;
+  --primary: #0077b6;
+  --secondary: #00b4d8;
+  --good: #2a9d8f;
+  --warn: #e9c46a;
+  --error: #e76f51;
+  --line: #adb5bd;
+  --glass: rgba(233, 236, 239, 0.9);
 }
 
 * {
@@ -60,14 +101,7 @@ body {
 }
 
 .ballpit-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.15;
+  display: none;
 }
 
 main {
@@ -95,20 +129,21 @@ header {
 }
 
 .card {
-  background: #FFFFFF;
-  border: 4px solid var(--memphis-magenta);
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 4px solid var(--line);
   border-radius: 24px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 8px 8px 0px rgba(255, 0, 110, 0.3), 12px 12px 0px rgba(0, 217, 255, 0.2);
+  box-shadow: 8px 8px 0px var(--line);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   position: relative;
+  overflow: hidden;
 }
 
 .card:hover {
-  transform: translateY(-6px);
-  border-color: var(--memphis-cyan);
-  box-shadow: 10px 10px 0px rgba(255, 0, 110, 0.4), 16px 16px 0px rgba(255, 213, 10, 0.25);
+  transform: translateY(-4px);
+  box-shadow: 12px 12px 0px rgba(0, 0, 0, 1);
 }
 
 h2 {
@@ -223,11 +258,13 @@ h2 {
 }
 
 .smallout {
-  font-size: 0.85rem;
-  color: var(--muted);
+  font-size: 0.9rem;
+  color: #000;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: #f0f0f0;
+  border: 2px solid #000;
   border-radius: 12px;
+  font-weight: 500;
 }
 
 .divider {

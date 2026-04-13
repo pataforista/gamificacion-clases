@@ -35,7 +35,6 @@ const GroupExam = ({ pickerItems = [] }) => {
     
     const [teamAvatars, setTeamAvatars] = useState({});
     const [visualScores, setVisualScores] = useState({}); // Separate from real scores
-    const [showBoard, setShowBoard] = useState(false);
     const [setupPhase, setSetupPhase] = useState('upload'); // upload, avatar, game
 
     const timerRef = useRef(null);
@@ -207,13 +206,16 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     return (
         <div className="grid">
-            <div className={`card ${showBoard ? 'full-width' : ''}`} style={{ gridColumn: showBoard ? 'span 2' : 'auto' }}>
+            <div className={`card full-width`} style={{ gridColumn: 'span 2' }}>
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: '1rem' }}>
                     <h2>Examen Grupal</h2>
                     {setupPhase === 'game' && (
-                        <button className={`btn ${showBoard ? 'primary' : ''}`} onClick={() => setShowBoard(!showBoard)}>
-                            {showBoard ? '📖 Ver Pregunta' : '🎲 Ver Tablero'}
-                        </button>
+                        <button className="btn" onClick={() => {
+                            if(window.confirm('¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
+                                setExam(null);
+                                setSetupPhase('upload');
+                            }
+                        }}>🛑 Cerrar Examen</button>
                     )}
                 </div>
 
@@ -244,9 +246,9 @@ const GroupExam = ({ pickerItems = [] }) => {
                         </div>
 
                         {showGuide && (
-                            <div className="smallout" style={{ textAlign: 'left', background: 'rgba(0,0,0,0.4)', color: 'var(--text)' }}>
+                            <div className="smallout" style={{ textAlign: 'left', background: 'var(--bg-secondary)', border: '2px dashed var(--line)', color: 'var(--text)', padding: '1rem', borderRadius: '12px' }}>
                                 <strong>Estructura requerida:</strong>
-                                <pre style={{ fontSize: '12px', marginTop: '10px', color: '#2dd4bf' }}>
+                                <pre style={{ fontSize: '12px', marginTop: '10px', color: 'var(--memphis-purple)', background: 'rgba(0,0,0,0.05)', padding: '10px', borderRadius: '8px' }}>
                                     {`{
   "questions": [
     {
@@ -301,128 +303,149 @@ const GroupExam = ({ pickerItems = [] }) => {
                     />
                 )}
 
-                {setupPhase === 'game' && showBoard && (
-                    <BoardGame 
-                        teams={pickerItems} 
-                        totalSteps={100} 
-                        scores={visualScores} 
-                        avatars={teamAvatars} 
-                    />
-                )}
-
-                {setupPhase === 'game' && !showBoard && exam && currentQuestion >= 0 && (
-                    <div>
-                        <div className="row" style={{ justifyContent: 'space-between' }}>
-                            <span>Pregunta {currentQuestion + 1} de {exam.questions.length}</span>
-                            <button className="btn" onClick={() => {
-                                setExam(null);
-                                setSetupPhase('upload');
-                            }}>Cerrar Examen</button>
+                {setupPhase === 'game' && exam && currentQuestion >= 0 && (
+                    <div className="game-grid-split" style={{ 
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: '2rem', 
+                        alignItems: 'flex-start',
+                        justifyContent: 'center'
+                    }}>
+                        {/* LEFT PANEL: BOARD */}
+                        <div style={{ flex: '1 1 500px', maxWidth: '650px' }}>
+                            <BoardGame 
+                                teams={pickerItems} 
+                                totalSteps={100} 
+                                scores={visualScores} 
+                                avatars={teamAvatars} 
+                            />
                         </div>
-                        <div className="divider"></div>
 
-                        {settings.timer && isTimerActive && (
-                            <div className="timer-bar-container" style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem' }}>
-                                <div className="timer-bar" style={{ 
-                                    width: `${(timeLeft / settings.duration) * 100}%`, 
-                                    height: '100%', 
-                                    background: timeLeft <= 5 ? 'var(--traffic-red)' : 'var(--good)',
-                                    transition: 'width 1s linear'
-                                }}></div>
-                            </div>
-                        )}
-
-                        {roboTeam && (
-                            <div className="card shake" style={{ background: 'var(--memphis-yellow)', color: '#000', textAlign: 'center', marginBottom: '1rem', padding: '0.5rem' }}>
-                                <h3 style={{ margin: 0 }}>🚨 ¡ROBO DE PUNTOS! 🚨</h3>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>Turno para: {roboTeam}</div>
-                                <div className="smallout" style={{ background: 'rgba(0,0,0,0.1)', color: '#000', marginTop: '5px' }}>Ganan +5 XP si aciertan ahora.</div>
-                            </div>
-                        )}
-
-                        {question && (
-                            <div className="exam-content">
-                                <div className="exam-question">{question.text}</div>
-                                <div className="exam-options">
-                                    {question.options.map((opt, i) => (
-                                        <button
-                                            key={i}
-                                            disabled={!!feedback || isRevealing || hiddenOptions.includes(i)}
-                                            className={`btn exam-option ${feedback && i === question.correctIndex ? 'correct' : ''}`}
-                                            style={{ 
-                                                visibility: hiddenOptions.includes(i) ? 'hidden' : 'visible',
-                                                transition: 'all 0.3s ease'
-                                            }}
-                                            onClick={() => answer(i === question.correctIndex, !!roboTeam)}
-                                        >
-                                            {opt}
-                                        </button>
+                        {/* RIGHT PANEL: INFO & QUESTIONS */}
+                        <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {/* NEW MINI SCOREBOARD */}
+                            <div className="card" style={{ padding: '1rem', border: '3px solid var(--line)', marginBottom: 0 }}>
+                                <h4 style={{ margin: '0 0 1rem 0', textTransform: 'uppercase', fontSize: '0.8rem', opacity: 0.7 }}>🏆 Clasificación</h4>
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                                    gap: '8px'
+                                }}>
+                                    {Object.entries(scores).map(([team, val]) => (
+                                        <div key={team} style={{ 
+                                            padding: '6px 10px',
+                                            background: activeTeam === team ? 'var(--primary)' : 'rgba(255,255,255,0.05)', 
+                                            color: activeTeam === team ? '#fff' : 'var(--text)', 
+                                            border: '2px solid var(--line)', 
+                                            borderRadius: '10px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            <span>{teamAvatars[team]}</span>
+                                            <div style={{ overflow: 'hidden' }}>
+                                                <div style={{ fontWeight: 900 }}>{val} XP</div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
-
-                                {settings.jokers && !feedback && !roboTeam && !isRevealing && (
-                                    <div className="row" style={{ marginTop: '1rem', justifyContent: 'center' }}>
-                                        <button 
-                                            className="btn" 
-                                            disabled={teamLog[activeTeam]?.jokers?.fifty}
-                                            onClick={() => {
-                                                const wrongIndices = question.options
-                                                    .map((_, idx) => idx)
-                                                    .filter(idx => idx !== question.correctIndex);
-                                                
-                                                // Randomly hide 2 wrong options
-                                                const toHide = [];
-                                                while(toHide.length < 2 && wrongIndices.length > 0) {
-                                                    const randIdx = Math.floor(Math.random() * wrongIndices.length);
-                                                    toHide.push(wrongIndices.splice(randIdx, 1)[0]);
-                                                }
-                                                setHiddenOptions(toHide);
-                                                setTeamLog(prev => ({
-                                                    ...prev,
-                                                    [activeTeam]: { ...prev[activeTeam], jokers: { ...prev[activeTeam]?.jokers, fifty: true } }
-                                                }));
-                                                audio.playSFX('click');
-                                            }}
-                                        >
-                                            🃏 Comodín 50/50 {teamLog[activeTeam]?.jokers?.fifty ? '(Usado)' : ''}
-                                        </button>
-                                    </div>
-                                )}
                             </div>
-                        )}
 
-                        {isRevealing && (
-                            <div className="promotion-overlay" style={{ zIndex: 100, background: 'rgba(0,0,0,0.85)' }}>
-                                <div className="promotion-content shake">
-                                    <div style={{ fontSize: '4rem' }}>🥁</div>
-                                    <div className="promotion-title">PROCESANDO...</div>
-                                    <div className="promotion-rank">La respuesta es...</div>
+                            <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text)', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                <span>📺 Pregunta {currentQuestion + 1} / {exam.questions.length}</span>
+                                <span style={{ color: 'var(--primary)' }}>Progreso: {Math.round(((currentQuestion + 1) / exam.questions.length) * 100)}%</span>
+                            </div>
+
+                            {settings.timer && isTimerActive && (
+                                <div className="timer-bar-container" style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.1)', border: '2px solid var(--line)', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <div className="timer-bar" style={{ 
+                                        width: `${(timeLeft / settings.duration) * 100}%`, 
+                                        height: '100%', 
+                                        background: timeLeft <= 5 ? 'var(--error)' : 'var(--good)',
+                                        transition: 'width 1s linear'
+                                    }}></div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {feedback && (
-                            <div className={`smallout ${feedback.type}`} style={{ marginTop: '20px' }}>
-                                {feedback.msg}
-                                <div className="row" style={{ marginTop: '10px' }}>
-                                    <button className="btn" onClick={() => {
+                            {roboTeam && (
+                                <div className="card shake" style={{ background: 'var(--warn)', color: '#000', textAlign: 'center', padding: '1rem', border: '4px solid var(--line)' }}>
+                                    <h3 style={{ margin: 0 }}>🚨 ¡ROBO DE PUNTOS! 🚨</h3>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>Turno para: {roboTeam}</div>
+                                </div>
+                            )}
+
+                            {!roboTeam && !activeTeam && !feedback && (
+                                <div className="card pulse" style={{ textAlign: 'center', padding: '1.5rem', background: 'var(--bg-secondary)', border: '4px dashed var(--primary)' }}>
+                                    <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text)' }}>Siguiente Participante</h3>
+                                    <button className="btn good" style={{ width: '100%', fontSize: '1.5rem', padding: '1rem', boxShadow: '4px 4px 0px var(--line)' }} onClick={nextTurn}>
+                                        🎲 ASIGNAR TURNO
+                                    </button>
+                                </div>
+                            )}
+
+                            {!roboTeam && activeTeam && !feedback && (
+                                <div className="card pulse" style={{ background: 'var(--primary)', color: '#fff', border: '4px solid var(--line)', textAlign: 'center', padding: '1rem' }}>
+                                    <h3 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>🎙️ PREGUNTA AL AIRE</h3>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{activeTeam}</div>
+                                </div>
+                            )}
+
+                            {question && (
+                                <div className="exam-content" style={{ marginTop: 0 }}>
+                                    <div className="exam-question" style={{ background: 'var(--bg-secondary)', color: 'var(--text)', border: '4px solid var(--line)', boxShadow: '6px 6px 0px var(--line)' }}>
+                                        {question.text}
+                                    </div>
+                                    <div className="exam-options" style={{ gridTemplateColumns: '1fr' }}>
+                                        {question.options.map((opt, i) => (
+                                            <button
+                                                key={i}
+                                                disabled={!!feedback || isRevealing || hiddenOptions.includes(i)}
+                                                className={`btn exam-option ${feedback && i === question.correctIndex ? 'correct' : ''}`}
+                                                style={{ 
+                                                    visibility: hiddenOptions.includes(i) ? 'hidden' : 'visible',
+                                                    width: '100%',
+                                                    border: '3px solid var(--line)',
+                                                    background: 'var(--bg)',
+                                                    color: 'var(--text)',
+                                                    marginBottom: '0.5rem'
+                                                }}
+                                                onClick={() => answer(i === question.correctIndex, !!roboTeam)}
+                                            >
+                                                {opt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {feedback && (
+                                <div className={`smallout ${feedback.type}`} style={{ 
+                                    background: feedback.type === 'correct' ? 'var(--good)' : 'var(--error)',
+                                    color: '#000',
+                                    border: '4px solid var(--line)',
+                                    boxShadow: '8px 8px 0px var(--line)',
+                                    padding: '1.5rem',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '1rem' }}>{feedback.msg}</div>
+                                    <button className="btn primary" style={{ background: 'var(--bg)', color: 'var(--text)', border: '2px solid var(--line)', width: '100%', fontSize: '1.2rem' }} onClick={() => {
                                         setFeedback(null);
                                         setActiveTeam(null);
                                         setRoboTeam(null);
                                         setHiddenOptions([]);
                                         if (currentQuestion >= exam.questions.length - 1) {
-                                            // Final!
-                                            setCurrentQuestion(-1); // Use -1 to flag results screen
+                                            setCurrentQuestion(-1);
                                             audio.playSFX('intro');
                                         } else {
                                             setCurrentQuestion(prev => prev + 1);
                                         }
                                     }}>
-                                        {currentQuestion >= exam.questions.length - 1 ? '¡Ver Gran Final!' : 'Siguiente Pregunta'}
+                                        {currentQuestion >= exam.questions.length - 1 ? '¡Ver Gran Final! 🏆' : 'Siguiente Pregunta ➡'}
                                     </button>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -453,25 +476,8 @@ const GroupExam = ({ pickerItems = [] }) => {
                 )}
             </div>
 
-            <div className="card">
-                <h2>Marcador y Turnos</h2>
-                <div className="row">
-                    <button className="btn good" onClick={nextTurn}>Asignar Turno</button>
-                    {activeTeam && <div className="pill" style={{ background: 'var(--good)', color: 'white' }}>Turno de: {activeTeam}</div>}
-                </div>
-                <div className="divider"></div>
-                <div className="score-list">
-                    {Object.entries(scores).map(([team, score]) => (
-                        <div key={team} className={`score-item ${team === activeTeam ? 'active' : ''}`}>
-                            <span>{team}</span>
-                            <span className="mono">{score} XP</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
             {exam && (
-                <div className="card">
+                <div className="card" style={{ marginTop: '2rem' }}>
                     <h2>🎵 Música de Espera</h2>
                     <div className="smallout" style={{ marginBottom: '1rem' }}>Selecciona la música que suena mientras los equipos piensan.</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>

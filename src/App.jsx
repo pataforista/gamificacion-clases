@@ -19,6 +19,12 @@ import './index.css';
 const App = () => {
   const { state, updateState } = usePersistence();
   const [activeTab, setActiveTab] = useState('progreso');
+  const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'theme-memphis');
+
+  const updateTheme = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem('app-theme', newTheme);
+  };
 
   const pickerItems = state.pickerItems && state.pickerItems.length > 0 
     ? state.pickerItems 
@@ -42,7 +48,7 @@ const App = () => {
 
   return (
     <AudioProvider>
-      <div className="app-container">
+      <div className={`app-container ${theme}`}>
         <div className="ballpit-bg">
           <Ballpit
             count={50}
@@ -56,7 +62,20 @@ const App = () => {
 
         <header>
           <div className="title">MedClass Pro</div>
-          <div className="pill">GAMIFICACIÓN MÉDICA · PREMIUM</div>
+          <div className="row" style={{ justifyContent: 'center', gap: '10px' }}>
+            <div className="pill">GAMIFICACIÓN MÉDICA · PREMIUM</div>
+            <select 
+              value={theme} 
+              onChange={(e) => updateTheme(e.target.value)}
+              className="pill"
+              style={{ background: 'var(--bg-secondary)', border: '2px solid var(--line)', padding: '2px 10px', cursor: 'pointer', outline: 'none' }}
+            >
+              <option value="theme-memphis">Estilo Memphis</option>
+              <option value="theme-lipari">Tema Lipari 🛋️</option>
+              <option value="theme-tokyo">Tema Tokyo ✈️</option>
+              <option value="theme-lisbon">Tema Lisbon 🌿</option>
+            </select>
+          </div>
         </header>
 
         <main>
