@@ -118,7 +118,9 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                 position: 'relative'
               }}
             >
-                {avatars[team] || '👤'}
+                {(avatars[team]?.startsWith('data:image') || avatars[team]?.includes('.png'))
+                    ? <img src={avatars[team]} alt={team} style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} /> 
+                    : (avatars[team] || '👤')}
                 {isActive && (
                   <div style={{
                     position: 'absolute',

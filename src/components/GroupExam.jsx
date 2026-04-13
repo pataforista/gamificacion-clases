@@ -371,7 +371,11 @@ const GroupExam = ({ pickerItems = [] }) => {
                                                 transition: 'background 0.3s ease, box-shadow 0.3s ease',
                                                 position: 'relative'
                                             }}>
-                                                <span style={{ fontSize: '1rem' }}>{teamAvatars[team] || '👤'}</span>
+                                                <span style={{ fontSize: '1rem', display: 'flex', alignItems: 'center' }}>
+                                                    {(teamAvatars[team]?.startsWith('data:image') || teamAvatars[team]?.includes('.png'))
+                                                        ? <img src={teamAvatars[team]} alt={team} style={{width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover'}} /> 
+                                                        : (teamAvatars[team] || '👤')}
+                                                </span>
                                                 <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                     <div style={{ fontSize: '0.55rem', opacity: 0.7, fontWeight: 900 }}>RANK {idx + 1}</div>
                                                     <div style={{ fontWeight: 900 }}>{val} XP</div>
