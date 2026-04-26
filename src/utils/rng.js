@@ -14,6 +14,21 @@ export const RNG = {
         return min + (array[0] % range);
     },
 
+    float() {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] / 4294967296;
+    },
+
+    shuffle(arr) {
+        const items = [...arr];
+        for (let i = items.length - 1; i > 0; i--) {
+            const j = this.int(0, i);
+            [items[i], items[j]] = [items[j], items[i]];
+        }
+        return items;
+    },
+
     pick(arr, key = "default") {
         if (!arr || arr.length === 0) return null;
         const idx = this.pickBalancedIndex(arr.length, key);
@@ -31,7 +46,8 @@ export const RNG = {
     pickBalancedIndex(listLength, key) {
         if (listLength <= 0) return 0;
         const bagKey = `bag-${key}`;
-        const state = JSON.parse(localStorage.getItem('rng_bags') || '{}');
+        // Using sessionStorage to avoid multi-window state corruption
+        const state = JSON.parse(sessionStorage.getItem('rng_bags') || '{}');
         let bag = state[bagKey] || [];
 
         if (bag.length === 0) {
@@ -42,7 +58,7 @@ export const RNG = {
         const resultIdx = bag.splice(randIdx, 1)[0];
 
         state[bagKey] = bag;
-        localStorage.setItem('rng_bags', JSON.stringify(state));
+        sessionStorage.setItem('rng_bags', JSON.stringify(state));
 
         return resultIdx % listLength;
     },

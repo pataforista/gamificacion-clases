@@ -5,12 +5,13 @@ import { useGSAP } from '@gsap/react';
 import CountUp from './CountUp';
 import confetti from 'canvas-confetti';
 import gsap from 'gsap';
+import { RNG } from '../utils/rng';
 
 const BADGES = [
-    { id: 'eye', name: 'Ojo Clínico', icon: '👁️', detail: 'Detectar un síntoma clave' },
-    { id: 'heart', name: 'Empatía', icon: '❤️', detail: 'Resolver conflicto ético' },
-    { id: 'brain', name: 'Genio', icon: '🧠', detail: 'Diferencial complejo' },
-    { id: 'fast', name: 'Velocidad', icon: '⚡', detail: 'Resolver bajo presión' },
+    { id: 'eye', name: 'Ojo Clínico', nameGen: 'Gran Observador', icon: '👁️', detail: 'Detectar un síntoma o detalle clave' },
+    { id: 'heart', name: 'Empatía', nameGen: 'Colaborador', icon: '❤️', detail: 'Resolver conflicto o ayudar a otros' },
+    { id: 'brain', name: 'Genio', nameGen: 'Mente Brillante', icon: '🧠', detail: 'Razonamiento complejo' },
+    { id: 'fast', name: 'Velocidad', nameGen: 'Rayos', icon: '⚡', detail: 'Resolver bajo presión' },
 ];
 
 const RPGDash = () => {
@@ -19,12 +20,32 @@ const RPGDash = () => {
     const [promotion, setPromotion] = useState(null);
     const prevRankRef = useRef(null);
 
+    // Mode handling: 'medical' | 'general'
+    const mode = state.rpgMode || 'medical';
+
     const getRank = (xp) => {
-        if (xp >= 1000) return "Jefe/a de Servicio";
-        if (xp >= 500) return "Adjunto/a";
-        if (xp >= 250) return "Residente Senior";
-        if (xp >= 100) return "Residente";
-        return "Interno/a";
+        if (mode === 'medical') {
+            if (xp >= 1000) return "Jefe/a de Servicio";
+            if (xp >= 500) return "Adjunto/a";
+            if (xp >= 250) return "Residente Senior";
+            if (xp >= 100) return "Residente";
+            return "Interno/a";
+        } else {
+            if (xp >= 1000) return "Maestro/a";
+            if (xp >= 500) return "Experto/a";
+            if (xp >= 250) return "Veterano/a";
+            if (xp >= 100) return "Aprendiz";
+            return "Novato/a";
+        }
+    };
+
+    const getNextRankInfo = (xp) => {
+        const nextThresholds = [100, 250, 500, 1000];
+        const nextTarget = nextThresholds.find(t => xp < t);
+        if (!nextTarget) return null;
+        
+        const nextRank = getRank(nextTarget);
+        return { next: nextRank, needed: nextTarget - xp };
     };
 
     useEffect(() => {
@@ -96,52 +117,107 @@ const RPGDash = () => {
         <>
             <div className="grid">
                 <div className="card">
-                    <h2>Jerarquía Médica</h2>
-                    <p className="muted" style={{ marginBottom: '1rem' }}>Sigue tu evolución profesional y acumula experiencia.</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2>Jerarquía</h2>
+                        <select 
+                            className="pill" 
+                            value={mode} 
+                            onChange={(e) => updateState({ rpgMode: e.target.value })}
+                            style={{ background: 'var(--bg)', border: '1px solid var(--line)', padding: '2px 8px' }}
+                        >
+                            <option value="medical">🩺 Médico</option>
+                            <option value="general">🎓 General</option>
+                        </select>
+                    </div>
+                    <p className="muted" style={{ marginBottom: '1rem' }}>Sigue tu evolución {mode === 'medical' ? 'profesional' : 'académica'} y acumula experiencia.</p>
                     <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--good)' }}>{getRank(state.xp)}</div>
-                        <div className="pill">XP: <CountUp to={state.xp} from={state.xp - 10} duration={0.5} className="mono" /></div>
+                        <div>
+                            <motion.div 
+                                key={getRank(state.xp)}
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.02em' }}
+                            >
+                                {getRank(state.xp)}
+                            </motion.div>
+                            {getNextRankInfo(state.xp) && (
+                                <div className="muted" style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                                    Próximo: {getNextRankInfo(state.xp).next} (Faltan {getNextRankInfo(state.xp).needed} XP)
+                                </div>
+                            )}
+                        </div>
+                        <motion.div 
+                            key={state.xp}
+                            initial={{ scale: 1.2 }}
+                            animate={{ scale: 1 }}
+                            className="pill"
+                        >
+                            XP: <CountUp to={state.xp} from={state.xp - 10} duration={0.5} className="mono" />
+                        </motion.div>
                     </div>
                     <div className="divider"></div>
                     <div className="row">
                         <button className="btn good" onClick={() => handleXP(10)}>+10 XP (Acierto)</button>
-                        <button className="btn" onClick={() => handleXP(50)}>+50 XP (Caso Resuelto)</button>
+                        <button className="btn" onClick={() => handleXP(50)}>+50 XP (Gran Logro)</button>
                     </div>
                 </div>
 
                 <div className="card">
                     <h2>Energía del Grupo</h2>
                     <div className="health-container">
-                        <div className="health-bar" style={{ width: `${state.health}%` }}></div>
+                        <motion.div 
+                            className="health-bar" 
+                            animate={{ width: `${state.health}%` }}
+                            transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                        />
                         <div className="health-text">{state.health} / 100</div>
                     </div>
                     <div className="divider"></div>
                     <div className="row">
-                        <button className="btn warn" onClick={() => handleHealth(-10)}>Daño (Error)</button>
+                        <button className="btn warn" onClick={() => handleHealth(-10)}>Daño (Fallo)</button>
                         <button className="btn good" onClick={() => handleHealth(10)}>Heal (Recuperación)</button>
                     </div>
                 </div>
 
                 <div className="card">
-                    <h2>Logros Médicos (Badges)</h2>
-                    <div className="badge-grid">
+                    <h2>Logros (Insignias)</h2>
+                    <motion.div 
+                        className="badge-grid"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            visible: { transition: { staggerChildren: 0.1 } }
+                        }}
+                    >
                         {BADGES.map((b) => (
-                            <div
+                            <motion.div
                                 key={b.id}
+                                variants={{
+                                    hidden: { scale: 0, opacity: 0 },
+                                    visible: { scale: 1, opacity: 1 }
+                                }}
+                                whileHover={{ scale: 1.1 }}
                                 className={`badge ${state.badges.includes(b.id) ? 'unlocked' : ''}`}
                                 onClick={() => toggleBadge(b.id)}
                                 title={b.detail}
+                                style={{ 
+                                    position: 'relative',
+                                    animation: state.badges.includes(b.id) ? 'badge-spin 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' : 'none'
+                                }}
                             >
                                 {b.icon}
-                                <div className="badge-name">{b.name}</div>
-                            </div>
+                                <div className="badge-name">{mode === 'medical' ? b.name : b.nameGen}</div>
+                            </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
+                    <button className="btn" style={{ marginTop: '1.5rem', width: '100%' }} onClick={() => notify("Proyección de logros activada", "achievement", "📽️")}>
+                        📺 Proyectar Logros
+                    </button>
                 </div>
 
                 <div className="card">
                     <h2>Gestión de Datos</h2>
-                    <div className="smallout">Exporta el progreso para usarlo en otra clase o navegador.</div>
+                    <div className="smallout">Exporta el progreso para usarlo en otra clase.</div>
                     <div className="divider"></div>
                     <div className="row">
                         <button className="btn primary" onClick={exportData}>Exportar JSON</button>
@@ -155,9 +231,9 @@ const RPGDash = () => {
                     <PromotionStars />
                     <div className="promotion-content">
                         <div className="promotion-badge">🎓</div>
-                        <div className="promotion-title">¡ASCENSO LOGRADO!</div>
+                        <div className="promotion-title">¡SUBIDA DE NIVEL!</div>
                         <div className="promotion-rank">{promotion}</div>
-                        <div className="smallout" style={{ background: 'transparent' }}>Tu prestigio médico ha crecido.</div>
+                        <div className="smallout" style={{ background: 'transparent' }}>Tu prestigio {mode === 'medical' ? 'médico' : 'académico'} ha crecido.</div>
                     </div>
                 </div>
             )}
@@ -178,14 +254,14 @@ const PromotionStars = () => {
                 opacity: 1,
             });
             gsap.to(star, {
-                x: `${Math.random() * 100}%`,
-                y: `${Math.random() * 100}%`,
-                scale: Math.random() * 2 + 0.5,
-                duration: 2 + Math.random() * 2,
+                x: `${RNG.float() * 100}%`,
+                y: `${RNG.float() * 100}%`,
+                scale: RNG.float() * 2 + 0.5,
+                duration: 2 + RNG.float() * 2,
                 repeat: -1,
                 yoyo: true,
                 ease: 'sine.inOut',
-                delay: Math.random() * 2
+                delay: RNG.float() * 2
             });
         });
     }, { scope: containerRef });

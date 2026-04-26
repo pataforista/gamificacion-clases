@@ -111,19 +111,25 @@ const FlowControl = ({ pickerItems = [] }) => {
                     <div className="traffic-row" style={{ marginTop: '20px', gap: '0.5rem' }}>
                         <button
                             className={`traffic-btn ${state.traffic === 'green' ? 'active' : ''}`}
-                            style={{ background: 'var(--traffic-green)', color: 'var(--traffic-green)' }}
+                            data-state="green"
                             onClick={() => setTraffic('green')}
-                        />
+                        >
+                            LIBRE
+                        </button>
                         <button
                             className={`traffic-btn ${state.traffic === 'yellow' ? 'active' : ''}`}
-                            style={{ background: 'var(--traffic-yellow)', color: 'var(--traffic-yellow)' }}
+                            data-state="yellow"
                             onClick={() => setTraffic('yellow')}
-                        />
+                        >
+                            DUDAS
+                        </button>
                         <button
                             className={`traffic-btn ${state.traffic === 'red' ? 'active' : ''}`}
-                            style={{ background: 'var(--traffic-red)', color: 'var(--traffic-red)' }}
+                            data-state="red"
                             onClick={() => setTraffic('red')}
-                        />
+                        >
+                            SILENCIO
+                        </button>
                     </div>
                     <div className="divider"></div>
                     <div style={{ textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', color: `var(--traffic-${state.traffic})` }}>

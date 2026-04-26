@@ -9,6 +9,8 @@ const DEFAULT_STATE = {
     traffic: "green",
     rollHistory: [],
     pickerItems: ["Opción A", "Opción B", "Opción C", "Opción D"],
+    redCodeEndTime: null,
+    isRedCodeActive: false,
     lastReset: new Date().toISOString()
 };
 

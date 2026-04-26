@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
+import { RNG } from '../utils/rng';
 import './Shuffle.css';
 
 gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
@@ -116,7 +117,7 @@ const Shuffle = ({
                 wrappersRef.current = [];
 
                 const rolls = Math.max(1, Math.floor(shuffleTimes));
-                const rand = set => set.charAt(Math.floor(Math.random() * set.length)) || '';
+                const rand = set => set.charAt(RNG.int(0, set.length - 1)) || '';
 
                 chars.forEach(ch => {
                     const parent = ch.parentElement;
@@ -224,7 +225,7 @@ const Shuffle = ({
                     if (!strip) return;
                     const kids = Array.from(strip.children);
                     for (let i = 1; i < kids.length - 1; i++) {
-                        kids[i].textContent = scrambleCharset.charAt(Math.floor(Math.random() * scrambleCharset.length));
+                        kids[i].textContent = scrambleCharset.charAt(RNG.int(0, scrambleCharset.length - 1));
                     }
                 });
             };
@@ -301,7 +302,7 @@ const Shuffle = ({
                     if (even.length) addTween(even, evenStart);
                 } else {
                     strips.forEach(strip => {
-                        const d = Math.random() * maxDelay;
+                        const d = RNG.float() * maxDelay;
                         const vars = {
                             duration,
                             ease,

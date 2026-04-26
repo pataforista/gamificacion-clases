@@ -61,7 +61,8 @@ const Picker = ({ onItemsChange, items = [] }) => {
                 <div className="divider"></div>
 
                 <div className="row">
-                    <button className="btn good" onClick={pickOne}>Elegir 1</button>
+                    <button className="btn primary good" onClick={pickOne}>Elegir 1</button>
+                    <button className="btn" onClick={pickOne}>⚡ Auto-Sorteo</button>
                     <button className="btn" onClick={() => setHistory([])}>Limpiar Historial</button>
                 </div>
 

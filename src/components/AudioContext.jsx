@@ -17,6 +17,7 @@ export const WAITING_TRACKS = {
     fun: { name: 'Divertido', url: 'https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3' },
     tension: { name: 'Tensión Máxima', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
     dance: { name: 'Energía', url: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3' },
+    thinking: { name: 'Pensando...', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
 };
 
 export const GAME_SFX = {

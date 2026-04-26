@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'motion/react';
+import { RNG } from '../utils/rng';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -11,9 +13,9 @@ const posStyle = (pos) => {
     return             { border: 'var(--good)',        bg: 'rgba(45,212,191,0.2)',   glow: 'rgba(45,212,191,0.3)' };
 };
 
-const TouchOrder = () => {
+const TouchOrder = ({ pickerItems = [] }) => {
     const [touches,   setTouches]   = useState({});      // { id: {x, y} }
-    const [results,   setResults]   = useState({});      // { id: globalTurnNum }
+    const [results,   setResults]   = useState({});      // { id: {turn, name} }
     const [countdown, setCountdown] = useState(null);    // 3 | 2 | 1 | null
     const [nextTurn,  setNextTurn]  = useState(1);       // next turn number to assign
     const [history,   setHistory]   = useState([]);      // [{ startTurn, count }]
@@ -30,13 +32,19 @@ const TouchOrder = () => {
     // Helper: keep phase state and ref in sync
     const setPhaseSync = (p) => { phaseRef.current = p; setPhase(p); };
 
+    // ─── Reset for next round ───────────────────────────────────────────
+    const resetRound = useCallback(() => {
+        setResults({});
+        setPhaseSync('waiting');
+    }, []);
+
     // ─── Cancel a running countdown ──────────────────────────────────────────
     const cancelCountdown = useCallback(() => {
         clearTimeout(timerRef.current);  timerRef.current  = null;
         clearInterval(intervalRef.current); intervalRef.current = null;
         setCountdown(null);
         setPhaseSync('waiting');
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); 
 
     // ─── Assign turns after countdown reaches 0 ──────────────────────────────
     const assignTurns = useCallback(() => {
@@ -44,29 +52,50 @@ const TouchOrder = () => {
         const ids = Object.keys(touchesRef.current);
         if (!ids.length) { setPhaseSync('waiting'); return; }
 
-        // Random shuffle
-        const shuffled = [...ids].sort(() => Math.random() - 0.5);
+        // Random shuffle using RNG
+        const shuffled = RNG.shuffle(ids);
         const startTurn = nextTurnRef.current;
         const res = {};
-        shuffled.forEach((id, i) => { res[id] = startTurn + i; });
+        
+        // Pick names if available
+        const names = pickerItems.length > 0 ? RNG.shuffle(pickerItems) : [];
+
+        shuffled.forEach((id, i) => { 
+            res[id] = {
+                turn: startTurn + i,
+                name: names[i % names.length] || null
+            }; 
+        });
 
         const newNext = startTurn + shuffled.length;
         nextTurnRef.current = newNext;
 
         setResults(res);
         setNextTurn(newNext);
-        setHistory(h => [...h, { startTurn, count: shuffled.length }]);
+        setHistory(h => [...h, { startTurn, count: shuffled.length, details: Object.values(res) }]);
         setCountdown(null);
         setPhaseSync('done');
 
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        
+        // Voice announcement
+        if ('speechSynthesis' in window) {
+            const winner = Object.values(res).find(r => r.turn === startTurn);
+            if (winner) {
+                const msg = new SpeechSynthesisUtterance(`¡Eso cuate! El ganador es ${winner.name || 'el número ' + winner.turn}`);
+                msg.lang = 'es-MX';
+                msg.rate = 1.1;
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
         confetti({
-            particleCount: 60,
-            spread: 55,
-            origin: { y: 0.55 },
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.5 },
             colors: ['#6366f1', '#2dd4bf', '#f59e0b'],
         });
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [pickerItems]); 
 
     // ─── Start 3-second countdown ────────────────────────────────────────────
     const startCountdown = useCallback(() => {
@@ -90,7 +119,7 @@ const TouchOrder = () => {
         timerRef.current = setTimeout(assignTurns, 3000);
     }, [assignTurns]);
 
-    // ─── Touch event handlers (stable refs so listeners are added once) ───────
+    // ─── Touch event handlers ───────
     const handleTouchStart = useCallback((e) => {
         e.preventDefault();
         const t = { ...touchesRef.current };
@@ -100,9 +129,15 @@ const TouchOrder = () => {
         }
         touchesRef.current = t;
         setTouches({ ...t });
-        // Start countdown on first finger down (any count ≥ 1)
+
+        // Start countdown on first finger down
         if (phaseRef.current === 'waiting') startCountdown();
-    }, [startCountdown]);
+        
+        // GESTURE: If 2 fingers touch in 'done' state -> reset round
+        if (phaseRef.current === 'done' && Object.keys(t).length >= 2) {
+            resetRound();
+        }
+    }, [startCountdown, resetRound]);
 
     const handleTouchMove = useCallback((e) => {
         e.preventDefault();
@@ -129,17 +164,13 @@ const TouchOrder = () => {
         // When ALL fingers are removed:
         if (Object.keys(t).length === 0) {
             if (phaseRef.current === 'counting') {
-                // Fingers lifted mid-countdown → cancel
                 cancelCountdown();
-            } else if (phaseRef.current === 'done') {
-                // Fingers lifted after results shown → ready for next round
-                setResults({});
-                setPhaseSync('waiting');
             }
+            // PERSISTENCE: If in 'done' state, we DO NOT reset to 'waiting' automatically.
+            // The results stay until resetRound() is called.
         }
     }, [cancelCountdown]);
 
-    // Register event listeners once on mount
     useEffect(() => {
         const pad = padRef.current;
         if (!pad) return;
@@ -155,13 +186,11 @@ const TouchOrder = () => {
         };
     }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-    // Cleanup timers on unmount
     useEffect(() => () => {
         clearTimeout(timerRef.current);
         clearInterval(intervalRef.current);
     }, []);
 
-    // ─── Reset everything ────────────────────────────────────────────────────
     const resetAll = () => {
         cancelCountdown();
         touchesRef.current  = {};
@@ -172,66 +201,108 @@ const TouchOrder = () => {
         setNextTurn(1);
     };
 
-    // Derived values for rendering
     const touchCount  = Object.keys(touches).length;
     const hasHistory  = history.length > 0;
-    // Sorted turn numbers in the current round (for computing position/medal)
-    const sortedTurns = Object.values(results).sort((a, b) => a - b);
+    const sortedResults = useMemo(() => 
+        Object.values(results).sort((a, b) => a.turn - b.turn), 
+    [results]);
+
+    // Responsive circle calculation
+    const padWidth = padRef.current?.clientWidth || 400;
+    const baseSize = Math.max(90, padWidth * 0.15);
+    const winnerSize = baseSize * 1.5;
 
     return (
         <div className="grid">
-
-            {/* ── Main pad card ─────────────────────────────────────────── */}
-            <div className="card">
+            <div className="card" style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ margin: 0 }}>Orden por toque</h2>
-                    {nextTurn > 1 && (
-                        <button className="btn warn" onClick={resetAll} style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }}>
-                            ↺ Reiniciar todo
-                        </button>
-                    )}
+                    <div className="row">
+                        {phase === 'done' && (
+                             <button className="btn primary good" onClick={resetRound}>
+                                Siguiente Ronda
+                            </button>
+                        )}
+                        {nextTurn > 1 && (
+                            <button className="btn warn" onClick={resetAll} style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }}>
+                                ↺ Reiniciar todo
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {/* Next-turn indicator */}
-                {nextTurn > 1 && (
-                    <div style={{
-                        marginBottom: '1rem', padding: '0.5rem 1rem', borderRadius: '12px',
-                        background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
-                        fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600,
-                    }}>
-                        Siguiente turno a asignar: <strong>#{nextTurn}</strong>
-                    </div>
-                )}
-
-                {/* Touch pad */}
                 <div
                     ref={padRef}
                     style={{
                         position: 'relative',
                         background: '#0a0a0b',
-                        height: '380px',
+                        height: '450px',
                         borderRadius: '24px',
-                        border: phase === 'counting' ? '1px dashed var(--primary)'
-                              : phase === 'done'     ? '1px solid var(--good)'
-                              :                        '1px dashed #444',
+                        border: phase === 'counting' ? '2px dashed var(--primary)'
+                              : phase === 'done'     ? '2px solid var(--good)'
+                              :                        '2px dashed #444',
                         overflow: 'hidden',
                         touchAction: 'none',
                         transition: 'border-color 0.3s ease',
                         userSelect: 'none',
                     }}
                 >
-                    {/* Big countdown number in background */}
-                    {countdown !== null && (
-                        <div style={{
-                            position: 'absolute', inset: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '9rem', fontWeight: 900,
-                            color: 'rgba(99,102,241,0.18)',
-                            pointerEvents: 'none', zIndex: 1,
-                        }}>
-                            {countdown}
-                        </div>
-                    )}
+                    {/* Giant Countdown Overlay */}
+                    <AnimatePresence>
+                        {countdown !== null && (
+                            <motion.div 
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: [1, 1.2, 1], opacity: 1 }}
+                                exit={{ scale: 2, opacity: 0 }}
+                                key={countdown}
+                                style={{
+                                    position: 'absolute', inset: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '12rem', fontWeight: 900,
+                                    color: 'var(--primary)', textShadow: '0 0 50px var(--primary)',
+                                    pointerEvents: 'none', zIndex: 10,
+                                }}
+                            >
+                                {countdown}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Podium Summary Overlay */}
+                    <AnimatePresence>
+                        {phase === 'done' && sortedResults.length > 0 && (
+                            <motion.div
+                                initial={{ y: -100, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                className="podium-overlay"
+                                style={{
+                                    position: 'absolute', top: '10%', left: '50%',
+                                    transform: 'translateX(-50%)', zIndex: 20,
+                                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+                                    padding: '1.5rem 2rem', borderRadius: '24px',
+                                    border: '2px solid var(--primary)', textAlign: 'center',
+                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', minWidth: '280px'
+                                }}
+                            >
+                                <h3 style={{ marginBottom: '1rem', color: 'var(--primary)', letterSpacing: '0.1em' }}>🏆 PODIO DE TURNO</h3>
+                                {sortedResults.slice(0, 3).map((res, i) => (
+                                    <div key={i} style={{ 
+                                        display: 'flex', alignItems: 'center', gap: '1rem', 
+                                        fontSize: i === 0 ? '1.8rem' : '1.2rem', fontWeight: 900,
+                                        marginBottom: '0.5rem', justifyContent: 'center'
+                                    }}>
+                                        <span>{MEDALS[i]}</span>
+                                        <span style={{ color: i === 0 ? 'var(--good)' : 'white' }}>
+                                            {res.name || `Turno #${res.turn}`}
+                                        </span>
+                                    </div>
+                                ))}
+                                <button className="btn primary good" style={{ marginTop: '1rem', width: '100%' }} onClick={resetRound}>
+                                    LISTO PARA OTRA
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Empty-state hint */}
                     {touchCount === 0 && phase === 'waiting' && (
@@ -242,133 +313,132 @@ const TouchOrder = () => {
                             gap: '0.75rem', color: 'rgba(255,255,255,0.15)',
                             pointerEvents: 'none',
                         }}>
-                            <span style={{ fontSize: '3.5rem' }}>👆</span>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                                {hasHistory ? `Próximo turno: #${nextTurn}` : 'Pon uno o más dedos aquí'}
+                            <span style={{ fontSize: '4.5rem', animation: 'pulse 2s infinite' }}>👆</span>
+                            <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                                {hasHistory ? `Próximo: #${nextTurn}` : 'Coloca tus dedos para sortear'}
                             </span>
                         </div>
                     )}
 
                     {/* Touch dots */}
-                    {Object.entries(touches).map(([id, t]) => {
-                        const rect = padRef.current?.getBoundingClientRect();
-                        if (!rect) return null;
+                    <AnimatePresence>
+                        {Object.entries(touches).map(([id, t]) => {
+                            const rect = padRef.current?.getBoundingClientRect();
+                            if (!rect) return null;
 
-                        const turn       = results[id];
-                        const hasTurn    = turn !== undefined;
-                        const posInRound = hasTurn ? sortedTurns.indexOf(turn) : -1;
-                        const styles     = hasTurn ? posStyle(posInRound) : null;
+                            const res        = results[id];
+                            const hasTurn    = res !== undefined;
+                            const turnNum    = hasTurn ? res.turn : -1;
+                            const posInRound = hasTurn ? sortedResults.findIndex(r => r.turn === turnNum) : -1;
+                            const styles     = hasTurn ? posStyle(posInRound) : null;
 
-                        // Increase size for winner (first position)
-                        const isWinner = posInRound === 0;
-                        const circleSize = hasTurn
-                          ? (isWinner ? '160px' : '124px')
-                          : '78px';
+                            const isWinner = posInRound === 0;
+                            const finalSize = hasTurn ? (isWinner ? winnerSize : baseSize) : baseSize * 0.8;
 
-                        return (
-                            <div
-                                key={id}
-                                style={{
-                                    position:     'absolute',
-                                    left:         t.x - rect.left,
-                                    top:          t.y - rect.top,
-                                    width:        circleSize,
-                                    height:       circleSize,
-                                    borderRadius: '50%',
-                                    border:       hasTurn
-                                                    ? `${isWinner ? '4px' : '3px'} solid ${styles.border}`
-                                                    : '2px solid rgba(255,255,255,0.28)',
-                                    transform:    'translate(-50%, -50%)',
-                                    background:   hasTurn ? styles.bg : 'rgba(255,255,255,0.07)',
-                                    boxShadow:    hasTurn
-                                                    ? `0 0 ${isWinner ? '40px' : '28px'} ${styles.glow}${isWinner ? ', inset 0 0 20px rgba(255,255,255,0.1)' : ''}`
-                                                    : 'none',
-                                    display:      'flex',
-                                    flexDirection:'column',
-                                    alignItems:   'center',
-                                    justifyContent:'center',
-                                    gap:          '4px',
-                                    transition:   'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                    pointerEvents:'none',
-                                    zIndex:       isWinner ? 3 : 2,
-                                    animation:    isWinner ? 'pulse-winner 1.5s ease-in-out infinite' : 'none',
-                                }}
-                            >
-                                {hasTurn ? (
-                                    <>
-                                        <span style={{ fontSize: isWinner ? '2.2rem' : posInRound === 1 ? '1.6rem' : '1.3rem', lineHeight: 1 }}>
-                                            {posInRound < 3 ? MEDALS[posInRound] : '🎯'}
-                                        </span>
-                                        <span style={{
-                                            color: '#fff', fontWeight: 900,
-                                            fontSize: isWinner ? '1.8rem' : posInRound === 1 ? '1.3rem' : '1.1rem',
-                                            lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.6)',
-                                        }}>
-                                            #{turn}
-                                        </span>
-                                    </>
-                                ) : countdown !== null ? (
-                                    <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '1.2rem', fontWeight: 700 }}>
-                                        {countdown}
-                                    </span>
-                                ) : null}
-                            </div>
-                        );
-                    })}
+                            return (
+                                <motion.div
+                                    key={id}
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ 
+                                        scale: 1, 
+                                        opacity: 1,
+                                        left: t.x - rect.left,
+                                        top: t.y - rect.top,
+                                        width: finalSize,
+                                        height: finalSize,
+                                    }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    transition={{ 
+                                        scale: { type: 'spring', stiffness: 300, damping: 20 },
+                                        default: { duration: 0.2 } 
+                                    }}
+                                    style={{
+                                        position:     'absolute',
+                                        borderRadius: '50%',
+                                        border:       hasTurn
+                                                        ? `${isWinner ? '6px' : '4px'} solid ${styles.border}`
+                                                        : '3px solid rgba(255,255,255,0.4)',
+                                        transform:    'translate(-50%, -50%)',
+                                        background:   hasTurn ? styles.bg : 'rgba(255,255,255,0.1)',
+                                        boxShadow:    hasTurn
+                                                        ? `0 0 ${isWinner ? '60px' : '40px'} ${styles.glow}`
+                                                        : 'none',
+                                        display:      'flex',
+                                        flexDirection:'column',
+                                        alignItems:   'center',
+                                        justifyContent:'center',
+                                        gap:          '4px',
+                                        pointerEvents:'none',
+                                        zIndex:       isWinner ? 5 : 2,
+                                        animation:    isWinner ? 'winner-glow-pulsar 2s infinite' : 'none'
+                                    }}
+                                >
+                                    {hasTurn && (
+                                        <motion.div
+                                            initial={{ scale: 0, rotate: -20 }}
+                                            animate={{ scale: 1, rotate: 0 }}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                        >
+                                            <span style={{ fontSize: isWinner ? '3rem' : '1.8rem', lineHeight: 1 }}>
+                                                {posInRound < 3 ? MEDALS[posInRound] : '🎯'}
+                                            </span>
+                                            <span style={{
+                                                color: '#fff', fontWeight: 900,
+                                                fontSize: isWinner ? '1.5rem' : '1rem',
+                                                lineHeight: 1, textAlign: 'center', padding: '0 5px'
+                                            }}>
+                                                {res.name || `#${res.turn}`}
+                                            </span>
+                                        </motion.div>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
                 </div>
 
                 <div className="smallout" style={{ marginTop: '1rem' }}>
                     {phase === 'done'
-                        ? '✅ ¡Turnos asignados! Retira los dedos para continuar con la siguiente ronda.'
+                        ? '✅ Resultados fijados. Pulsa "Siguiente Ronda" o toca con 2 dedos para reiniciar.'
                         : phase === 'counting'
-                        ? '⏳ ¡Mantén los dedos quietos…!'
-                        : hasHistory
-                        ? '↩ Los turnos se acumulan entre rondas. Pulsa "Reiniciar todo" para empezar de cero.'
-                        : 'Coloca uno o más dedos y mantén 3 segundos para asignar turnos de forma aleatoria.'}
+                        ? '⏳ ¡No te muevas! Calculando justicia...'
+                        : 'Mantén los dedos presionados 3 segundos para asignar turnos.'}
                 </div>
             </div>
 
-            {/* ── History panel (appears after first round) ─────────────── */}
+            {/* ── History panel ─────────────── */}
             {hasHistory && (
                 <div className="card">
-                    <h2>Historial · {nextTurn - 1} turno{nextTurn > 2 ? 's' : ''} asignado{nextTurn > 2 ? 's' : ''}</h2>
+                    <h2>Historial de Rondas</h2>
                     <div className="orderlist">
-                        {history.map(({ startTurn, count }, ri) => (
+                        {history.slice().reverse().map(({ startTurn, count, details }, ri) => (
                             <div key={ri} style={{
-                                padding: '0.75rem 1rem',
-                                background: 'rgba(255,255,255,0.02)',
+                                padding: '1rem',
+                                background: 'rgba(255,255,255,0.03)',
                                 border: '1px solid var(--line)',
-                                borderRadius: '14px',
+                                borderRadius: '16px',
+                                marginBottom: '1rem'
                             }}>
-                                <div style={{
-                                    fontSize: '0.72rem', color: 'var(--muted)',
-                                    fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem',
-                                }}>
-                                    Ronda {ri + 1} · {count} {count === 1 ? 'participante' : 'participantes'}
+                                <div className="muted" style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '0.5rem' }}>
+                                    RONDA {history.length - ri} · {count} PARTICIPANTES
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                    {Array.from({ length: count }, (_, i) => {
-                                        const t = startTurn + i;
-                                        return (
-                                            <span key={i} style={{
-                                                padding: '0.28rem 0.65rem',
-                                                borderRadius: '8px',
-                                                background: i === 0 ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
-                                                border: `1px solid ${i === 0 ? 'var(--primary)' : 'var(--line)'}`,
-                                                fontSize: '0.85rem', fontWeight: 700,
-                                                color: i === 0 ? 'var(--primary)' : 'var(--text)',
-                                            }}>
-                                                {i < 3 ? MEDALS[i] : '🎯'} #{t}
-                                            </span>
-                                        );
-                                    })}
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {details.map((res, i) => (
+                                        <span key={i} className="pill" style={{ 
+                                            background: i === 0 ? 'rgba(99,102,241,0.2)' : 'var(--bg-secondary)',
+                                            border: `1px solid ${i === 0 ? 'var(--primary)' : 'var(--line)'}`,
+                                            fontWeight: 800
+                                        }}>
+                                            {i < 3 ? MEDALS[i] : '🎯'} {res.name || `#${res.turn}`}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

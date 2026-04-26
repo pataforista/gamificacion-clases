@@ -8,7 +8,7 @@ import BoardGame from './BoardGame';
 import AvatarSelector from './AvatarSelector';
 
 const GroupExam = ({ pickerItems = [] }) => {
-    const { alert } = useNotifications();
+    const { alert, confirm } = useNotifications();
     const audio = useAudio();
     const [exam, setExam] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -25,7 +25,8 @@ const GroupExam = ({ pickerItems = [] }) => {
         rebote: true,
         jokers: true,
         suspense: true,
-        duration: 25
+        duration: 25,
+        quickMode: false
     });
 
     const [timeLeft, setTimeLeft] = useState(0);
@@ -123,7 +124,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         setRoboTeam(null);
         setHiddenOptions([]);
         
-        if (settings.timer) {
+        if (settings.timer && !settings.quickMode) {
             setTimeLeft(settings.duration);
             setIsTimerActive(true);
         }
@@ -243,8 +244,8 @@ const GroupExam = ({ pickerItems = [] }) => {
                             </AnimatePresence>
                         </div>
                         {setupPhase === 'game' && (
-                            <button className="btn" onClick={() => {
-                                if(window.confirm('¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
+                            <button className="btn" onClick={async () => {
+                                if(await confirm('¿Cerrar Examen?', '¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
                                     setExam(null);
                                     setSetupPhase('upload');
                                 }
@@ -315,6 +316,10 @@ const GroupExam = ({ pickerItems = [] }) => {
                                 <input type="checkbox" checked={settings.suspense} onChange={e => setSettings({...settings, suspense: e.target.checked})} />
                                 Suspenso (Redoble)
                             </label>
+                            <label className="row" style={{ cursor: 'pointer' }}>
+                                <input type="checkbox" checked={settings.quickMode} onChange={e => setSettings({...settings, quickMode: e.target.checked})} />
+                                Modo Rápido (Sin Tiempo)
+                            </label>
                         </div>
                         {settings.timer && (
                             <input 
@@ -333,6 +338,8 @@ const GroupExam = ({ pickerItems = [] }) => {
                         onComplete={(selections) => {
                             setTeamAvatars(selections);
                             setSetupPhase('game');
+                            // Start first turn automatically if quick mode or just to save clicks
+                            nextTurn(); 
                         }} 
                     />
                 )}

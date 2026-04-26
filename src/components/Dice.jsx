@@ -9,7 +9,7 @@ import './Dice.css';
 // Configure the global dice roller engine
 NumberGenerator.generator.engine = NumberGenerator.engines.browserCrypto;
 
-const PolyhedralDice = ({ value, type, isRolling, theme }) => {
+const PolyhedralDice = ({ value, type, isRolling, theme, isCrit, isFumble }) => {
     const getShape = (type) => {
         switch (type) {
             case '4': return {
@@ -44,14 +44,14 @@ const PolyhedralDice = ({ value, type, isRolling, theme }) => {
 
     return (
         <motion.div
-            className={`poly-dice-container theme-${theme}`}
+            className={`poly-dice-container theme-${theme} ${isCrit ? 'is-crit' : ''} ${isFumble ? 'is-fumble' : ''}`}
             animate={isRolling ? {
                 rotate: [0, 90, 180, 270, 360],
                 scale: [1, 1.3, 0.7, 1.2, 1], // Squash and stretch
                 x: [0, 10, -10, 10, 0],
                 y: [0, -20, 0, -10, 0]
             } : {
-                rotate: [0, 15, -15, 0], // Small wobble on stop
+                rotate: [0, 20, -15, 5, 0], // Realistic bounce
                 scale: [1, 1.1, 1],
                 x: 0,
                 y: 0
@@ -62,14 +62,17 @@ const PolyhedralDice = ({ value, type, isRolling, theme }) => {
                 ease: "easeInOut"
             } : {
                 type: "spring",
-                stiffness: 400,
-                damping: 15
+                stiffness: 200,
+                damping: 10
+            }}
+            style={{
+                filter: isCrit ? 'drop-shadow(0 0 15px #FFD60A)' : isFumble ? 'drop-shadow(0 0 15px #FF006E)' : 'none'
             }}
         >
             <svg viewBox="0 0 100 100" className="poly-dice-svg">
-                <path d={shape.path} className="poly-dice-face" />
+                <path d={shape.path} className="poly-dice-face" style={{ fill: isCrit ? 'var(--warn)' : isFumble ? 'var(--error)' : undefined }} />
                 {shape.lines && <path d={shape.lines} className="poly-dice-lines" />}
-                <text x="50" y="55" className="poly-dice-text">
+                <text x="50" y="55" className="poly-dice-text" style={{ fill: (isCrit || isFumble) ? 'black' : undefined, fontWeight: 900 }}>
                     {isRolling ? "?" : value}
                 </text>
             </svg>
@@ -89,7 +92,7 @@ const Dice = () => {
     const [diceMod, setDiceMod] = useState(0);
     const [formula, setFormula] = useState("");
     const [rollMode, setRollMode] = useState("normal");
-    const [theme, setTheme] = useState("medical");
+    const [theme, setTheme] = useState("classic");
 
     const roller = useMemo(() => new DiceRoller(), []);
 
@@ -102,6 +105,9 @@ const Dice = () => {
 
         setTimeout(() => {
             let f = `${diceCount}d${diceType}`;
+            if (rollMode !== 'normal') f += rollMode;
+            if (diceMod > 0) f += `+${diceMod}`;
+            else if (diceMod < 0) f += `${diceMod}`;
             try {
                 const rollResult = roller.roll(f);
                 const total = rollResult.total;
@@ -234,6 +240,8 @@ const Dice = () => {
                                             type={diceType}
                                             isRolling={isRolling}
                                             theme={theme}
+                                            isCrit={diceCount === 1 && diceType === "20" && val === 20}
+                                            isFumble={diceCount === 1 && diceType === "20" && val === 1}
                                         />
                                     </motion.div>
                                 ))
@@ -320,7 +328,15 @@ const Dice = () => {
             <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <h2>Récords y Log</h2>
                 <p className="muted" style={{ marginBottom: '1rem' }}>Sigue el historial de tus lanzamientos y fórmulas recientes.</p>
-                <div className="out" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>{result || "—"}</div>
+                <motion.div 
+                    key={result}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="out" 
+                    style={{ fontSize: '5rem', marginBottom: '10px' }}
+                >
+                    {result || "—"}
+                </motion.div>
                 <div className="smallout" style={{ marginBottom: '20px' }}>{detail || "Esperando tirada..."}</div>
 
                 <div className="history-list">

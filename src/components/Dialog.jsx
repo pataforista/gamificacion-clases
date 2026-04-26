@@ -23,17 +23,17 @@ const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' })
                         style={{
                             position: 'absolute',
                             inset: 0,
-                            background: 'rgba(45, 45, 45, 0.5)',
-                            backdropFilter: 'blur(8px)',
+                            background: 'rgba(0, 0, 0, 0.65)',
+                            backdropFilter: 'blur(16px)', // More pronounced blur
                             pointerEvents: 'auto'
                         }}
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        initial={{ opacity: 0, scale: 0.8, rotateY: -15, rotateX: 5 }}
+                        animate={{ opacity: 1, scale: 1, rotateY: 0, rotateX: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, rotateY: 15 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
                         style={{
                             position: 'relative',
                             width: '100%',
@@ -42,9 +42,10 @@ const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' })
                             border: '3px solid var(--line)',
                             borderRadius: '28px',
                             padding: '30px',
-                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
                             pointerEvents: 'auto',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            perspective: '1000px' // For 3D rotation depth
                         }}
                     >
                         <div style={{

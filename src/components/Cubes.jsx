@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { RNG } from '../utils/rng';
 import './Cubes.css';
 
 const Cubes = ({
@@ -188,12 +189,12 @@ const Cubes = ({
     useEffect(() => {
         if (!autoAnimate || !sceneRef.current) return;
         simPosRef.current = {
-            x: Math.random() * gridSize,
-            y: Math.random() * gridSize
+            x: RNG.float() * gridSize,
+            y: RNG.float() * gridSize
         };
         simTargetRef.current = {
-            x: Math.random() * gridSize,
-            y: Math.random() * gridSize
+            x: RNG.float() * gridSize,
+            y: RNG.float() * gridSize
         };
         const speed = 0.02;
         const loop = () => {
@@ -205,8 +206,8 @@ const Cubes = ({
                 tiltAt(pos.y, pos.x);
                 if (Math.hypot(pos.x - tgt.x, pos.y - tgt.y) < 0.1) {
                     simTargetRef.current = {
-                        x: Math.random() * gridSize,
-                        y: Math.random() * gridSize
+                        x: RNG.float() * gridSize,
+                        y: RNG.float() * gridSize
                     };
                 }
             }

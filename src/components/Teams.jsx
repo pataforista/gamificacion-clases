@@ -4,9 +4,16 @@ import { useNotifications } from './NotificationContext';
 import { RNG } from '../utils/rng';
 
 const Teams = ({ pickerItems = [] }) => {
-    const { alert } = useNotifications();
+    const { alert, notify } = useNotifications();
     const [teamCount, setTeamCount] = useState(2);
     const [teams, setTeams] = useState([]);
+
+    const copyToClipboard = async () => {
+        if (teams.length === 0) return;
+        const text = teams.map((team, i) => `EQUIPO ${i + 1}:\n${team.map(m => `- ${m}`).join('\n')}`).join('\n\n');
+        await navigator.clipboard.writeText(text);
+        notify("Equipos copiados al portapapeles", "achievement", "📋");
+    };
 
     const generateTeams = async () => {
         const items = [...pickerItems];
@@ -46,6 +53,8 @@ const Teams = ({ pickerItems = [] }) => {
                         />
                     </div>
                     <button className="btn primary good" onClick={generateTeams}>Generar</button>
+                    <button className="btn" onClick={generateTeams}>🔄 Rehacer</button>
+                    {teams.length > 0 && <button className="btn" onClick={copyToClipboard}>📋 Copiar</button>}
                     <button className="btn" onClick={() => setTeams([])}>Limpiar</button>
                 </div>
             </div>
