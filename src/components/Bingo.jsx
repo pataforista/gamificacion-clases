@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RNG } from '../utils/rng';
@@ -57,11 +57,6 @@ const Bingo = () => {
     setRolling(false);
   };
 
-  const handleRangeChange = (e) => {
-    reset();
-    setMaxNum(Number(e.target.value));
-  };
-
   const calledSorted = [...called].sort((a, b) => a - b);
 
   return (
@@ -114,7 +109,7 @@ const Bingo = () => {
               style={{
                 fontSize: 'clamp(5rem, 18vw, 8rem)',
                 fontWeight: 900,
-                color: rolling ? 'var(--memphis-magenta)' : (current ? 'var(--memphis-cyan)' : 'var(--muted)'),
+                color: rolling ? 'var(--primary)' : (current ? 'var(--secondary)' : 'var(--muted)'),
                 textShadow: 'none',
                 userSelect: 'none',
               }}

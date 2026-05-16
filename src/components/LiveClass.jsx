@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePersistence } from '../hooks/usePersistence';
 import { useNotifications } from './NotificationContext';
 import { useAudio } from './AudioContext';
@@ -12,40 +12,39 @@ const LiveClass = ({ pickerItems = [] }) => {
     const { state, updateState } = usePersistence();
     const { alert, notify } = useNotifications();
     const audio = useAudio();
-    
+
     const [lastWinner, setLastWinner] = useState(null);
     const [quickResult, setQuickResult] = useState(null);
     const [localTimer, setLocalTimer] = useState(0);
+    const wasActiveRef = useRef(false);
 
-    // Sync local timer with global end time
+    // Mirror the global red-code timer for display only
     useEffect(() => {
-        let interval;
-        if (state.isRedCodeActive && state.redCodeEndTime) {
-            interval = setInterval(() => {
-                const now = Date.now();
-                const diff = Math.max(0, Math.ceil((state.redCodeEndTime - now) / 1000));
-                setLocalTimer(diff);
-                
-                if (diff === 0) {
-                    updateState({ isRedCodeActive: false });
-                    audio.stop();
-                    audio.playSFX('buzzer');
-                    if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
-                    clearInterval(interval);
-                }
-            }, 1000);
-        } else {
+        if (!state.isRedCodeActive || !state.redCodeEndTime) {
+            if (wasActiveRef.current) {
+                audio.stop();
+                wasActiveRef.current = false;
+            }
             setLocalTimer(0);
+            return;
         }
+        wasActiveRef.current = true;
+        const tick = () => {
+            const diff = Math.max(0, Math.ceil((state.redCodeEndTime - Date.now()) / 1000));
+            setLocalTimer(diff);
+        };
+        tick();
+        const interval = setInterval(tick, 250);
         return () => clearInterval(interval);
-    }, [state.isRedCodeActive, state.redCodeEndTime, updateState, audio]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.isRedCodeActive, state.redCodeEndTime]);
 
     const startRedCode = (seconds = 30) => {
         const endTime = Date.now() + (seconds * 1000);
-        updateState({ 
-            traffic: 'red', 
-            isRedCodeActive: true, 
-            redCodeEndTime: endTime 
+        updateState({
+            traffic: 'red',
+            isRedCodeActive: true,
+            redCodeEndTime: endTime,
         });
         audio.play('thinking');
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -63,13 +62,15 @@ const LiveClass = ({ pickerItems = [] }) => {
     };
 
     const quickPick = () => {
+        if (lastWinner === "...") return; // already rolling
         if (pickerItems.length === 0) {
             return alert("Sin Alumnos", "Ingresa nombres en la pestaña Sorteo.");
         }
         audio.playSFX('drumroll');
         setLastWinner("...");
         setTimeout(() => {
-            const chosen = RNG.pick(pickerItems, "live_pick");
+            const key = RNG.keyFromItems("live_pick", pickerItems);
+            const chosen = RNG.pick(pickerItems, key);
             setLastWinner(chosen);
             audio.playSFX('boing');
             if (navigator.vibrate) navigator.vibrate(100);

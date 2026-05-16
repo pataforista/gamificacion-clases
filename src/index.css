@@ -26,6 +26,11 @@
   --error: #FF6B9D;
   --accent-glow: rgba(255, 0, 110, 0.4);
 
+  /* Traffic-light colors (high-contrast on any theme) */
+  --traffic-green: #22c55e;
+  --traffic-yellow: #FFD60A;
+  --traffic-red: #ef4444;
+
   /* Borders and lines - Solid & Bold */
   --line: #000000;
   --glass: rgba(255, 255, 255, 0.95);
@@ -35,6 +40,18 @@
 }
 
 /* THEMES */
+/* Aliases for legacy memphis-* tokens used by some components, mapped to active theme */
+.theme-lipari, .theme-tokyo, .theme-lisbon {
+  --memphis-magenta: var(--primary);
+  --memphis-cyan: var(--secondary);
+  --memphis-yellow: var(--warn);
+  --memphis-orange: var(--warn);
+  --memphis-lime: var(--good);
+  --memphis-purple: var(--primary);
+  --memphis-coral: var(--error);
+  --memphis-mint: var(--good);
+}
+
 .theme-lipari {
   --bg: #010c1a;
   --bg-secondary: #001d3d;
@@ -49,6 +66,9 @@
   --line: #ffc300;
   --glass: rgba(0, 53, 102, 0.9);
   --accent-glow: rgba(251, 133, 0, 0.5);
+  --traffic-green: #80ed99;
+  --traffic-yellow: #ffd60a;
+  --traffic-red: #ef233c;
 }
 
 .theme-tokyo {
@@ -65,6 +85,9 @@
   --line: #7aa2f7;
   --glass: rgba(36, 40, 59, 0.9);
   --accent-glow: rgba(187, 154, 247, 0.5);
+  --traffic-green: #9ece6a;
+  --traffic-yellow: #e0af68;
+  --traffic-red: #f7768e;
 }
 
 .theme-lisbon {
@@ -81,6 +104,9 @@
   --line: #adb5bd;
   --glass: rgba(233, 236, 239, 0.9);
   --accent-glow: rgba(0, 119, 182, 0.4);
+  --traffic-green: #2a9d8f;
+  --traffic-yellow: #e9c46a;
+  --traffic-red: #e76f51;
 }
 
 * {
@@ -348,7 +374,7 @@ h2 {
 .tab:hover {
   color: var(--primary);
   border-color: var(--primary);
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary);
 }
 
 .tab.active {
@@ -490,7 +516,8 @@ h2 {
 
 .orderitem {
   padding: 1rem;
-  background: #FFFFFF;
+  background: var(--bg);
+  color: var(--text);
   border: 2px solid transparent;
   border-radius: 14px;
   display: flex;
@@ -501,15 +528,15 @@ h2 {
 }
 
 .orderitem:hover {
-  border-color: var(--memphis-cyan);
-  background: rgba(0, 217, 255, 0.08);
-  box-shadow: 3px 3px 0px rgba(0, 217, 255, 0.2);
+  border-color: var(--secondary);
+  background: var(--bg-secondary);
+  box-shadow: 3px 3px 0px var(--accent-glow);
 }
 
 .orderitem.active {
-  background: rgba(0, 217, 255, 0.15);
-  border-color: var(--memphis-cyan);
-  box-shadow: 4px 4px 0px rgba(0, 217, 255, 0.3);
+  background: var(--bg-secondary);
+  border-color: var(--secondary);
+  box-shadow: 4px 4px 0px var(--accent-glow);
   font-weight: 700;
 }
 
@@ -745,8 +772,8 @@ h2 {
 }
 
 .exam-option:hover {
-  border-color: var(--memphis-cyan);
-  box-shadow: 3px 3px 0px rgba(0, 217, 255, 0.2);
+  border-color: var(--secondary);
+  box-shadow: 3px 3px 0px var(--accent-glow);
   transform: translateY(-2px);
 }
 
@@ -776,7 +803,7 @@ h2 {
 
 /* Win text (Picker result) */
 .win-text {
-  color: var(--memphis-magenta);
+  color: var(--primary);
   font-weight: 700;
 }
 

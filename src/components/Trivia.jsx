@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { RNG, cleanLines } from '../utils/rng';
 import { useNotifications } from './NotificationContext';
@@ -14,7 +14,7 @@ const DEFAULT_QUESTIONS = [
 const DEFAULT_SECONDS = 30;
 
 const Trivia = ({ pickerItems = [] }) => {
-  const { alert } = useNotifications();
+  const { alert, notify } = useNotifications();
 
   const [questions, setQuestions] = useState(DEFAULT_QUESTIONS);
   const [inputQA, setInputQA] = useState(
@@ -64,15 +64,16 @@ const Trivia = ({ pickerItems = [] }) => {
     setActive(true);
     setRound(r => r + 1);
 
-    // Pick random question
-    const key = RNG.keyFromItems(`trivia-${round}`, questions.map(q => q.q));
-    const idx = questions.findIndex(q => q.q === RNG.pick(questions.map(q => q.q), key));
-    setCurrentQ(questions[idx >= 0 ? idx : 0]);
+    // Pick a question via balanced bag (no repeats until all seen)
+    const qKey = RNG.keyFromItems('trivia-q', questions.map(q => q.q));
+    const qIdx = RNG.pickBalancedIndex(questions.length, qKey);
+    setCurrentQ(questions[qIdx]);
 
-    // Pick random student if available
+    // Pick a student via balanced bag too
     if (pickerItems.length > 0) {
-      const sKey = RNG.keyFromItems(`student-${round}`, pickerItems);
-      setStudent(RNG.pick(pickerItems, sKey));
+      const sKey = RNG.keyFromItems('trivia-student', pickerItems);
+      const sIdx = RNG.pickBalancedIndex(pickerItems.length, sKey);
+      setStudent(pickerItems[sIdx]);
     } else {
       setStudent(null);
     }
@@ -88,7 +89,7 @@ const Trivia = ({ pickerItems = [] }) => {
     setScore(s => ({ ...s, correct: s.correct + 1 }));
     confetti({ particleCount: 80, spread: 50, origin: { x: 0.5, y: 0.4 } });
     if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
-    alert("¡Eso!", RNG.getFlavor('correct'));
+    notify(RNG.getFlavor('correct'), 'achievement', '✅');
   };
 
   const handleWrong = () => {
@@ -97,7 +98,7 @@ const Trivia = ({ pickerItems = [] }) => {
     setShowAnswer(true);
     setScore(s => ({ ...s, wrong: s.wrong + 1 }));
     if (navigator.vibrate) navigator.vibrate([200]);
-    alert("¡Ay!", RNG.getFlavor('wrong'));
+    notify(RNG.getFlavor('wrong'), 'xp', '❌');
   };
 
   const resetAll = () => {

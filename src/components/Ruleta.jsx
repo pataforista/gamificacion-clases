@@ -5,12 +5,15 @@ import { cleanLines, RNG } from '../utils/rng';
 import { useAudio } from './AudioContext';
 import { useNotifications } from './NotificationContext';
 
-const COLORS = [
-  'var(--primary)', 'var(--secondary)', 'var(--good)', 'var(--warn)', 'var(--error)',
-  'var(--primary)', 'var(--secondary)', 'var(--good)', 'var(--warn)', 'var(--error)'
-];
+const COLOR_VARS = ['--primary', '--secondary', '--good', '--warn', '--error'];
 
 const POINTER_ANGLE = -Math.PI / 2; // 12 o'clock
+
+// Canvas 2D does NOT resolve CSS variables — we read them from the document root.
+const readVar = (name, fallback) => {
+  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
+  return v || fallback;
+};
 
 const Ruleta = ({ items = [] }) => {
   const { playSFX } = useAudio();
@@ -47,12 +50,20 @@ const Ruleta = ({ items = [] }) => {
     const n = opts.length;
     const arc = (2 * Math.PI) / n;
 
+    // Resolve theme palette (canvas can't read CSS vars directly)
+    const palette = COLOR_VARS.map((v, i) => readVar(v, ['#FF006E', '#00D9FF', '#CCFF00', '#FFD60A', '#FF6B9D'][i]));
+    const lineCol = readVar('--line', '#000');
+    const primaryCol = readVar('--primary', '#FF006E');
+    const secondaryCol = readVar('--secondary', '#00D9FF');
+    const bgCol = readVar('--bg', '#FFF');
+    const textCol = readVar('--text', '#000');
+
     ctx.clearRect(0, 0, size, size);
 
     // Outer glow ring
     ctx.beginPath();
     ctx.arc(cx, cy, r + 10, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'var(--secondary)';
+    ctx.strokeStyle = secondaryCol;
     ctx.globalAlpha = 0.3;
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -67,9 +78,9 @@ const Ruleta = ({ items = [] }) => {
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, r, start, end);
       ctx.closePath();
-      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.fillStyle = palette[i % palette.length];
       ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)';
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -78,13 +89,13 @@ const Ruleta = ({ items = [] }) => {
       ctx.translate(cx, cy);
       ctx.rotate(start + arc / 2);
       ctx.textAlign = 'right';
-      const fontSize = Math.max(9, Math.min(14, 120 / n));
+      const fontSize = Math.max(10, Math.min(15, 120 / n));
       ctx.font = `bold ${fontSize}px Outfit, sans-serif`;
-      ctx.fillStyle = 'var(--line)';
+      ctx.fillStyle = textCol;
       const maxChars = Math.max(6, Math.floor(180 / n));
       const label = opt.length > maxChars ? opt.slice(0, maxChars - 1) + '…' : opt;
-      ctx.shadowColor = 'rgba(255,255,255,0.5)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(255,255,255,0.4)';
+      ctx.shadowBlur = 2;
       ctx.fillText(label, r - 8, fontSize / 3);
       ctx.restore();
     });
@@ -92,9 +103,9 @@ const Ruleta = ({ items = [] }) => {
     // Center hub
     ctx.beginPath();
     ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
-    ctx.fillStyle = 'var(--bg)';
+    ctx.fillStyle = bgCol;
     ctx.fill();
-    ctx.strokeStyle = 'var(--primary)';
+    ctx.strokeStyle = primaryCol;
     ctx.lineWidth = 3;
     ctx.stroke();
 
@@ -113,9 +124,9 @@ const Ruleta = ({ items = [] }) => {
       py + 22 * Math.sin(angle + 0.4)
     );
     ctx.closePath();
-    ctx.fillStyle = 'var(--primary)';
+    ctx.fillStyle = primaryCol;
     ctx.fill();
-    ctx.strokeStyle = 'var(--line)';
+    ctx.strokeStyle = lineCol;
     ctx.lineWidth = 2;
     ctx.stroke();
   }, [options]);
@@ -123,6 +134,13 @@ const Ruleta = ({ items = [] }) => {
   useEffect(() => {
     drawWheel(rotationRef.current);
   }, [options, drawWheel]);
+
+  // Redraw when the active theme class on <body> changes
+  useEffect(() => {
+    const obs = new MutationObserver(() => drawWheel(rotationRef.current));
+    obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, [drawWheel]);
 
   const getWinnerIndex = (rotation) => {
     const opts = options.length > 0 ? options : ['Sin opciones'];

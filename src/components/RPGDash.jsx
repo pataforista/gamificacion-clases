@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
 import { usePersistence } from '../hooks/usePersistence';
 import { useNotifications } from './NotificationContext';
 import { useGSAP } from '@gsap/react';
@@ -19,6 +20,8 @@ const RPGDash = () => {
     const { notify, confirm } = useNotifications();
     const [promotion, setPromotion] = useState(null);
     const prevRankRef = useRef(null);
+    const prevXpRef = useRef(state.xp);
+    useEffect(() => { prevXpRef.current = state.xp; }, [state.xp]);
 
     // Mode handling: 'medical' | 'general'
     const mode = state.rpgMode || 'medical';
@@ -50,15 +53,17 @@ const RPGDash = () => {
 
     useEffect(() => {
         const currentRank = getRank(state.xp);
+        const medicalRanks = ["Interno/a", "Residente", "Residente Senior", "Adjunto/a", "Jefe/a de Servicio"];
+        const generalRanks = ["Novato/a", "Aprendiz", "Veterano/a", "Experto/a", "Maestro/a"];
+        const ranks = mode === 'medical' ? medicalRanks : generalRanks;
+
         if (prevRankRef.current && prevRankRef.current !== currentRank && state.xp > 0) {
-            const ranks = ["Interno/a", "Residente", "Residente Senior", "Adjunto/a", "Jefe/a de Servicio"];
             if (ranks.indexOf(currentRank) > ranks.indexOf(prevRankRef.current)) {
                 setPromotion(currentRank);
                 confetti({
                     particleCount: 150,
                     spread: 70,
                     origin: { y: 0.6 },
-                    colors: ['#6366f1', '#2dd4bf', '#f59e0b']
                 });
 
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
@@ -67,7 +72,8 @@ const RPGDash = () => {
             }
         }
         prevRankRef.current = currentRank;
-    }, [state.xp]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.xp, mode]);
 
     const handleXP = (amount) => {
         updateState({ xp: Math.max(0, state.xp + amount) });
@@ -105,11 +111,11 @@ const RPGDash = () => {
 
     const handleReset = async () => {
         const confirmed = await confirm(
-            "Reiniciar Todo",
-            "¿Estás seguro de que deseas reiniciar TODO el progreso médico? Esta acción no se puede deshacer."
+            "Reiniciar progreso",
+            `¿Reiniciar XP, salud y logros? Tu lista de alumnos y el título de la materia se conservan.`
         );
         if (confirmed) {
-            resetState();
+            resetState(true); // preserveRoster
         }
     };
 
@@ -152,7 +158,7 @@ const RPGDash = () => {
                             animate={{ scale: 1 }}
                             className="pill"
                         >
-                            XP: <CountUp to={state.xp} from={state.xp - 10} duration={0.5} className="mono" />
+                            XP: <CountUp to={state.xp} from={prevXpRef.current} duration={0.5} className="mono" />
                         </motion.div>
                     </div>
                     <div className="divider"></div>
@@ -210,9 +216,9 @@ const RPGDash = () => {
                             </motion.div>
                         ))}
                     </motion.div>
-                    <button className="btn" style={{ marginTop: '1.5rem', width: '100%' }} onClick={() => notify("Proyección de logros activada", "achievement", "📽️")}>
-                        📺 Proyectar Logros
-                    </button>
+                    <div className="muted" style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>
+                        {state.badges.length} / {BADGES.length} logros desbloqueados
+                    </div>
                 </div>
 
                 <div className="card">

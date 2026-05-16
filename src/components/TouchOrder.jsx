@@ -235,12 +235,12 @@ const TouchOrder = ({ pickerItems = [] }) => {
                     ref={padRef}
                     style={{
                         position: 'relative',
-                        background: '#0a0a0b',
+                        background: 'var(--bg)',
                         height: '450px',
                         borderRadius: '24px',
-                        border: phase === 'counting' ? '2px dashed var(--primary)'
-                              : phase === 'done'     ? '2px solid var(--good)'
-                              :                        '2px dashed #444',
+                        border: phase === 'counting' ? '3px dashed var(--primary)'
+                              : phase === 'done'     ? '3px solid var(--good)'
+                              :                        '3px dashed var(--line)',
                         overflow: 'hidden',
                         touchAction: 'none',
                         transition: 'border-color 0.3s ease',
@@ -310,8 +310,8 @@ const TouchOrder = ({ pickerItems = [] }) => {
                             position: 'absolute', inset: 0,
                             display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center',
-                            gap: '0.75rem', color: 'rgba(255,255,255,0.15)',
-                            pointerEvents: 'none',
+                            gap: '0.75rem', color: 'var(--muted)',
+                            pointerEvents: 'none', opacity: 0.6,
                         }}>
                             <span style={{ fontSize: '4.5rem', animation: 'pulse 2s infinite' }}>👆</span>
                             <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>

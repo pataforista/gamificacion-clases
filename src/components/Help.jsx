@@ -15,15 +15,14 @@ const Help = () => {
 
             <section style={{ marginBottom: '2rem' }}>
                 <h3>2. Control de Flujo</h3>
-                <p>
-                    Utiliza el <strong>Semáforo</strong> para indicar la fase actual de la clase:
-                    <ul>
-                        <li><span style={{ color: 'var(--traffic-green)' }}>● Verde:</span> Trabajo en equipo o libre.</li>
-                        <li><span style={{ color: 'var(--traffic-yellow)' }}>● Amarillo:</span> Transición o resolución de dudas.</li>
-                        <li><span style={{ color: 'var(--traffic-red)' }}>● Rojo:</span> Explicación del docente (silencio total).</li>
-                    </ul>
-                    El <strong>Código Rojo</strong> es un temporizador rápido de 30s para retomar el control del aula inmediatamente.
-                </p>
+                <p>Utiliza el <strong>Semáforo</strong> para indicar la fase actual de la clase:</p>
+                <ul style={{ marginLeft: '1.5rem' }}>
+                    <li><span style={{ color: 'var(--traffic-green)', fontWeight: 800 }}>● Verde:</span> Trabajo en equipo o libre.</li>
+                    <li><span style={{ color: 'var(--traffic-yellow)', fontWeight: 800 }}>● Amarillo:</span> Transición o resolución de dudas.</li>
+                    <li><span style={{ color: 'var(--traffic-red)', fontWeight: 800 }}>● Rojo:</span> Explicación del docente (silencio total).</li>
+                </ul>
+                <p>El <strong>Código Rojo</strong> es un temporizador rápido (15s/30s/60s/2m) para retomar el control del aula.
+                Atajos de teclado: <code>1/2/3</code> cambian el semáforo, <code>R</code> activa/desactiva el código rojo.</p>
             </section>
 
             <section style={{ marginBottom: '2rem' }}>

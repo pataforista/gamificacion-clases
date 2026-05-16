@@ -30,33 +30,43 @@ const App = () => {
   };
 
   useEffect(() => {
-    document.body.className = theme;
+    const themeClasses = ['theme-memphis', 'theme-lipari', 'theme-tokyo', 'theme-lisbon'];
+    themeClasses.forEach(c => document.body.classList.remove(c));
+    document.body.classList.add(theme);
   }, [theme]);
 
-  // Global Timer Sync for Overlay
+  // Global Timer Sync for Overlay — single source of truth for red-code countdown
   useEffect(() => {
-    let interval;
-    if (state.isRedCodeActive && state.redCodeEndTime) {
-      interval = setInterval(() => {
-        const diff = Math.max(0, Math.ceil((state.redCodeEndTime - Date.now()) / 1000));
-        setGlobalTimer(diff);
-      }, 1000);
-    } else {
-      setGlobalTimer(0);
+    if (!state.isRedCodeActive || !state.redCodeEndTime) {
+      if (globalTimer !== 0) setGlobalTimer(0);
+      return;
     }
+    const tick = () => {
+      const diff = Math.max(0, Math.ceil((state.redCodeEndTime - Date.now()) / 1000));
+      setGlobalTimer(diff);
+      if (diff === 0) {
+        updateState({ isRedCodeActive: false, redCodeEndTime: null });
+        if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isRedCodeActive, state.redCodeEndTime]);
 
-  // Keyboard Shortcuts
+  // Keyboard Shortcuts (skip when typing in inputs or editable header)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
+      const t = e.target;
+      if (!t) return;
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return;
+
       switch(e.key.toLowerCase()) {
         case '1': updateState({ traffic: 'green' }); break;
         case '2': updateState({ traffic: 'yellow' }); break;
         case '3': updateState({ traffic: 'red' }); break;
-        case 'r': 
+        case 'r':
           if (state.isRedCodeActive) {
             updateState({ isRedCodeActive: false, redCodeEndTime: null });
           } else {
@@ -64,6 +74,7 @@ const App = () => {
             updateState({ traffic: 'red', isRedCodeActive: true, redCodeEndTime: endTime });
           }
           break;
+        default: break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -118,7 +129,7 @@ const App = () => {
             >
               <div className="red-code-label">ATENCIÓN PLENA</div>
               <div className="giant-timer">{globalTimer}</div>
-              <button className="btn primary error" onClick={() => updateState({ isRedCodeActive: false, redCodeEndTime: null })}>
+              <button className="btn primary" onClick={() => updateState({ isRedCodeActive: false, redCodeEndTime: null })}>
                 Cerrar Temporizador
               </button>
             </motion.div>
