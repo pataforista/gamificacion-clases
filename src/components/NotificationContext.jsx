@@ -4,9 +4,13 @@ import gsap from 'gsap';
 import Dialog from './Dialog';
 import './Notifications.css';
 
-const NotificationContext = createContext();
+const NotificationContext = createContext(null);
 
-export const useNotifications = () => useContext(NotificationContext);
+export const useNotifications = () => {
+    const ctx = useContext(NotificationContext);
+    if (!ctx) throw new Error("useNotifications debe usarse dentro de NotificationProvider");
+    return ctx;
+};
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);

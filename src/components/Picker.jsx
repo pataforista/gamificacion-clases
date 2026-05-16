@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RNG, cleanLines } from '../utils/rng';
 import { useNotifications } from './NotificationContext';
 import Shuffle from './Shuffle';
 import AnimatedList from './AnimatedList';
 
 const Picker = ({ onItemsChange, items = [] }) => {
-    const { alert } = useNotifications();
-    const [inputText, setInputText] = useState(items.join('\n') || "Opción A\nOpción B\nOpción C\nOpción D");
+    const { alert, confirm } = useNotifications();
+    const [inputText, setInputText] = useState(items.join('\n'));
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
+    const lastSyncRef = useRef(items.join('\n'));
+
+    // Keep textarea in sync with shared roster when it changes from another tab
+    useEffect(() => {
+        const joined = items.join('\n');
+        if (joined !== lastSyncRef.current && joined !== inputText) {
+            setInputText(joined);
+            lastSyncRef.current = joined;
+        }
+    }, [items, inputText]);
 
     const handleTextChange = (e) => {
         const text = e.target.value;
         setInputText(text);
+        lastSyncRef.current = text;
         if (onItemsChange) onItemsChange(cleanLines(text));
     };
 
@@ -41,8 +52,11 @@ const Picker = ({ onItemsChange, items = [] }) => {
                     }}>
                         ✨ Cargar Demo
                     </button>
-                    <button className="btn" onClick={() => {
+                    <button className="btn" onClick={async () => {
+                        const ok = await confirm("Limpiar lista", "¿Borrar todos los nombres? Esta acción no se puede deshacer.");
+                        if (!ok) return;
                         setInputText('');
+                        lastSyncRef.current = '';
                         if (onItemsChange) onItemsChange([]);
                         setResult(null);
                     }}>
@@ -61,9 +75,8 @@ const Picker = ({ onItemsChange, items = [] }) => {
                 <div className="divider"></div>
 
                 <div className="row">
-                    <button className="btn primary good" onClick={pickOne}>Elegir 1</button>
-                    <button className="btn" onClick={pickOne}>⚡ Auto-Sorteo</button>
-                    <button className="btn" onClick={() => setHistory([])}>Limpiar Historial</button>
+                    <button className="btn primary good" onClick={pickOne}>🎲 Elegir alumno</button>
+                    <button className="btn" onClick={() => setHistory([])} disabled={history.length === 0}>Limpiar Historial</button>
                 </div>
 
                 <div className="out" style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
