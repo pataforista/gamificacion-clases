@@ -10,7 +10,7 @@
 }
 
 .notification {
-    background: #FFFFFF;
+    background: var(--glass);
     border: 3px solid var(--memphis-cyan);
     border-radius: 20px;
     padding: 12px 20px;
@@ -31,7 +31,7 @@
 .notification.achievement {
     border-left: 5px solid var(--memphis-yellow);
     border-top-color: var(--memphis-yellow);
-    background: rgba(255, 213, 10, 0.1);
+    background: var(--glass);
     box-shadow: 4px 4px 0px rgba(255, 213, 10, 0.3);
 }
 

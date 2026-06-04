@@ -59,13 +59,13 @@ const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' })
                             fontSize: '1.5rem',
                             fontWeight: 800,
                             marginBottom: '10px',
-                            color: '#fff'
+                            color: 'var(--text)'
                         }}>
                             {title}
                         </h2>
 
                         <p style={{
-                            color: 'rgba(255, 255, 255, 0.7)',
+                            color: 'var(--text-secondary)',
                             lineHeight: '1.6',
                             marginBottom: '25px',
                             fontSize: '0.95rem'

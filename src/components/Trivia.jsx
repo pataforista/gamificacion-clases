@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { RNG, cleanLines } from '../utils/rng';
 import { useNotifications } from './NotificationContext';
+import { useAudio } from './AudioContext';
 
 const DEFAULT_QUESTIONS = [
   { q: '¿Cuál es el hueso más largo del cuerpo humano?', a: 'Fémur' },
@@ -15,6 +16,7 @@ const DEFAULT_SECONDS = 30;
 
 const Trivia = ({ pickerItems = [] }) => {
   const { alert, notify } = useNotifications();
+  const audio = useAudio();
 
   const [questions, setQuestions] = useState(DEFAULT_QUESTIONS);
   const [inputQA, setInputQA] = useState(
@@ -44,8 +46,12 @@ const Trivia = ({ pickerItems = [] }) => {
         if (prev <= 1) {
           stopTimer();
           setActive(false);
+          audio.playSFX('buzzer');
           if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
           return 0;
+        }
+        if (prev <= 5) {
+          audio.playSFX('tick');
         }
         return prev - 1;
       });
@@ -79,6 +85,7 @@ const Trivia = ({ pickerItems = [] }) => {
     }
 
     startTimer(seconds);
+    audio.playSFX('click');
     if (navigator.vibrate) navigator.vibrate(80);
   };
 
@@ -89,6 +96,7 @@ const Trivia = ({ pickerItems = [] }) => {
     setScore(s => ({ ...s, correct: s.correct + 1 }));
     confetti({ particleCount: 80, spread: 50, origin: { x: 0.5, y: 0.4 } });
     if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+    audio.playSFX('correct');
     notify(RNG.getFlavor('correct'), 'achievement', '✅');
   };
 
@@ -98,6 +106,7 @@ const Trivia = ({ pickerItems = [] }) => {
     setShowAnswer(true);
     setScore(s => ({ ...s, wrong: s.wrong + 1 }));
     if (navigator.vibrate) navigator.vibrate([200]);
+    audio.playSFX('incorrect');
     notify(RNG.getFlavor('wrong'), 'xp', '❌');
   };
 

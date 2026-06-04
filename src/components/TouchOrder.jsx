@@ -119,49 +119,50 @@ const TouchOrder = ({ pickerItems = [] }) => {
         timerRef.current = setTimeout(assignTurns, 3000);
     }, [assignTurns]);
 
-    // ─── Touch event handlers ───────
-    const handleTouchStart = useCallback((e) => {
-        e.preventDefault();
-        const t = { ...touchesRef.current };
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            const touch = e.changedTouches[i];
-            t[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+    // ─── Pointer event handlers ───────
+    const handlePointerDown = useCallback((e) => {
+        const pad = padRef.current;
+        if (pad) {
+            try {
+                pad.setPointerCapture(e.pointerId);
+            } catch (err) {}
         }
+        const t = { ...touchesRef.current };
+        t[e.pointerId] = { x: e.clientX, y: e.clientY };
         touchesRef.current = t;
         setTouches({ ...t });
 
-        // Start countdown on first finger down
+        // Start countdown on first pointer down
         if (phaseRef.current === 'waiting') startCountdown();
         
-        // GESTURE: If 2 fingers touch in 'done' state -> reset round
+        // GESTURE: If 2 pointers touch in 'done' state -> reset round
         if (phaseRef.current === 'done' && Object.keys(t).length >= 2) {
             resetRound();
         }
     }, [startCountdown, resetRound]);
 
-    const handleTouchMove = useCallback((e) => {
-        e.preventDefault();
+    const handlePointerMove = useCallback((e) => {
         const t = { ...touchesRef.current };
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            const touch = e.changedTouches[i];
-            if (t[touch.identifier]) {
-                t[touch.identifier] = { x: touch.clientX, y: touch.clientY };
-            }
+        if (t[e.pointerId]) {
+            t[e.pointerId] = { x: e.clientX, y: e.clientY };
+            touchesRef.current = t;
+            setTouches({ ...t });
         }
-        touchesRef.current = t;
-        setTouches({ ...t });
     }, []);
 
-    const handleTouchEnd = useCallback((e) => {
-        e.preventDefault();
-        const t = { ...touchesRef.current };
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            delete t[e.changedTouches[i].identifier];
+    const handlePointerUp = useCallback((e) => {
+        const pad = padRef.current;
+        if (pad) {
+            try {
+                pad.releasePointerCapture(e.pointerId);
+            } catch (err) {}
         }
+        const t = { ...touchesRef.current };
+        delete t[e.pointerId];
         touchesRef.current = t;
         setTouches({ ...t });
 
-        // When ALL fingers are removed:
+        // When ALL pointers are removed:
         if (Object.keys(t).length === 0) {
             if (phaseRef.current === 'counting') {
                 cancelCountdown();
@@ -174,17 +175,17 @@ const TouchOrder = ({ pickerItems = [] }) => {
     useEffect(() => {
         const pad = padRef.current;
         if (!pad) return;
-        pad.addEventListener('touchstart',  handleTouchStart, { passive: false });
-        pad.addEventListener('touchmove',   handleTouchMove,  { passive: false });
-        pad.addEventListener('touchend',    handleTouchEnd,   { passive: false });
-        pad.addEventListener('touchcancel', handleTouchEnd,   { passive: false });
+        pad.addEventListener('pointerdown',   handlePointerDown);
+        pad.addEventListener('pointermove',   handlePointerMove);
+        pad.addEventListener('pointerup',     handlePointerUp);
+        pad.addEventListener('pointercancel', handlePointerUp);
         return () => {
-            pad.removeEventListener('touchstart',  handleTouchStart);
-            pad.removeEventListener('touchmove',   handleTouchMove);
-            pad.removeEventListener('touchend',    handleTouchEnd);
-            pad.removeEventListener('touchcancel', handleTouchEnd);
+            pad.removeEventListener('pointerdown',   handlePointerDown);
+            pad.removeEventListener('pointermove',   handlePointerMove);
+            pad.removeEventListener('pointerup',     handlePointerUp);
+            pad.removeEventListener('pointercancel', handlePointerUp);
         };
-    }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+    }, [handlePointerDown, handlePointerMove, handlePointerUp]);
 
     useEffect(() => () => {
         clearTimeout(timerRef.current);

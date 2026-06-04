@@ -12,26 +12,32 @@ export const useAudio = () => {
 
 // Colección de canciones de espera/transición estables
 export const WAITING_TRACKS = {
-    jeopardy: { name: 'Jeopardy', url: 'https://www.soundjay.com/misc/game-show-bells-a11.mp3' },
-    cien_mexicanos: { name: '100 Mexicanos Dijeron', url: 'https://www.soundjay.com/button/sounds/button-30.mp3' },
+    jeopardy: { name: 'Jeopardy Tema', url: '/sounds/Jeopardy-Theme.mp3' },
+    cien_mexicanos: { name: '100 Mexicanos Dijeron', url: '/sounds/100-Mexicanos-dijieron-Tiempo-en-el-Relo.mp3' },
     fun: { name: 'Divertido', url: 'https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3' },
     tension: { name: 'Tensión Máxima', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
     dance: { name: 'Energía', url: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3' },
-    thinking: { name: 'Pensando...', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
+    thinking: { name: 'Pensando...', url: 'https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3' },
 };
 
 export const GAME_SFX = {
-  intro: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-changing-tab-206.mp3',
-  correct: '/sounds/buena.mp3',
-  incorrect: '/sounds/error.mp3',
+  intro: '/sounds/musica intro para juego.mp3',
+  correct: '/sounds/100-Mexicanos-Dijieron-Respuesta-Correct.mp3',
+  correct_alt: '/sounds/buena.mp3',
+  incorrect: '/sounds/error 2.mp3',
+  incorrect_heavy: '/sounds/error.mp3',
   lose: 'https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-game-over-470.mp3',
   click: 'https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3',
   boing: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-toy-whistle-316.mp3',
   applause: '/sounds/aplausos.mp3',
+  victory: '/sounds/100-Mexicanos-Dijeron-Musica-de-triunfo_Media.mp3',
   buzzer: 'https://assets.mixkit.co/sfx/preview/mixkit-classic-alarm-995.mp3',
   drumroll: 'https://assets.mixkit.co/sfx/preview/mixkit-drum-roll-566.mp3',
   tick: 'https://assets.mixkit.co/sfx/preview/mixkit-tick-tock-clock-timer-1045.mp3',
 };
+
+// Cache for SFX elements to prevent memory leaks
+const sfxCache = {};
 
 export const AudioProvider = ({ children }) => {
     const [isPlaying, setIsPlaying] = useState(false);
@@ -103,8 +109,13 @@ export const AudioProvider = ({ children }) => {
             console.warn(`SFX not found: ${sfxKey}`);
             return;
         }
-        const sfx = new Audio(url);
+        let sfx = sfxCache[url];
+        if (!sfx) {
+            sfx = new Audio(url);
+            sfxCache[url] = sfx;
+        }
         sfx.volume = volume;
+        sfx.currentTime = 0;
         sfx.play().catch(err => console.warn('SFX play error:', err));
     }, [volume]);
 

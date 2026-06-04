@@ -18,23 +18,30 @@ const Bingo = () => {
   const done = remaining.length === 0;
 
   const draw = useCallback(() => {
-    if (rolling || done) return;
+    if (timerRef.current || done) return;
 
     setRolling(true);
     let ticks = 0;
     const total = 12;
+    const calledSet = new Set(called);
 
     timerRef.current = setInterval(() => {
       // Show random flicker during animation
-      const pool = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !called.includes(n));
-      if (pool.length === 0) { clearInterval(timerRef.current); setRolling(false); return; }
+      const pool = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !calledSet.has(n));
+      if (pool.length === 0) { 
+        clearInterval(timerRef.current); 
+        timerRef.current = null; 
+        setRolling(false); 
+        return; 
+      }
       setCurrent(pool[RNG.int(0, pool.length - 1)]);
       ticks++;
 
       if (ticks >= total) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
         // Final pick
-        const finalPool = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !called.includes(n));
+        const finalPool = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !calledSet.has(n));
         const chosen = finalPool[RNG.int(0, finalPool.length - 1)];
         setCurrent(chosen);
         setCalled(prev => [...prev, chosen]);
@@ -48,10 +55,13 @@ const Bingo = () => {
         }
       }
     }, 70);
-  }, [rolling, done, called, maxNum]);
+  }, [done, called, maxNum, playSFX]);
 
   const reset = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     setCalled([]);
     setCurrent(null);
     setRolling(false);

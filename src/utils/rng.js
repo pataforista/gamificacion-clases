@@ -96,6 +96,13 @@ export const RNG = {
     },
 
     resetBag(key) {
-        this._bags.delete(key);
+        const bagKey = `bag-${key}`;
+        try {
+            const state = JSON.parse(sessionStorage.getItem('rng_bags') || '{}');
+            delete state[bagKey];
+            sessionStorage.setItem('rng_bags', JSON.stringify(state));
+        } catch (e) {
+            console.error(e);
+        }
     },
 };

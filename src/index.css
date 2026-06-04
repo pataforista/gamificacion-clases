@@ -20,6 +20,7 @@
 
   /* Primary colors mapping */
   --primary: #FF006E;
+  --primary-rgb: 255, 0, 110;
   --secondary: #00D9FF;
   --good: #CCFF00;
   --warn: #FFD60A;
@@ -59,6 +60,7 @@
   --text-secondary: #ffc300;
   --muted: #ffb703;
   --primary: #fb8500;
+  --primary-rgb: 251, 133, 0;
   --secondary: #219ebc;
   --good: #8ecae6;
   --warn: #ffb703;
@@ -78,6 +80,7 @@
   --text-secondary: #7aa2f7;
   --muted: #565f89;
   --primary: #bb9af7;
+  --primary-rgb: 187, 154, 247;
   --secondary: #7dcfff;
   --good: #9ece6a;
   --warn: #e0af68;
@@ -97,6 +100,7 @@
   --text-secondary: #495057;
   --muted: #6c757d;
   --primary: #0077b6;
+  --primary-rgb: 0, 119, 182;
   --secondary: #00b4d8;
   --good: #2a9d8f;
   --warn: #e9c46a;

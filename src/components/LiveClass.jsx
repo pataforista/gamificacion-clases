@@ -95,28 +95,28 @@ const LiveClass = ({ pickerItems = [] }) => {
             <div className="card full-width" style={{ gridColumn: 'span 2' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2>Gestión de Clase en Vivo</h2>
-                    <div className={`pill active-${state.traffic}`} style={{ background: `var(--traffic-${state.traffic})`, color: 'black' }}>
-                        {state.traffic.toUpperCase()}
+                    <div className={`pill active-${state.traffic || 'green'}`} style={{ background: `var(--traffic-${state.traffic || 'green'})`, color: 'black' }}>
+                        {(state.traffic || 'green').toUpperCase()}
                     </div>
                 </div>
 
                 <div className="traffic-row" style={{ marginTop: '20px', height: '120px' }}>
                     <button 
-                        className={`traffic-btn ${state.traffic === 'green' ? 'active' : ''}`}
+                        className={`traffic-btn ${(state.traffic || 'green') === 'green' ? 'active' : ''}`}
                         style={{ background: 'var(--traffic-green)', color: '#000', fontSize: '1rem' }}
                         onClick={() => setTraffic('green')}
                     >
                         LIBRE
                     </button>
                     <button 
-                        className={`traffic-btn ${state.traffic === 'yellow' ? 'active' : ''}`}
+                        className={`traffic-btn ${(state.traffic || 'green') === 'yellow' ? 'active' : ''}`}
                         style={{ background: 'var(--traffic-yellow)', color: '#000', fontSize: '1rem' }}
                         onClick={() => setTraffic('yellow')}
                     >
                         DUDAS
                     </button>
                     <button 
-                        className={`traffic-btn ${state.traffic === 'red' ? 'active' : ''}`}
+                        className={`traffic-btn ${(state.traffic || 'green') === 'red' ? 'active' : ''}`}
                         style={{ background: 'var(--traffic-red)', color: '#000', fontSize: '1rem' }}
                         onClick={() => setTraffic('red')}
                     >

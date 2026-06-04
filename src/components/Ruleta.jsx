@@ -222,11 +222,13 @@ const Ruleta = ({ items = [] }) => {
           </button>
         </div>
 
-        {winner && (
-          <AnimatePresence>
+        <AnimatePresence>
+          {winner && (
             <motion.div
+              key="winner-modal"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: [1, 1.2, 1], opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 15 }}
               style={{
                 position: 'absolute',
@@ -249,8 +251,8 @@ const Ruleta = ({ items = [] }) => {
               <div style={{ fontSize: '2.5rem', fontWeight: 900, margin: '10px 0' }}>{winner}</div>
               <button className="btn primary" onClick={() => setWinner(null)}>¡Dale!</button>
             </motion.div>
-          </AnimatePresence>
-        )}
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="card">

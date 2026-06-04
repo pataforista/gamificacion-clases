@@ -7,7 +7,8 @@ const POKEMONS = [
   '/personajes/dugtrio.png',
   '/personajes/electrode.png',
   '/personajes/gengar.png',
-  '/personajes/gloom-f.png'
+  '/personajes/gloom-f.png',
+  '🩺', '🧠', '🫀', '💊', '🧬', '🔬', '🦴', '🩹', '🌡️', '🏥', '⚕️', '🦷', '🧪', '👁️', '👂', '🦠'
 ];
 
 const AvatarSelector = ({ teams = [], onComplete }) => {
@@ -53,7 +54,8 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
       }}>
         {POKEMONS.map((path, i) => {
           // Check if this pokemon is already selected by another team
-          const isTaken = Object.values(selections).includes(path);
+          const isTaken = (teams.length <= POKEMONS.length) && Object.values(selections).includes(path);
+          const isEmoji = !path.startsWith('/') && !path.startsWith('http') && !path.includes('.');
           return (
             <button
               key={i}
@@ -67,11 +69,12 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: isTaken ? '2px solid rgba(255,0,0,0.5)' : '2px solid var(--line)',
-                opacity: isTaken ? 0.3 : 1
+                opacity: isTaken ? 0.3 : 1,
+                fontSize: isEmoji ? '2.2rem' : 'inherit'
               }}
               onClick={() => handleSelect(path)}
             >
-              <img src={path} alt="pokemon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              {isEmoji ? path : <img src={path} alt="pokemon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
             </button>
           );
         })}
@@ -92,11 +95,21 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
 
       {Object.keys(selections).length > 0 && (
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {teams.map(t => selections[t] && (
-                  <div key={t} className="pill" style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      {t}: <img src={selections[t]} width="20" height="20" style={{ borderRadius: '50%', objectFit: 'cover' }} alt="Avatar" />
-                  </div>
-              ))}
+              {teams.map(t => {
+                  const sel = selections[t];
+                  if (!sel) return null;
+                  const isEmoji = !sel.startsWith('/') && !sel.startsWith('http') && !sel.includes('.');
+                  return (
+                      <div key={t} className="pill" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px' }}>
+                          <span style={{ fontWeight: 900 }}>{t}:</span>
+                          {isEmoji ? (
+                              <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{sel}</span>
+                          ) : (
+                              <img src={sel} width="20" height="20" style={{ borderRadius: '50%', objectFit: 'cover' }} alt="Avatar" />
+                          )}
+                      </div>
+                  );
+              })}
           </div>
       )}
     </div>
