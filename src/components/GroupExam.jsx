@@ -65,6 +65,7 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     const [teamAvatars, setTeamAvatars] = useState({});
     const [setupPhase, setSetupPhase] = useState('upload'); // upload, edit, avatar, game
+    const [projectorMode, setProjectorMode] = useState(false); // big question/options for projection
 
     // Audio volume control
     const [isMuted, setIsMuted] = useState(false);
@@ -596,6 +597,26 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     const showQuestionBlock = question && (activeTeam || roboTeam) && (!isLastQuestion || wagerConfirmed || roboTeam);
 
+    // Projector mode: question + options take a wide main column with bigger
+    // text; ranking and board collapse into a narrow side column.
+    const dashStyle = projectorMode
+        ? {
+            display: 'grid',
+            gridTemplateColumns: 'minmax(140px, 0.8fr) 3fr',
+            gridTemplateRows: 'auto auto',
+            gridTemplateAreas: '"rank main" "board main"',
+            gap: 'clamp(0.5rem, 1.2vw, 1.5rem)',
+            alignItems: 'start'
+        }
+        : {
+            display: 'grid',
+            gridTemplateColumns: 'minmax(100px, 0.6fr) 2fr 1.6fr',
+            gap: 'clamp(0.5rem, 1.2vw, 1.5rem)',
+            alignItems: 'start'
+        };
+    const questionFont = projectorMode ? 'clamp(1.4rem, 2.8vw, 3rem)' : 'clamp(1.05rem, 2.1vw, 2rem)';
+    const optionFont = projectorMode ? 'clamp(1.15rem, 2vw, 2rem)' : 'clamp(0.95rem, 1.5vw, 1.45rem)';
+
     return (
         <div className="grid">
             <div className="card full-width" style={{ gridColumn: 'span 2' }}>
@@ -658,6 +679,15 @@ const GroupExam = ({ pickerItems = [] }) => {
                                     setSetupPhase('upload');
                                 }
                             }}>🛑 Cerrar Examen</button>
+                        )}
+                        {setupPhase === 'game' && (
+                            <button
+                                className="btn"
+                                style={projectorMode ? { background: 'var(--primary)', color: 'white', fontWeight: 900 } : { fontWeight: 900 }}
+                                onClick={() => { audio.playSFX('click'); setProjectorMode(p => !p); }}
+                            >
+                                {projectorMode ? '🔳 Salir de Proyector' : '📺 Modo Proyector'}
+                            </button>
                         )}
                     </div>
                 </div>
@@ -852,14 +882,9 @@ const GroupExam = ({ pickerItems = [] }) => {
 
                 {/* ===================== GAME PHASE ===================== */}
                 {setupPhase === 'game' && exam && currentQuestion >= 0 && (
-                    <div className="game-dashboard" style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'minmax(100px, 0.6fr) 2fr 1.6fr',
-                        gap: 'clamp(0.5rem, 1.2vw, 1.5rem)',
-                        alignItems: 'start'
-                    }}>
+                    <div className="game-dashboard" style={dashStyle}>
                         {/* LEFT: RANKING */}
-                        <div className="card" style={{ padding: 'clamp(0.4rem, 1vw, 1rem)', marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '3px solid var(--line)' }}>
+                        <div className="card" style={{ gridArea: projectorMode ? 'rank' : undefined, padding: 'clamp(0.4rem, 1vw, 1rem)', marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '3px solid var(--line)' }}>
                             <h4 style={{ margin: '0 0 0.2rem 0', textTransform: 'uppercase', fontSize: '0.65rem', opacity: 0.7 }}>🏆 Clasificación</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(4px, 0.5vh, 8px)' }}>
                                 <AnimatePresence>
@@ -897,7 +922,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                         </div>
 
                         {/* CENTER: BOARD */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ gridArea: projectorMode ? 'board' : undefined, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <div style={{ background: 'var(--bg-secondary)', padding: '5px', borderRadius: '18px', border: '4px solid var(--line)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', width: '100%' }}>
                                 <BoardGame
                                     teams={pickerItems}
@@ -914,7 +939,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                         </div>
 
                         {/* RIGHT: QUESTIONS & CONTROLS */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.35rem, 0.7vh, 1rem)' }}>
+                        <div style={{ gridArea: projectorMode ? 'main' : undefined, display: 'flex', flexDirection: 'column', gap: 'clamp(0.35rem, 0.7vh, 1rem)' }}>
                             {settings.timer && (
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     <div className="timer-bar-container" style={{ flex: 1, height: 'clamp(10px, 1.5vh, 14px)', background: 'rgba(0,0,0,0.1)', border: '2px solid var(--line)', borderRadius: '8px', overflow: 'hidden' }}>
@@ -1021,7 +1046,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                             {/* Question + options */}
                             {showQuestionBlock && (
                                 <div className="exam-content" style={{ marginTop: 0 }}>
-                                    <div className="exam-question" style={{ background: 'var(--bg-secondary)', fontSize: 'clamp(1.05rem, 2.1vw, 2rem)', lineHeight: 1.3, color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.7rem, 1.3vw, 1.4rem)' }}>
+                                    <div className="exam-question" style={{ background: 'var(--bg-secondary)', fontSize: questionFont, lineHeight: 1.3, color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.7rem, 1.3vw, 1.4rem)' }}>
                                         {question.text}
                                     </div>
                                     <div className="exam-options" style={{ gap: 'clamp(5px, 0.7vh, 10px)', marginTop: 'clamp(0.4rem, 0.7vh, 1rem)' }}>
@@ -1053,7 +1078,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                                                         background: bg,
                                                         color: fg,
                                                         padding: 'clamp(9px, 1.3vh, 18px)',
-                                                        fontSize: 'clamp(0.95rem, 1.5vw, 1.45rem)',
+                                                        fontSize: optionFont,
                                                         fontWeight: '700',
                                                         cursor: 'pointer',
                                                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
