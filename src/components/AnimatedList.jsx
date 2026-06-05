@@ -76,12 +76,16 @@ const AnimatedList = ({
 
   useEffect(() => {
     if (!enableArrowNavigation) return;
+    const container = listRef.current;
+    if (!container) return;
+    // Scope keyboard nav to the focused list instead of window, so it never
+    // hijacks the page's global Tab traversal or arrow-key scrolling.
     const handleKeyDown = e => {
-      if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setKeyboardNav(true);
         setSelectedIndex(prev => Math.min(prev + 1, items.length - 1));
-      } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+      } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setKeyboardNav(true);
         setSelectedIndex(prev => Math.max(prev - 1, 0));
@@ -95,8 +99,8 @@ const AnimatedList = ({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
   }, [items, selectedIndex, onItemSelect, enableArrowNavigation]);
 
   useEffect(() => {
@@ -123,7 +127,7 @@ const AnimatedList = ({
 
   return (
     <div className={`scroll-list-container ${className}`}>
-      <div ref={listRef} className={`scroll-list ${!displayScrollbar ? 'no-scrollbar' : ''}`} onScroll={handleScroll}>
+      <div ref={listRef} className={`scroll-list ${!displayScrollbar ? 'no-scrollbar' : ''}`} onScroll={handleScroll} tabIndex={enableArrowNavigation ? 0 : undefined}>
         {items.map((item, index) => (
           <AnimatedItem
             key={index}

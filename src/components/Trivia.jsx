@@ -29,7 +29,6 @@ const Trivia = ({ pickerItems = [] }) => {
   const [student, setStudent] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
-  const [round, setRound] = useState(0);
 
   const timerRef = useRef(null);
 
@@ -68,7 +67,6 @@ const Trivia = ({ pickerItems = [] }) => {
     stopTimer();
     setShowAnswer(false);
     setActive(true);
-    setRound(r => r + 1);
 
     // Pick a question via balanced bag (no repeats until all seen)
     const qKey = RNG.keyFromItems('trivia-q', questions.map(q => q.q));
@@ -118,7 +116,6 @@ const Trivia = ({ pickerItems = [] }) => {
     setShowAnswer(false);
     setTimeLeft(null);
     setScore({ correct: 0, wrong: 0 });
-    setRound(0);
   };
 
   const handleQAChange = (e) => {

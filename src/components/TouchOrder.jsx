@@ -125,7 +125,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
         if (pad) {
             try {
                 pad.setPointerCapture(e.pointerId);
-            } catch (err) {}
+            } catch { /* setPointerCapture no soportado en este navegador */ }
         }
         const t = { ...touchesRef.current };
         t[e.pointerId] = { x: e.clientX, y: e.clientY };
@@ -155,7 +155,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
         if (pad) {
             try {
                 pad.releasePointerCapture(e.pointerId);
-            } catch (err) {}
+            } catch { /* setPointerCapture no soportado en este navegador */ }
         }
         const t = { ...touchesRef.current };
         delete t[e.pointerId];
@@ -413,7 +413,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
                 <div className="card">
                     <h2>Historial de Rondas</h2>
                     <div className="orderlist">
-                        {history.slice().reverse().map(({ startTurn, count, details }, ri) => (
+                        {history.slice().reverse().map(({ count, details }, ri) => (
                             <div key={ri} style={{
                                 padding: '1rem',
                                 background: 'rgba(255,255,255,0.03)',

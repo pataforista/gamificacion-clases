@@ -2,14 +2,16 @@ import React, { useState, lazy, Suspense, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePersistence } from './hooks/usePersistence';
 import { AudioProvider } from './components/AudioContext';
-import RPGDash from './components/RPGDash';
-import FlowControl from './components/FlowControl';
-import Dice from './components/Dice';
-import Picker from './components/Picker';
-import Teams from './components/Teams';
 import LiveClass from './components/LiveClass';
 
-// Lazy loaded components for better bundle size
+// Only the landing tab (LiveClass) is eagerly imported. Every other tab is
+// lazy-loaded so heavy libraries (mathjs via rpg-dice-roller, gsap) stay out of
+// the initial bundle and load on demand when their tab is opened.
+const RPGDash = lazy(() => import('./components/RPGDash'));
+const FlowControl = lazy(() => import('./components/FlowControl'));
+const Dice = lazy(() => import('./components/Dice'));
+const Picker = lazy(() => import('./components/Picker'));
+const Teams = lazy(() => import('./components/Teams'));
 const TouchOrder = lazy(() => import('./components/TouchOrder'));
 const GroupExam = lazy(() => import('./components/GroupExam'));
 const Ruleta = lazy(() => import('./components/Ruleta'));
