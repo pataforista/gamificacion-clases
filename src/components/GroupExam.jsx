@@ -854,7 +854,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                 {setupPhase === 'game' && exam && currentQuestion >= 0 && (
                     <div className="game-dashboard" style={{
                         display: 'grid',
-                        gridTemplateColumns: 'minmax(110px, 0.7fr) 2.5fr 1.2fr',
+                        gridTemplateColumns: 'minmax(100px, 0.6fr) 2fr 1.6fr',
                         gap: 'clamp(0.5rem, 1.2vw, 1.5rem)',
                         alignItems: 'start'
                     }}>
@@ -907,7 +907,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                                     activeTeam={roboTeam || activeTeam}
                                 />
                             </div>
-                            <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text)', fontWeight: 'bold', fontSize: 'clamp(0.7rem, 1.2vw, 0.9rem)', padding: '0 0.2rem' }}>
+                            <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text)', fontWeight: 'bold', fontSize: 'clamp(0.8rem, 1.3vw, 1.15rem)', padding: '0 0.2rem' }}>
                                 <span>📺 Pregunta {currentQuestion + 1} / {exam.questions.length}</span>
                                 <span style={{ color: 'var(--primary)' }}>{Math.round(((currentQuestion + 1) / exam.questions.length) * 100)}% Completado</span>
                             </div>
@@ -985,8 +985,8 @@ const GroupExam = ({ pickerItems = [] }) => {
                             {/* Active team header + jokers */}
                             {!roboTeam && activeTeam && !feedback && (!isLastQuestion || wagerConfirmed) && (
                                 <div className="card" style={{ background: 'var(--primary)', color: '#fff', border: '4px solid var(--line)', textAlign: 'center', padding: 'clamp(0.4rem, 0.8vh, 1rem)', marginBottom: 0, boxShadow: '0 15px 30px rgba(0,0,0,0.3)' }}>
-                                    <h3 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '2px', fontSize: 'clamp(0.65rem, 1.1vw, 0.8rem)' }}>🎙️ PREGUNTA AL AIRE</h3>
-                                    <div style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.5rem)', fontWeight: 900 }}>{activeTeam}</div>
+                                    <h3 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '2px', fontSize: 'clamp(0.7rem, 1.1vw, 0.95rem)' }}>🎙️ PREGUNTA AL AIRE</h3>
+                                    <div style={{ fontSize: 'clamp(1.3rem, 2vw, 2rem)', fontWeight: 900 }}>{activeTeam}</div>
                                     {wagerConfirmed && (
                                         <div style={{ fontSize: '0.9rem', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '8px', marginTop: '5px', fontWeight: 'bold' }}>Apuesta: {wager} XP</div>
                                     )}
@@ -1021,7 +1021,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                             {/* Question + options */}
                             {showQuestionBlock && (
                                 <div className="exam-content" style={{ marginTop: 0 }}>
-                                    <div className="exam-question" style={{ background: 'var(--bg-secondary)', fontSize: 'clamp(0.85rem, 1.4vw, 1rem)', color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.6rem, 1.1vw, 1.2rem)' }}>
+                                    <div className="exam-question" style={{ background: 'var(--bg-secondary)', fontSize: 'clamp(1.05rem, 2.1vw, 2rem)', lineHeight: 1.3, color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.7rem, 1.3vw, 1.4rem)' }}>
                                         {question.text}
                                     </div>
                                     <div className="exam-options" style={{ gap: 'clamp(5px, 0.7vh, 10px)', marginTop: 'clamp(0.4rem, 0.7vh, 1rem)' }}>
@@ -1052,20 +1052,21 @@ const GroupExam = ({ pickerItems = [] }) => {
                                                         border,
                                                         background: bg,
                                                         color: fg,
-                                                        padding: 'clamp(7px, 1.1vh, 14px)',
-                                                        fontSize: 'clamp(0.78rem, 1.2vw, 0.95rem)',
+                                                        padding: 'clamp(9px, 1.3vh, 18px)',
+                                                        fontSize: 'clamp(0.95rem, 1.5vw, 1.45rem)',
                                                         fontWeight: '700',
                                                         cursor: 'pointer',
                                                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                                                         transition: 'all 0.2s ease',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '8px'
+                                                        gap: '10px'
                                                     }}
                                                     onClick={() => answer(i, !!roboTeam)}
                                                 >
-                                                    <span style={{ opacity: 0.55, fontWeight: 900, fontSize: '0.7rem' }}>{i + 1}.</span>
+                                                    <span style={{ opacity: 0.55, fontWeight: 900, fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>{i + 1}.</span>
                                                     <span style={{ flex: 1, textAlign: 'left' }}>{opt}</span>
+                                                    {isResolved && i === question.correctIndex && <span style={{ fontWeight: 900 }}>✓</span>}
                                                 </button>
                                             );
                                         })}
@@ -1091,15 +1092,21 @@ const GroupExam = ({ pickerItems = [] }) => {
                                     padding: 'clamp(0.6rem, 1.2vh, 1.5rem)',
                                     textAlign: 'center'
                                 }}>
-                                    <div style={{ fontSize: 'clamp(1rem, 1.7vw, 1.3rem)', fontWeight: 900, marginBottom: '0.5rem' }}>{feedback.msg}</div>
+                                    <div style={{ fontSize: 'clamp(1.1rem, 2vw, 1.8rem)', fontWeight: 900, marginBottom: '0.5rem' }}>{feedback.msg}</div>
+
+                                    {question && (
+                                        <div style={{ fontSize: 'clamp(1rem, 1.7vw, 1.5rem)', fontWeight: 800, background: 'rgba(0,0,0,0.22)', padding: 'clamp(8px, 1vw, 14px)', borderRadius: '10px', margin: '10px 0' }}>
+                                            ✅ Respuesta correcta: {question.options[question.correctIndex]}
+                                        </div>
+                                    )}
 
                                     {feedback.explanation && (
-                                        <div style={{ fontSize: '0.85rem', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', margin: '10px 0', textAlign: 'left', borderLeft: '4px solid white' }}>
+                                        <div style={{ fontSize: 'clamp(0.95rem, 1.4vw, 1.3rem)', lineHeight: 1.35, background: 'rgba(0,0,0,0.2)', padding: 'clamp(10px, 1.1vw, 16px)', borderRadius: '8px', margin: '10px 0', textAlign: 'left', borderLeft: '4px solid white' }}>
                                             <strong>💡 Explicación:</strong> {feedback.explanation}
                                         </div>
                                     )}
 
-                                    <button className="btn primary" style={{ background: 'var(--bg)', color: 'var(--text)', border: '2px solid var(--line)', width: '100%', fontSize: 'clamp(0.9rem, 1.4vw, 1.1rem)' }} onClick={advanceAfterFeedback}>
+                                    <button className="btn primary" style={{ background: 'var(--bg)', color: 'var(--text)', border: '2px solid var(--line)', width: '100%', fontSize: 'clamp(1rem, 1.5vw, 1.3rem)', padding: 'clamp(0.5rem, 1vh, 0.9rem)' }} onClick={advanceAfterFeedback}>
                                         {isLastQuestion ? '🏆 ¡Ver Gran Final!' : 'Siguiente Pregunta ➡'}
                                     </button>
                                 </div>
