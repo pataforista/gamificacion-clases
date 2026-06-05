@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion, AnimatePresence } from 'motion/react';
 import Dialog from './Dialog';
 import './Notifications.css';
 
@@ -49,42 +48,32 @@ export const NotificationProvider = ({ children }) => {
         <NotificationContext.Provider value={{ notify, alert, confirm }}>
             {children}
             <div className="notification-container">
-                {notifications.map((n) => (
-                    <NotificationItem key={n.id} notification={n} />
-                ))}
+                <AnimatePresence>
+                    {notifications.map((n) => (
+                        <NotificationItem key={n.id} notification={n} />
+                    ))}
+                </AnimatePresence>
             </div>
             <Dialog {...dialog} />
         </NotificationContext.Provider>
     );
 };
 
-const NotificationItem = ({ notification }) => {
-    const containerRef = React.useRef();
-
-    useGSAP(() => {
-        gsap.fromTo(containerRef.current,
-            { x: 100, opacity: 0, scale: 0.8 },
-            { x: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.7)' }
-        );
-
-        // Exit animation before removal
-        gsap.to(containerRef.current, {
-            opacity: 0,
-            x: 50,
-            scale: 0.9,
-            delay: 3.5,
-            duration: 0.5,
-            ease: 'power2.in'
-        });
-    }, { scope: containerRef });
-
-    return (
-        <div ref={containerRef} className={`notification ${notification.type}`}>
-            <div className="notification-icon">{notification.icon}</div>
-            <div className="notification-content">
-                <div className="notification-title">{notification.type === 'xp' ? 'Progreso' : 'Logro'}</div>
-                <div className="notification-msg">{notification.msg}</div>
-            </div>
+const NotificationItem = ({ notification }) => (
+    // Animated with motion (already on the critical path) instead of gsap, so the
+    // always-mounted provider no longer pulls gsap into the initial bundle.
+    <motion.div
+        layout
+        initial={{ x: 100, opacity: 0, scale: 0.8 }}
+        animate={{ x: 0, opacity: 1, scale: 1 }}
+        exit={{ x: 50, opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+        className={`notification ${notification.type}`}
+    >
+        <div className="notification-icon">{notification.icon}</div>
+        <div className="notification-content">
+            <div className="notification-title">{notification.type === 'xp' ? 'Progreso' : 'Logro'}</div>
+            <div className="notification-msg">{notification.msg}</div>
         </div>
-    );
-};
+    </motion.div>
+);

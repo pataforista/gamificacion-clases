@@ -3,10 +3,20 @@ import { usePersistence } from '../hooks/usePersistence';
 import { useNotifications } from './NotificationContext';
 import { useAudio } from './AudioContext';
 import { RNG } from '../utils/rng';
-import { DiceRoller } from 'rpg-dice-roller';
 import { motion, AnimatePresence } from 'motion/react';
 
-const roller = new DiceRoller();
+// Lightweight "NdM" dice roller for the quick dice in this view. Avoids pulling
+// the heavy rpg-dice-roller (and mathjs) into the initial bundle — the full
+// notation engine lives in the dedicated, lazy-loaded "Dado" tab.
+const rollFormula = (formula) => {
+    const match = /^(\d+)d(\d+)$/i.exec(String(formula).trim());
+    if (!match) throw new Error(`Fórmula no soportada: ${formula}`);
+    const count = parseInt(match[1], 10);
+    const sides = parseInt(match[2], 10);
+    let total = 0;
+    for (let i = 0; i < count; i++) total += RNG.int(1, sides);
+    return total;
+};
 
 const LiveClass = ({ pickerItems = [] }) => {
     const { state, updateState } = usePersistence();
@@ -80,8 +90,8 @@ const LiveClass = ({ pickerItems = [] }) => {
 
     const quickRoll = (formula) => {
         try {
-            const roll = roller.roll(formula);
-            setQuickResult({ formula, total: roll.total });
+            const total = rollFormula(formula);
+            setQuickResult({ formula, total });
             audio.playSFX('boing');
             if (navigator.vibrate) navigator.vibrate(40);
         } catch (e) {
