@@ -291,7 +291,13 @@ const Dice = () => {
                     </div>
                     <div>
                         <label>Modo Especial</label><br />
-                        <select value={rollMode} onChange={e => setRollMode(e.target.value)}>
+                        <select value={rollMode} onChange={e => {
+                            const mode = e.target.value;
+                            setRollMode(mode);
+                            // Advantage/disadvantage need at least 2 dice to mean
+                            // anything (keep highest/lowest of one die is a no-op).
+                            if ((mode === 'kh1' || mode === 'kl1') && diceCount < 2) setDiceCount(2);
+                        }}>
                             <option value="normal">Normal</option>
                             <option value="kh1">Ventaja (Mejor)</option>
                             <option value="kl1">Desventaja (Peor)</option>

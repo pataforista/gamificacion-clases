@@ -20,6 +20,7 @@ const RPGDash = () => {
     const { notify, confirm } = useNotifications();
     const [promotion, setPromotion] = useState(null);
     const prevRankRef = useRef(null);
+    const prevModeRef = useRef(state.rpgMode || 'medical');
     const prevXpRef = useRef(state.xp);
     useEffect(() => { prevXpRef.current = state.xp; }, [state.xp]);
 
@@ -56,6 +57,15 @@ const RPGDash = () => {
         const medicalRanks = ["Interno/a", "Residente", "Residente Senior", "Adjunto/a", "Jefe/a de Servicio"];
         const generalRanks = ["Novato/a", "Aprendiz", "Veterano/a", "Experto/a", "Maestro/a"];
         const ranks = mode === 'medical' ? medicalRanks : generalRanks;
+
+        // Switching modes renames every rank, so re-baseline without celebrating:
+        // otherwise the old mode's rank name (absent from the new list) reads as a
+        // promotion and fires a spurious "level up".
+        if (prevModeRef.current !== mode) {
+            prevModeRef.current = mode;
+            prevRankRef.current = currentRank;
+            return;
+        }
 
         if (prevRankRef.current && prevRankRef.current !== currentRank && state.xp > 0) {
             if (ranks.indexOf(currentRank) > ranks.indexOf(prevRankRef.current)) {
