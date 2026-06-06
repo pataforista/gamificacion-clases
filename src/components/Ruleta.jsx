@@ -243,7 +243,8 @@ const Ruleta = ({ items = [] }) => {
                 boxShadow: '0 0 50px var(--primary)',
                 zIndex: 10,
                 textAlign: 'center',
-                minWidth: '280px',
+                minWidth: 'min(280px, 90vw)',
+                maxWidth: 'calc(100vw - 2rem)',
                 pointerEvents: 'auto'
               }}
             >

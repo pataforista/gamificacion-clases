@@ -571,6 +571,20 @@ h2 {
     gap: 1rem;
   }
 
+  /* Cards flagged as full-width (or with an inline `grid-column: span 2`) must
+     collapse to a single track on mobile. Otherwise the span forces an extra
+     implicit column, breaking alignment and overflowing the viewport. */
+  .grid > .full-width,
+  .grid > [style*="span 2"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Multi-column game/exam dashboards stack vertically on phones. */
+  .game-dashboard {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "rank" "board" "main" !important;
+  }
+
   /* Prevent zoom on focus for iOS */
   input, textarea, select {
     font-size: 16px !important;
@@ -594,6 +608,13 @@ h2 {
 
   .traffic-btn {
     height: 80px;
+    font-size: 0.8rem;
+  }
+
+  /* Keep the big result/timer numbers from overflowing narrow screens. */
+  .out {
+    font-size: 4rem;
+    word-break: break-word;
   }
 }
 
@@ -603,7 +624,27 @@ h2 {
   }
 
   .out {
-    font-size: 3.5rem;
+    font-size: 3rem;
+  }
+
+  .title {
+    font-size: clamp(2rem, 9vw, 3rem);
+  }
+
+  /* Header subtitle + theme picker share a row that grows too tall when
+     stretched; keep them centered and auto-width on small phones. */
+  header .row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  header .row > * {
+    width: auto;
+  }
+
+  .traffic-row {
+    gap: 0.75rem;
   }
 }
 
