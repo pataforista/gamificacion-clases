@@ -13,6 +13,7 @@ const Dice = lazy(() => import('./components/Dice'));
 const Picker = lazy(() => import('./components/Picker'));
 const Teams = lazy(() => import('./components/Teams'));
 const TouchOrder = lazy(() => import('./components/TouchOrder'));
+const TouchOrderUneven = lazy(() => import('./components/TouchOrderUneven'));
 const GroupExam = lazy(() => import('./components/GroupExam'));
 const Ruleta = lazy(() => import('./components/Ruleta'));
 const Bingo = lazy(() => import('./components/Bingo'));
@@ -109,6 +110,7 @@ const App = () => {
         { id: 'bingo', label: 'Bingo' },
         { id: 'trivia', label: 'Trivia ⚡' },
         { id: 'touch', label: 'Orden por toque' },
+        { id: 'touch-uneven', label: 'Toque Disparejo' },
         { id: 'help', label: 'Ayuda' },
       ]
     }
@@ -207,6 +209,7 @@ const App = () => {
                   {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
                   {activeTab === 'dice' && <Dice />}
                   {activeTab === 'touch' && <TouchOrder pickerItems={pickerItems} />}
+                  {activeTab === 'touch-uneven' && <TouchOrderUneven pickerItems={pickerItems} />}
                   {activeTab === 'picker' && <Picker items={pickerItems} onItemsChange={setPickerItems} />}
                   {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
                   {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
