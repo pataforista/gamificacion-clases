@@ -52,7 +52,12 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
 
         const res = {};
         shuffled.forEach((id, i) => {
-            res[id] = { group: i < clampedA ? 'A' : 'B', name: names[i] || null };
+            res[id] = {
+                group: i < clampedA ? 'A' : 'B',
+                name: names[i] || null,
+                x: touchesRef.current[id]?.x ?? 0,
+                y: touchesRef.current[id]?.y ?? 0,
+            };
         });
 
         const snapshotA = shuffled.slice(0, clampedA).map((_, i) => res[shuffled[i]]);
@@ -155,6 +160,10 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
     const padWidth  = padRef.current?.clientWidth || 400;
     const baseSize  = Math.max(85, padWidth * 0.15);
 
+    const activeDots = phase === 'done'
+        ? Object.entries(results).map(([id, res]) => ({ id, pos: { x: res.x, y: res.y }, res }))
+        : Object.entries(touches).map(([id, t]) => ({ id, pos: t, res: results[id] }));
+
     return (
         <div className="grid">
             <div className="card" style={{ position: 'relative' }}>
@@ -243,7 +252,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                     style={{
                         position: 'relative',
                         background: 'var(--bg)',
-                        height: '450px',
+                        height: 'clamp(260px, 55vmin, 450px)',
                         borderRadius: '24px',
                         border: phase === 'counting' ? '3px dashed var(--primary)'
                               : phase === 'done'     ? '3px solid var(--good)'
@@ -265,7 +274,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                                 style={{
                                     position: 'absolute', inset: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '12rem', fontWeight: 900,
+                                    fontSize: 'clamp(4rem, 20vmin, 12rem)', fontWeight: 900,
                                     color: 'var(--primary)', textShadow: '0 0 50px var(--primary)',
                                     pointerEvents: 'none', zIndex: 10,
                                 }}
@@ -282,45 +291,49 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                                 initial={{ y: -90, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 style={{
-                                    position: 'absolute', top: '8%', left: '50%',
+                                    position: 'absolute', top: '6%', left: '50%',
                                     transform: 'translateX(-50%)', zIndex: 20,
                                     background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(12px)',
-                                    padding: '1.4rem 1.8rem', borderRadius: '24px',
+                                    padding: '1rem 1.4rem', borderRadius: '20px',
                                     border: '2px solid var(--line)', textAlign: 'center',
-                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', minWidth: '280px',
+                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                                    maxWidth: 'min(360px, 90vw)', width: 'max-content',
+                                    maxHeight: '80%', overflowY: 'auto',
                                 }}
                             >
-                                <h3 style={{ marginBottom: '1rem', letterSpacing: '0.08em', color: 'var(--fg)' }}>
+                                <h3 style={{ marginBottom: '0.75rem', letterSpacing: '0.08em', color: 'var(--fg)', fontSize: '0.95rem' }}>
                                     ⚡ GRUPOS ASIGNADOS
                                 </h3>
-                                <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.7rem', marginBottom: '0.5rem', letterSpacing: '0.08em' }}>
-                                            {groupAName.toUpperCase()} ({groupAResults.length})
+                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    <div style={{ textAlign: 'left', minWidth: '80px' }}>
+                                        <div style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.7rem', marginBottom: '0.4rem', letterSpacing: '0.08em', borderBottom: '1px solid var(--primary)', paddingBottom: '0.3rem' }}>
+                                            {groupAName.toUpperCase()} · {groupAResults.length}
                                         </div>
                                         {groupAResults.map((r, i) => (
-                                            <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '0.2rem' }}>
-                                                {r.name || `Participante ${i + 1}`}
+                                            <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <span style={{ color: 'var(--primary)', fontSize: '0.8rem' }}>A</span>
+                                                {r.name || `P${i + 1}`}
                                             </div>
                                         ))}
                                     </div>
                                     {groupBResults.length > 0 && (
                                         <>
-                                            <div style={{ width: '1px', background: 'var(--line)', alignSelf: 'stretch' }} />
-                                            <div style={{ textAlign: 'left' }}>
-                                                <div style={{ color: 'var(--good)', fontWeight: 900, fontSize: '0.7rem', marginBottom: '0.5rem', letterSpacing: '0.08em' }}>
-                                                    {groupBName.toUpperCase()} ({groupBResults.length})
+                                            <div style={{ width: '1px', background: 'var(--line)', alignSelf: 'stretch', flexShrink: 0 }} />
+                                            <div style={{ textAlign: 'left', minWidth: '80px' }}>
+                                                <div style={{ color: 'var(--good)', fontWeight: 900, fontSize: '0.7rem', marginBottom: '0.4rem', letterSpacing: '0.08em', borderBottom: '1px solid var(--good)', paddingBottom: '0.3rem' }}>
+                                                    {groupBName.toUpperCase()} · {groupBResults.length}
                                                 </div>
                                                 {groupBResults.map((r, i) => (
-                                                    <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '0.2rem' }}>
-                                                        {r.name || `Participante ${groupAResults.length + i + 1}`}
+                                                    <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                        <span style={{ color: 'var(--good)', fontSize: '0.8rem' }}>B</span>
+                                                        {r.name || `P${groupAResults.length + i + 1}`}
                                                     </div>
                                                 ))}
                                             </div>
                                         </>
                                     )}
                                 </div>
-                                <button className="btn primary good" style={{ marginTop: '1rem', width: '100%' }} onClick={resetRound}>
+                                <button className="btn primary good" style={{ marginTop: '0.75rem', width: '100%' }} onClick={resetRound}>
                                     LISTO PARA OTRA
                                 </button>
                             </motion.div>
@@ -346,13 +359,12 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                         </div>
                     )}
 
-                    {/* Touch dots */}
+                    {/* Touch dots — rendered from results when done (persist after lifting fingers) */}
                     <AnimatePresence>
-                        {Object.entries(touches).map(([id, t]) => {
+                        {activeDots.map(({ id, pos, res }) => {
                             const rect = padRef.current?.getBoundingClientRect();
                             if (!rect) return null;
 
-                            const res      = results[id];
                             const assigned = res !== undefined;
                             const colors   = assigned ? (res.group === 'A' ? COLOR_A : COLOR_B) : null;
 
@@ -362,8 +374,8 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{
                                         scale: 1, opacity: 1,
-                                        left: t.x - rect.left,
-                                        top:  t.y - rect.top,
+                                        left: pos.x - rect.left,
+                                        top:  pos.y - rect.top,
                                         width:  baseSize,
                                         height: baseSize,
                                     }}

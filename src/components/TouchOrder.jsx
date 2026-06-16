@@ -6,10 +6,11 @@ import { RNG } from '../utils/rng';
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 // Color scheme by position within a round
-const posStyle = (pos) => {
+const posStyle = (pos, total) => {
     if (pos === 0) return { border: 'var(--primary)',  bg: 'rgba(99,102,241,0.35)',  glow: 'rgba(99,102,241,0.5)' };
     if (pos === 1) return { border: '#c0c0c0',         bg: 'rgba(192,192,192,0.2)',  glow: 'rgba(192,192,192,0.3)' };
     if (pos === 2) return { border: '#cd7f32',         bg: 'rgba(205,127,50,0.2)',   glow: 'rgba(205,127,50,0.3)' };
+    if (pos === total - 1 && total > 3) return { border: '#f87171', bg: 'rgba(248,113,113,0.15)', glow: 'rgba(248,113,113,0.25)' };
     return             { border: 'var(--good)',        bg: 'rgba(45,212,191,0.2)',   glow: 'rgba(45,212,191,0.3)' };
 };
 
@@ -60,11 +61,13 @@ const TouchOrder = ({ pickerItems = [] }) => {
         // Pick names if available
         const names = pickerItems.length > 0 ? RNG.shuffle(pickerItems) : [];
 
-        shuffled.forEach((id, i) => { 
+        shuffled.forEach((id, i) => {
             res[id] = {
                 turn: startTurn + i,
-                name: names[i % names.length] || null
-            }; 
+                name: names[i % names.length] || null,
+                x: touchesRef.current[id]?.x ?? 0,
+                y: touchesRef.current[id]?.y ?? 0,
+            };
         });
 
         const newNext = startTurn + shuffled.length;
@@ -213,6 +216,10 @@ const TouchOrder = ({ pickerItems = [] }) => {
     const baseSize = Math.max(90, padWidth * 0.15);
     const winnerSize = baseSize * 1.5;
 
+    const activeDots = phase === 'done'
+        ? Object.entries(results).map(([id, res]) => ({ id, pos: { x: res.x, y: res.y }, res }))
+        : Object.entries(touches).map(([id, t]) => ({ id, pos: t, res: results[id] }));
+
     return (
         <div className="grid">
             <div className="card" style={{ position: 'relative' }}>
@@ -237,7 +244,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
                     style={{
                         position: 'relative',
                         background: 'var(--bg)',
-                        height: '450px',
+                        height: 'clamp(260px, 55vmin, 450px)',
                         borderRadius: '24px',
                         border: phase === 'counting' ? '3px dashed var(--primary)'
                               : phase === 'done'     ? '3px solid var(--good)'
@@ -259,7 +266,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
                                 style={{
                                     position: 'absolute', inset: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '12rem', fontWeight: 900,
+                                    fontSize: 'clamp(4rem, 20vmin, 12rem)', fontWeight: 900,
                                     color: 'var(--primary)', textShadow: '0 0 50px var(--primary)',
                                     pointerEvents: 'none', zIndex: 10,
                                 }}
@@ -277,28 +284,44 @@ const TouchOrder = ({ pickerItems = [] }) => {
                                 animate={{ y: 0, opacity: 1 }}
                                 className="podium-overlay"
                                 style={{
-                                    position: 'absolute', top: '10%', left: '50%',
+                                    position: 'absolute', top: '8%', left: '50%',
                                     transform: 'translateX(-50%)', zIndex: 20,
-                                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
-                                    padding: '1.5rem 2rem', borderRadius: '24px',
+                                    background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)',
+                                    padding: '1rem 1.4rem', borderRadius: '20px',
                                     border: '2px solid var(--primary)', textAlign: 'center',
-                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', minWidth: '280px'
+                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                                    maxWidth: 'min(340px, 88vw)', width: 'max-content',
+                                    maxHeight: '75%', overflowY: 'auto',
                                 }}
                             >
-                                <h3 style={{ marginBottom: '1rem', color: 'var(--primary)', letterSpacing: '0.1em' }}>🏆 PODIO DE TURNO</h3>
-                                {sortedResults.slice(0, 3).map((res, i) => (
-                                    <div key={i} style={{ 
-                                        display: 'flex', alignItems: 'center', gap: '1rem', 
-                                        fontSize: i === 0 ? '1.8rem' : '1.2rem', fontWeight: 900,
-                                        marginBottom: '0.5rem', justifyContent: 'center'
-                                    }}>
-                                        <span>{MEDALS[i]}</span>
-                                        <span style={{ color: i === 0 ? 'var(--good)' : 'white' }}>
-                                            {res.name || `Turno #${res.turn}`}
-                                        </span>
-                                    </div>
-                                ))}
-                                <button className="btn primary good" style={{ marginTop: '1rem', width: '100%' }} onClick={resetRound}>
+                                <h3 style={{ marginBottom: '0.75rem', color: 'var(--primary)', letterSpacing: '0.08em', fontSize: '0.95rem' }}>🏆 TURNO ASIGNADO</h3>
+                                {sortedResults.map((res, i) => {
+                                    const isFirst = i === 0;
+                                    const isLast  = i === sortedResults.length - 1 && sortedResults.length > 1;
+                                    return (
+                                        <div key={i} style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                            fontSize: isFirst ? '1.3rem' : '0.95rem', fontWeight: 900,
+                                            marginBottom: '0.35rem', opacity: isLast && !isFirst ? 0.75 : 1,
+                                        }}>
+                                            <span>{i < 3 ? MEDALS[i] : isLast ? '🔴' : '🎯'}</span>
+                                            <span style={{ color: isFirst ? '#fbbf24' : isLast ? '#f87171' : 'white', flex: 1, textAlign: 'left' }}>
+                                                {res.name || `Turno #${res.turn}`}
+                                            </span>
+                                            {isFirst && (
+                                                <span style={{ fontSize: '0.55rem', background: 'rgba(250,204,21,0.2)', color: '#fbbf24', padding: '2px 5px', borderRadius: '4px', fontWeight: 900, whiteSpace: 'nowrap' }}>
+                                                    PRIMERO
+                                                </span>
+                                            )}
+                                            {isLast && (
+                                                <span style={{ fontSize: '0.55rem', background: 'rgba(248,113,113,0.15)', color: '#f87171', padding: '2px 5px', borderRadius: '4px', fontWeight: 900, whiteSpace: 'nowrap' }}>
+                                                    ÚLTIMO
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                                <button className="btn primary good" style={{ marginTop: '0.75rem', width: '100%' }} onClick={resetRound}>
                                     LISTO PARA OTRA
                                 </button>
                             </motion.div>
@@ -321,37 +344,38 @@ const TouchOrder = ({ pickerItems = [] }) => {
                         </div>
                     )}
 
-                    {/* Touch dots */}
+                    {/* Touch dots — rendered from results when done (persist after lifting fingers) */}
                     <AnimatePresence>
-                        {Object.entries(touches).map(([id, t]) => {
+                        {activeDots.map(({ id, pos, res }) => {
                             const rect = padRef.current?.getBoundingClientRect();
                             if (!rect) return null;
 
-                            const res        = results[id];
                             const hasTurn    = res !== undefined;
                             const turnNum    = hasTurn ? res.turn : -1;
                             const posInRound = hasTurn ? sortedResults.findIndex(r => r.turn === turnNum) : -1;
-                            const styles     = hasTurn ? posStyle(posInRound) : null;
+                            const total      = sortedResults.length;
+                            const isLast     = hasTurn && posInRound === total - 1 && total > 1;
+                            const styles     = hasTurn ? posStyle(posInRound, total) : null;
 
-                            const isWinner = posInRound === 0;
+                            const isWinner  = posInRound === 0;
                             const finalSize = hasTurn ? (isWinner ? winnerSize : baseSize) : baseSize * 0.8;
 
                             return (
                                 <motion.div
                                     key={id}
                                     initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ 
-                                        scale: 1, 
+                                    animate={{
+                                        scale: 1,
                                         opacity: 1,
-                                        left: t.x - rect.left,
-                                        top: t.y - rect.top,
+                                        left: pos.x - rect.left,
+                                        top: pos.y - rect.top,
                                         width: finalSize,
                                         height: finalSize,
                                     }}
                                     exit={{ scale: 0, opacity: 0 }}
-                                    transition={{ 
+                                    transition={{
                                         scale: { type: 'spring', stiffness: 300, damping: 20 },
-                                        default: { duration: 0.2 } 
+                                        default: { duration: 0.2 }
                                     }}
                                     style={{
                                         position:     'absolute',
@@ -368,7 +392,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
                                         flexDirection:'column',
                                         alignItems:   'center',
                                         justifyContent:'center',
-                                        gap:          '4px',
+                                        gap:          '2px',
                                         pointerEvents:'none',
                                         zIndex:       isWinner ? 5 : 2,
                                         animation:    isWinner ? 'winner-glow-pulsar 2s infinite' : 'none'
@@ -379,18 +403,28 @@ const TouchOrder = ({ pickerItems = [] }) => {
                                             initial={{ scale: 0, rotate: -20 }}
                                             animate={{ scale: 1, rotate: 0 }}
                                             transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}
                                         >
-                                            <span style={{ fontSize: isWinner ? '3rem' : '1.8rem', lineHeight: 1 }}>
-                                                {posInRound < 3 ? MEDALS[posInRound] : '🎯'}
+                                            <span style={{ fontSize: isWinner ? '2.5rem' : '1.6rem', lineHeight: 1 }}>
+                                                {posInRound < 3 ? MEDALS[posInRound] : isLast ? '🔴' : '🎯'}
                                             </span>
                                             <span style={{
                                                 color: '#fff', fontWeight: 900,
-                                                fontSize: isWinner ? '1.5rem' : '1rem',
+                                                fontSize: isWinner ? '1.3rem' : '0.9rem',
                                                 lineHeight: 1, textAlign: 'center', padding: '0 5px'
                                             }}>
                                                 {res.name || `#${res.turn}`}
                                             </span>
+                                            {isWinner && (
+                                                <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontWeight: 900, letterSpacing: '0.05em' }}>
+                                                    ¡PRIMERO!
+                                                </span>
+                                            )}
+                                            {isLast && (
+                                                <span style={{ fontSize: '0.55rem', color: '#f87171', fontWeight: 900, letterSpacing: '0.05em' }}>
+                                                    ÚLTIMO
+                                                </span>
+                                            )}
                                         </motion.div>
                                     )}
                                 </motion.div>
