@@ -3,24 +3,23 @@ import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { RNG } from '../utils/rng';
 
-const COLOR_A = { border: 'var(--primary)', bg: 'rgba(99,102,241,0.35)', glow: 'rgba(99,102,241,0.5)' };
-const COLOR_B = { border: 'var(--good)',    bg: 'rgba(45,212,191,0.25)',  glow: 'rgba(45,212,191,0.45)' };
+const COLOR_WINNER = { border: '#fbbf24', bg: 'rgba(251,191,36,0.25)', glow: 'rgba(251,191,36,0.6)' };
+const COLOR_LOSER  = { border: 'rgba(255,255,255,0.25)', bg: 'rgba(255,255,255,0.04)', glow: 'rgba(0,0,0,0)' };
 
 const TouchOrderUneven = ({ pickerItems = [] }) => {
-    const [groupAName,  setGroupAName]  = useState('Equipo A');
-    const [groupBName,  setGroupBName]  = useState('Equipo B');
-    const [groupACount, setGroupACount] = useState(1);
+    const [winnerLabel, setWinnerLabel] = useState('Sale');
+    const [loserLabel,  setLoserLabel]  = useState('Se queda');
 
     const [touches,   setTouches]   = useState({});
-    const [results,   setResults]   = useState({});   // { id: { group:'A'|'B', name:string|null } }
+    const [results,   setResults]   = useState({});   // { id: { group:'winner'|'loser', name, x, y } }
     const [countdown, setCountdown] = useState(null);
     const [phase,     setPhase]     = useState('waiting');
     const [history,   setHistory]   = useState([]);
 
-    const touchesRef = useRef({});
-    const phaseRef   = useRef('waiting');
-    const padRef     = useRef(null);
-    const timerRef   = useRef(null);
+    const touchesRef  = useRef({});
+    const phaseRef    = useRef('waiting');
+    const padRef      = useRef(null);
+    const timerRef    = useRef(null);
     const intervalRef = useRef(null);
 
     const setPhaseSync = (p) => { phaseRef.current = p; setPhase(p); };
@@ -31,7 +30,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
     }, []);
 
     const cancelCountdown = useCallback(() => {
-        clearTimeout(timerRef.current);    timerRef.current   = null;
+        clearTimeout(timerRef.current);     timerRef.current   = null;
         clearInterval(intervalRef.current); intervalRef.current = null;
         setCountdown(null);
         setPhaseSync('waiting');
@@ -45,32 +44,34 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
         const shuffled = RNG.shuffle(ids);
         const names    = pickerItems.length > 0 ? RNG.shuffle([...pickerItems]) : [];
 
-        // Clamp so Group B always has at least 1 member (unless only 1 finger total)
-        const clampedA = ids.length === 1
-            ? 1
-            : Math.min(Math.max(1, groupACount), ids.length - 1);
-
         const res = {};
         shuffled.forEach((id, i) => {
             res[id] = {
-                group: i < clampedA ? 'A' : 'B',
-                name: names[i] || null,
-                x: touchesRef.current[id]?.x ?? 0,
-                y: touchesRef.current[id]?.y ?? 0,
+                group: i === 0 ? 'winner' : 'loser',
+                name:  names[i] || null,
+                x:     touchesRef.current[id]?.x ?? 0,
+                y:     touchesRef.current[id]?.y ?? 0,
             };
         });
 
-        const snapshotA = shuffled.slice(0, clampedA).map((_, i) => res[shuffled[i]]);
-        const snapshotB = shuffled.slice(clampedA).map((_, i) => res[shuffled[clampedA + i]]);
+        const winner = Object.values(res).find(r => r.group === 'winner');
+        const losers = Object.values(res).filter(r => r.group === 'loser');
 
         setResults(res);
-        setHistory(h => [...h, { count: ids.length, groupAName, groupBName, groupA: snapshotA, groupB: snapshotB }]);
+        setHistory(h => [...h, { count: ids.length, winnerLabel, loserLabel, winner, losers }]);
         setCountdown(null);
         setPhaseSync('done');
 
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        confetti({ particleCount: 80, spread: 65, origin: { y: 0.5 }, colors: ['#6366f1', '#2dd4bf', '#f59e0b'] });
-    }, [pickerItems, groupACount, groupAName, groupBName]);
+
+        if ('speechSynthesis' in window && winner) {
+            const msg = new SpeechSynthesisUtterance(`¡${winner.name || winnerLabel}!`);
+            msg.lang = 'es-MX'; msg.rate = 1.0;
+            window.speechSynthesis.speak(msg);
+        }
+
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.5 }, colors: ['#fbbf24', '#6366f1', '#2dd4bf'] });
+    }, [pickerItems, winnerLabel, loserLabel]);
 
     const startCountdown = useCallback(() => {
         if (timerRef.current) return;
@@ -154,11 +155,12 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
 
     const touchCount   = Object.keys(touches).length;
     const hasHistory   = history.length > 0;
-    const groupAResults = useMemo(() => Object.values(results).filter(r => r.group === 'A'), [results]);
-    const groupBResults = useMemo(() => Object.values(results).filter(r => r.group === 'B'), [results]);
+    const winnerResult = useMemo(() => Object.values(results).find(r => r.group === 'winner'), [results]);
+    const loserResults = useMemo(() => Object.values(results).filter(r => r.group === 'loser'), [results]);
 
-    const padWidth  = padRef.current?.clientWidth || 400;
-    const baseSize  = Math.max(85, padWidth * 0.15);
+    const padWidth   = padRef.current?.clientWidth || 400;
+    const baseSize   = Math.max(80, padWidth * 0.13);
+    const winnerSize = baseSize * 1.8;
 
     const activeDots = phase === 'done'
         ? Object.entries(results).map(([id, res]) => ({ id, pos: { x: res.x, y: res.y }, res }))
@@ -170,7 +172,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
 
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ margin: 0 }}>Asignación Dispareja</h2>
+                    <h2 style={{ margin: 0 }}>Dedo Disparejo</h2>
                     <div className="row">
                         {phase === 'done' && (
                             <button className="btn primary good" onClick={resetRound}>Siguiente Ronda</button>
@@ -183,62 +185,40 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                     </div>
                 </div>
 
-                {/* Configuration panel */}
+                {/* Labels config */}
                 <div style={{
                     display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem',
-                    padding: '1rem 1.2rem', background: 'var(--bg-secondary)',
+                    padding: '0.9rem 1.2rem', background: 'var(--bg-secondary)',
                     borderRadius: '16px', border: '1px solid var(--line)',
                     alignItems: 'flex-end',
                 }}>
-                    <div style={{ flex: 1, minWidth: '130px' }}>
-                        <label style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800, display: 'block', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>
-                            GRUPO A
+                    <div style={{ flex: 1, minWidth: '120px' }}>
+                        <label style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: 800, display: 'block', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>
+                            ⭐ EL QUE SALE (1)
                         </label>
                         <input
                             type="text"
-                            value={groupAName}
-                            onChange={e => setGroupAName(e.target.value)}
+                            value={winnerLabel}
+                            onChange={e => setWinnerLabel(e.target.value)}
                             style={{
                                 width: '100%', padding: '0.45rem 0.7rem', borderRadius: '8px',
-                                border: '2px solid var(--primary)', background: 'var(--bg)',
+                                border: '2px solid #fbbf24', background: 'var(--bg)',
                                 color: 'var(--fg)', fontSize: '0.9rem', fontWeight: 700,
                                 boxSizing: 'border-box',
                             }}
                         />
                     </div>
-
-                    <div>
+                    <div style={{ flex: 1, minWidth: '120px' }}>
                         <label style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 800, display: 'block', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>
-                            CANTIDAD A
-                        </label>
-                        <div className="row" style={{ gap: '0.4rem' }}>
-                            <button
-                                className="btn"
-                                onClick={() => setGroupACount(c => Math.max(1, c - 1))}
-                                style={{ padding: '0.35rem 0.65rem', fontSize: '1.1rem', lineHeight: 1 }}
-                            >−</button>
-                            <span style={{ minWidth: '2rem', textAlign: 'center', fontWeight: 900, fontSize: '1.3rem' }}>
-                                {groupACount}
-                            </span>
-                            <button
-                                className="btn"
-                                onClick={() => setGroupACount(c => c + 1)}
-                                style={{ padding: '0.35rem 0.65rem', fontSize: '1.1rem', lineHeight: 1 }}
-                            >+</button>
-                        </div>
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: '130px' }}>
-                        <label style={{ fontSize: '0.7rem', color: 'var(--good)', fontWeight: 800, display: 'block', marginBottom: '0.3rem', letterSpacing: '0.05em' }}>
-                            GRUPO B (RESTO)
+                            LOS QUE SE QUEDAN (RESTO)
                         </label>
                         <input
                             type="text"
-                            value={groupBName}
-                            onChange={e => setGroupBName(e.target.value)}
+                            value={loserLabel}
+                            onChange={e => setLoserLabel(e.target.value)}
                             style={{
                                 width: '100%', padding: '0.45rem 0.7rem', borderRadius: '8px',
-                                border: '2px solid var(--good)', background: 'var(--bg)',
+                                border: '2px solid var(--line)', background: 'var(--bg)',
                                 color: 'var(--fg)', fontSize: '0.9rem', fontWeight: 700,
                                 boxSizing: 'border-box',
                             }}
@@ -255,7 +235,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                         height: 'clamp(260px, 55vmin, 450px)',
                         borderRadius: '24px',
                         border: phase === 'counting' ? '3px dashed var(--primary)'
-                              : phase === 'done'     ? '3px solid var(--good)'
+                              : phase === 'done'     ? '3px solid #fbbf24'
                               :                        '3px dashed var(--line)',
                         overflow: 'hidden',
                         touchAction: 'none',
@@ -263,7 +243,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                         userSelect: 'none',
                     }}
                 >
-                    {/* Countdown overlay */}
+                    {/* Countdown */}
                     <AnimatePresence>
                         {countdown !== null && (
                             <motion.div
@@ -286,55 +266,45 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
 
                     {/* Result overlay */}
                     <AnimatePresence>
-                        {phase === 'done' && Object.keys(results).length > 0 && (
+                        {phase === 'done' && winnerResult && (
                             <motion.div
-                                initial={{ y: -90, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
+                                initial={{ scale: 0.6, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 18 }}
                                 style={{
                                     position: 'absolute', top: '6%', left: '50%',
                                     transform: 'translateX(-50%)', zIndex: 20,
-                                    background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(12px)',
-                                    padding: '1rem 1.4rem', borderRadius: '20px',
-                                    border: '2px solid var(--line)', textAlign: 'center',
-                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                                    maxWidth: 'min(360px, 90vw)', width: 'max-content',
-                                    maxHeight: '80%', overflowY: 'auto',
+                                    background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)',
+                                    padding: '1rem 1.6rem', borderRadius: '20px',
+                                    border: '2px solid #fbbf24', textAlign: 'center',
+                                    boxShadow: '0 0 40px rgba(251,191,36,0.35), 0 20px 50px rgba(0,0,0,0.5)',
+                                    maxWidth: 'min(320px, 88vw)', width: 'max-content',
+                                    maxHeight: '78%', overflowY: 'auto',
                                 }}
                             >
-                                <h3 style={{ marginBottom: '0.75rem', letterSpacing: '0.08em', color: 'var(--fg)', fontSize: '0.95rem' }}>
-                                    ⚡ GRUPOS ASIGNADOS
-                                </h3>
-                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                    <div style={{ textAlign: 'left', minWidth: '80px' }}>
-                                        <div style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.7rem', marginBottom: '0.4rem', letterSpacing: '0.08em', borderBottom: '1px solid var(--primary)', paddingBottom: '0.3rem' }}>
-                                            {groupAName.toUpperCase()} · {groupAResults.length}
-                                        </div>
-                                        {groupAResults.map((r, i) => (
-                                            <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <span style={{ color: 'var(--primary)', fontSize: '0.8rem' }}>A</span>
-                                                {r.name || `P${i + 1}`}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {groupBResults.length > 0 && (
-                                        <>
-                                            <div style={{ width: '1px', background: 'var(--line)', alignSelf: 'stretch', flexShrink: 0 }} />
-                                            <div style={{ textAlign: 'left', minWidth: '80px' }}>
-                                                <div style={{ color: 'var(--good)', fontWeight: 900, fontSize: '0.7rem', marginBottom: '0.4rem', letterSpacing: '0.08em', borderBottom: '1px solid var(--good)', paddingBottom: '0.3rem' }}>
-                                                    {groupBName.toUpperCase()} · {groupBResults.length}
-                                                </div>
-                                                {groupBResults.map((r, i) => (
-                                                    <div key={i} style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                        <span style={{ color: 'var(--good)', fontSize: '0.8rem' }}>B</span>
-                                                        {r.name || `P${groupAResults.length + i + 1}`}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
+                                <div style={{ fontSize: '2rem', lineHeight: 1, marginBottom: '0.2rem' }}>⭐</div>
+                                <div style={{ color: '#fbbf24', fontWeight: 900, fontSize: '0.65rem', letterSpacing: '0.12em', marginBottom: '0.15rem' }}>
+                                    {winnerLabel.toUpperCase()}
                                 </div>
-                                <button className="btn primary good" style={{ marginTop: '0.75rem', width: '100%' }} onClick={resetRound}>
-                                    LISTO PARA OTRA
+                                <div style={{ color: '#fff', fontWeight: 900, fontSize: '1.5rem', marginBottom: '0.7rem' }}>
+                                    {winnerResult.name || '¡Ese!'}
+                                </div>
+                                {loserResults.length > 0 && (
+                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '0.5rem', marginBottom: '0.6rem' }}>
+                                        <div style={{ color: 'var(--muted)', fontWeight: 800, fontSize: '0.6rem', letterSpacing: '0.1em', marginBottom: '0.35rem' }}>
+                                            {loserLabel.toUpperCase()} · {loserResults.length}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                            {loserResults.map((r, i) => (
+                                                <span key={i} style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 700, fontSize: '0.85rem' }}>
+                                                    {r.name || `P${i + 2}`}{i < loserResults.length - 1 ? ',' : ''}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <button className="btn primary good" style={{ width: '100%' }} onClick={resetRound}>
+                                    OTRA RONDA
                                 </button>
                             </motion.div>
                         )}
@@ -350,54 +320,58 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                             pointerEvents: 'none', opacity: 0.6,
                         }}>
                             <span style={{ fontSize: '4.5rem', animation: 'pulse 2s infinite' }}>👆</span>
-                            <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-                                Coloca los dedos para dividir grupos
-                            </span>
+                            <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Todos ponen un dedo</span>
                             <span style={{ fontSize: '0.85rem' }}>
-                                {groupACount} → {groupAName} · resto → {groupBName}
+                                Solo 1 {winnerLabel.toLowerCase()} · el resto {loserLabel.toLowerCase()}
                             </span>
                         </div>
                     )}
 
-                    {/* Touch dots — rendered from results when done (persist after lifting fingers) */}
+                    {/* Dots — winner big & golden, losers small & grey */}
                     <AnimatePresence>
                         {activeDots.map(({ id, pos, res }) => {
                             const rect = padRef.current?.getBoundingClientRect();
                             if (!rect) return null;
 
                             const assigned = res !== undefined;
-                            const colors   = assigned ? (res.group === 'A' ? COLOR_A : COLOR_B) : null;
+                            const isWinner = assigned && res.group === 'winner';
+                            const colors   = assigned ? (isWinner ? COLOR_WINNER : COLOR_LOSER) : null;
+                            const dotSize  = assigned ? (isWinner ? winnerSize : baseSize * 0.78) : baseSize * 0.85;
 
                             return (
                                 <motion.div
                                     key={id}
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{
-                                        scale: 1, opacity: 1,
-                                        left: pos.x - rect.left,
-                                        top:  pos.y - rect.top,
-                                        width:  baseSize,
-                                        height: baseSize,
+                                        scale: 1,
+                                        opacity: assigned && !isWinner ? 0.45 : 1,
+                                        left:   pos.x - rect.left,
+                                        top:    pos.y - rect.top,
+                                        width:  dotSize,
+                                        height: dotSize,
                                     }}
                                     exit={{ scale: 0, opacity: 0 }}
                                     transition={{
                                         scale:   { type: 'spring', stiffness: 300, damping: 20 },
-                                        default: { duration: 0.2 },
+                                        default: { duration: 0.25 },
                                     }}
                                     style={{
                                         position:      'absolute',
                                         borderRadius:  '50%',
-                                        border:        assigned ? `4px solid ${colors.border}` : '3px solid rgba(255,255,255,0.4)',
+                                        border:        assigned
+                                            ? `${isWinner ? '5px' : '2px'} solid ${colors.border}`
+                                            : '3px solid rgba(255,255,255,0.4)',
                                         transform:     'translate(-50%, -50%)',
                                         background:    assigned ? colors.bg : 'rgba(255,255,255,0.1)',
-                                        boxShadow:     assigned ? `0 0 40px ${colors.glow}` : 'none',
+                                        boxShadow:     isWinner ? `0 0 60px ${colors.glow}` : 'none',
                                         display:       'flex',
                                         flexDirection: 'column',
                                         alignItems:    'center',
                                         justifyContent:'center',
                                         gap:           '2px',
                                         pointerEvents: 'none',
-                                        zIndex:        2,
+                                        zIndex:        isWinner ? 5 : 2,
+                                        animation:     isWinner ? 'winner-glow-pulsar 2s infinite' : 'none',
                                     }}
                                 >
                                     {assigned && (
@@ -405,26 +379,21 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                                             initial={{ scale: 0, rotate: -20 }}
                                             animate={{ scale: 1, rotate: 0 }}
                                             transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}
                                         >
-                                            <span style={{
-                                                fontWeight: 900, lineHeight: 1,
-                                                fontSize:   `${baseSize * 0.38}px`,
-                                                color:      colors.border,
-                                                textShadow: `0 0 10px ${colors.glow}`,
-                                            }}>
-                                                {res.group}
-                                            </span>
-                                            {res.name && (
-                                                <span style={{
-                                                    color: '#fff', fontWeight: 800,
-                                                    fontSize: `${baseSize * 0.13}px`,
-                                                    lineHeight: 1.2, textAlign: 'center',
-                                                    padding: '0 4px',
-                                                    maxWidth: `${baseSize - 12}px`,
-                                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                                }}>
-                                                    {res.name}
+                                            {isWinner ? (
+                                                <>
+                                                    <span style={{ fontSize: `${winnerSize * 0.33}px`, lineHeight: 1 }}>⭐</span>
+                                                    <span style={{ color: '#fbbf24', fontWeight: 900, fontSize: `${winnerSize * 0.13}px`, lineHeight: 1, textAlign: 'center', padding: '0 4px' }}>
+                                                        {res.name || winnerLabel}
+                                                    </span>
+                                                    <span style={{ fontSize: `${winnerSize * 0.08}px`, color: '#fbbf24', fontWeight: 900, letterSpacing: '0.05em' }}>
+                                                        ¡SALE!
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 900, fontSize: `${baseSize * 0.26}px`, lineHeight: 1 }}>
+                                                    ✗
                                                 </span>
                                             )}
                                         </motion.div>
@@ -436,18 +405,18 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                 </div>
 
                 <div className="smallout" style={{ marginTop: '1rem' }}>
-                    {phase === 'done'
-                        ? `✅ ${groupAResults.length} en ${groupAName} · ${groupBResults.length} en ${groupBName}. Toca con 2 dedos para nueva ronda.`
+                    {phase === 'done' && winnerResult
+                        ? `⭐ ${winnerResult.name || winnerLabel} sale · ${loserResults.length} se quedan. Toca con 2 dedos para repetir.`
                         : phase === 'counting'
-                        ? '⏳ ¡No te muevas! Dividiendo grupos...'
-                        : `Mantén los dedos 3 segundos · ${groupACount} irán a ${groupAName}, el resto a ${groupBName}.`}
+                        ? '⏳ ¡No te muevas! Eligiendo al elegido...'
+                        : `Todos ponen un dedo y aguantan 3 segundos · solo 1 ${winnerLabel.toLowerCase()}.`}
                 </div>
             </div>
 
-            {/* History panel */}
+            {/* History */}
             {hasHistory && (
                 <div className="card">
-                    <h2>Historial de Divisiones</h2>
+                    <h2>Historial</h2>
                     <div className="orderlist">
                         {history.slice().reverse().map((round, ri) => (
                             <div key={ri} style={{
@@ -457,42 +426,21 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                                 borderRadius: '16px',
                                 marginBottom: '1rem',
                             }}>
-                                <div className="muted" style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '0.75rem' }}>
-                                    RONDA {history.length - ri} · {round.count} PARTICIPANTES
+                                <div className="muted" style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '0.5rem' }}>
+                                    RONDA {history.length - ri} · {round.count} DEDOS
                                 </div>
-                                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                    <div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 900, marginBottom: '0.4rem' }}>
-                                            {round.groupAName} ({round.groupA.length})
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                            {round.groupA.map((r, i) => (
-                                                <span key={i} className="pill" style={{
-                                                    background: 'rgba(99,102,241,0.2)',
-                                                    border: '1px solid var(--primary)', fontWeight: 700,
-                                                }}>
-                                                    A · {r.name || `P${i + 1}`}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {round.groupB.length > 0 && (
-                                        <div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--good)', fontWeight: 900, marginBottom: '0.4rem' }}>
-                                                {round.groupBName} ({round.groupB.length})
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                                {round.groupB.map((r, i) => (
-                                                    <span key={i} className="pill" style={{
-                                                        background: 'rgba(45,212,191,0.2)',
-                                                        border: '1px solid var(--good)', fontWeight: 700,
-                                                    }}>
-                                                        B · {r.name || `P${round.groupA.length + i + 1}`}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <span className="pill" style={{ background: 'rgba(251,191,36,0.2)', border: '1px solid #fbbf24', fontWeight: 800 }}>
+                                        ⭐ {round.winner?.name || round.winnerLabel}
+                                    </span>
+                                    {round.losers.length > 0 && (
+                                        <span style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>vs</span>
                                     )}
+                                    {round.losers.map((r, i) => (
+                                        <span key={i} className="pill" style={{ fontWeight: 700, opacity: 0.55 }}>
+                                            {r.name || `P${i + 2}`}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         ))}
