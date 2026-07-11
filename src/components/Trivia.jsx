@@ -41,21 +41,23 @@ const Trivia = ({ pickerItems = [] }) => {
     stopTimer();
     setTimeLeft(secs);
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          stopTimer();
-          setActive(false);
-          audio.playSFX('buzzer');
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-          return 0;
-        }
-        if (prev <= 5) {
-          audio.playSFX('tick');
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => Math.max(0, prev - 1));
     }, 1000);
   }, [stopTimer]);
+
+  // Efectos del temporizador fuera del updater (los updaters deben ser puros;
+  // en StrictMode se ejecutan dos veces y el buzzer sonaba doble).
+  useEffect(() => {
+    if (timeLeft == null || !timerRef.current) return;
+    if (timeLeft === 0) {
+      stopTimer();
+      setActive(false);
+      audio.playSFX('buzzer');
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    } else if (timeLeft <= 4) {
+      audio.playSFX('tick');
+    }
+  }, [timeLeft, stopTimer, audio]);
 
   useEffect(() => () => stopTimer(), [stopTimer]);
 

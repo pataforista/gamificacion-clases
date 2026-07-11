@@ -96,7 +96,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
 
     const handlePointerDown = useCallback((e) => {
         const pad = padRef.current;
-        if (pad) { try { pad.setPointerCapture(e.pointerId); } catch {} }
+        if (pad) { try { pad.setPointerCapture(e.pointerId); } catch { /* setPointerCapture no soportado */ } }
         const t = { ...touchesRef.current, [e.pointerId]: { x: e.clientX, y: e.clientY } };
         touchesRef.current = t;
         setTouches({ ...t });
@@ -116,7 +116,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
 
     const handlePointerUp = useCallback((e) => {
         const pad = padRef.current;
-        if (pad) { try { pad.releasePointerCapture(e.pointerId); } catch {} }
+        if (pad) { try { pad.releasePointerCapture(e.pointerId); } catch { /* releasePointerCapture no soportado */ } }
         const t = { ...touchesRef.current };
         delete t[e.pointerId];
         touchesRef.current = t;

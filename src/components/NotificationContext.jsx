@@ -11,12 +11,16 @@ export const useNotifications = () => {
     return ctx;
 };
 
+let nextNotificationId = 0;
+
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
     const [dialog, setDialog] = useState({ isOpen: false });
 
     const notify = useCallback((msg, type = 'xp', icon = '⭐') => {
-        const id = Date.now();
+        // Contador incremental: Date.now() colisionaba si llegaban dos
+        // notificaciones en el mismo milisegundo (keys duplicadas).
+        const id = ++nextNotificationId;
         setNotifications((prev) => [...prev, { id, msg, type, icon }]);
 
         setTimeout(() => {

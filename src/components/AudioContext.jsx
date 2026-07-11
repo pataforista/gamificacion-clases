@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, useMemo } from 'react';
 
 const AudioCtx = createContext();
 
@@ -129,7 +129,9 @@ export const AudioProvider = ({ children }) => {
         }
     }, [currentTrack]);
 
-    const value = {
+    // Memoizado para que los consumidores (y los efectos que dependen de
+    // `audio`) no se re-ejecuten en cada render del provider.
+    const value = useMemo(() => ({
         isPlaying,
         currentTrack,
         volume,
@@ -140,7 +142,7 @@ export const AudioProvider = ({ children }) => {
         resume,
         unlock,
         changeVolume,
-    };
+    }), [isPlaying, currentTrack, volume, play, playSFX, stop, pause, resume, unlock, changeVolume]);
 
     return (
         <AudioCtx.Provider value={value}>

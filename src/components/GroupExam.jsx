@@ -208,10 +208,14 @@ const GroupExam = ({ pickerItems = [] }) => {
         audio.stop();
         audio.playSFX('buzzer');
         if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-        setFeedback({ type: 'incorrect', msg: '⏳ ¡TIEMPO AGOTADO! ' + RNG.getFlavor('wrong'), explanation: question?.explanation || "" });
-        if (settings.rebote) {
-            setFeedback(null);
-            startRoboPhase();
+        // Solo hay rebote en el turno original; si el tiempo se agota durante el
+        // rebote, la pregunta se cierra en vez de encadenar rebotes sin fin.
+        if (settings.rebote && !roboTeam) {
+            setFeedback({ type: 'incorrect_temporary', msg: `⏳ ¡TIEMPO AGOTADO para ${activeTeam || 'el equipo'}! Pasando al rebote...` });
+            setTimeout(startRoboPhase, 1800);
+        } else {
+            setRoboTeam(null);
+            setFeedback({ type: 'incorrect', msg: '⏳ ¡TIEMPO AGOTADO! ' + RNG.getFlavor('wrong'), explanation: question?.explanation || "" });
         }
     };
 
@@ -496,8 +500,11 @@ const GroupExam = ({ pickerItems = [] }) => {
                 speedBonusMsg = " ⚡ ¡BONO DE VELOCIDAD! (+3 XP)";
             }
 
-            if (isLastQuestion && !isRobo && wagerConfirmed) {
+            // Gran Final: con apuesta se gana lo apostado (sin bono de velocidad);
+            // con apuesta 0 se conserva el premio base para no dar "+0 XP".
+            if (isLastQuestion && !isRobo && wagerConfirmed && wager > 0) {
                 xp = wager;
+                speedBonusMsg = "";
             }
 
             setScores(prev => ({ ...prev, [team]: (prev[team] || 0) + xp }));
@@ -888,7 +895,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                             <h4 style={{ margin: '0 0 0.2rem 0', textTransform: 'uppercase', fontSize: '0.65rem', opacity: 0.7 }}>🏆 Clasificación</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(4px, 0.5vh, 8px)' }}>
                                 <AnimatePresence>
-                                    {Object.entries(visualScores)
+                                    {Object.entries(scores)
                                         .sort((a, b) => b[1] - a[1])
                                         .map(([team], idx) => {
                                             const val = scores[team] || 0;
