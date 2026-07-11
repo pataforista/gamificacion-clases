@@ -10,6 +10,40 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      workbox: {
+        // La app se usa en aulas sin internet: precachear también los sonidos
+        // locales y los avatares de personajes para que funcionen offline.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,mp3}'],
+        // mathjs (pestaña "Dado") supera el límite por defecto de 2 MiB.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            // SFX externos de mixkit: tras la primera reproducción con internet
+            // quedan cacheados y sobreviven offline.
+            urlPattern: /^https:\/\/assets\.mixkit\.co\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'external-audio',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-css', expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-files',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
       manifest: {
         name: 'MedClass Pro: Gamificación Médica',
         short_name: 'MedClass Pro',

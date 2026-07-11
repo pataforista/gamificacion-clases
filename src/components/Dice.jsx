@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DiceRoller, NumberGenerator } from 'rpg-dice-roller';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePersistence } from '../hooks/usePersistence';

@@ -127,12 +127,41 @@ a rutas locales, y ampliar `workbox.globPatterns` en `vite.config.js` para inclu
 
 ## Resumen de prioridades
 
-| # | Hallazgo | Impacto | Esfuerzo |
-|---|----------|---------|----------|
-| 1 | Gran Final: apuesta pisa el bono; +0 XP con mensaje engañoso | Alto (confunde en clase) | Bajo |
-| 2 | Sonidos externos (mixkit) + precache sin mp3/png → offline roto | Alto (aula sin internet) | Medio |
-| 3 | Atajos 1-9 del examen chocan con el semáforo global | Medio | Bajo |
-| 4 | Ranking del examen ordena por tablero pero muestra XP | Medio | Bajo |
-| 5 | Config de ESLint sin soporte JSX (28 falsos errores) | Medio (higiene) | Bajo |
-| 6 | Carpeta `assets/` duplicada (1.7 MB muertos) | Bajo | Trivial |
-| 7 | Resto de menores (§3 y §4) | Bajo | Bajo |
+| # | Hallazgo | Impacto | Estado |
+|---|----------|---------|--------|
+| 1 | Gran Final: apuesta pisa el bono; +0 XP con mensaje engañoso | Alto (confunde en clase) | ✅ Corregido |
+| 2 | Sonidos externos (mixkit) + precache sin mp3/png → offline roto | Alto (aula sin internet) | ✅ Mitigado |
+| 3 | Atajos 1-9 del examen chocan con el semáforo global | Medio | ✅ Corregido |
+| 4 | Ranking del examen ordena por tablero pero muestra XP | Medio | ✅ Corregido |
+| 5 | Config de ESLint sin soporte JSX (28 falsos errores) | Medio (higiene) | ✅ Corregido |
+| 6 | Carpeta `assets/` duplicada (1.7 MB muertos) | Bajo | ✅ Eliminada |
+| 7 | Resto de menores (§3 y §4) | Bajo | ✅ Corregidos |
+
+## Correcciones aplicadas (misma rama, tras el diagnóstico)
+
+Verificadas con `npm run build`, `npm run lint` (0 errores) y re-ejecución de las pruebas de
+navegador (13 pestañas + examen completo, con captura confirmando "+13 XP" en la Gran Final):
+
+- **Gran Final** (`GroupExam.jsx`): con apuesta > 0 se gana exactamente lo apostado y ya no se
+  anuncia un bono que no aplica; con apuesta 0 se conserva el premio base (+10/+bono) en vez de
+  "+0 XP". El timeout con rebote ahora muestra el aviso "TIEMPO AGOTADO… pasando al rebote"
+  (antes se borraba en el mismo render) y un timeout **durante** el rebote cierra la pregunta en
+  lugar de encadenar rebotes sin fin. La Clasificación se ordena por XP real.
+- **Atajos de teclado** (`App.jsx`): las teclas 1/2/3 del semáforo se ignoran cuando la pestaña
+  activa es el Examen Grupal (ahí 1-9 responden opciones).
+- **Offline** (`vite.config.js`): el precache del service worker ahora incluye los mp3 locales y
+  los avatares de `personajes/` (54 entradas, ~3 MB), y hay runtime caching CacheFirst para
+  `assets.mixkit.co` y Google Fonts — tras el primer uso con internet, todo sobrevive offline.
+  *Pendiente opcional:* auto-hospedar los 10 SFX de mixkit y la fuente Outfit para que funcionen
+  offline desde la primera carga (no fue posible descargarlos desde este entorno).
+- **ESLint** (`eslint.config.js`): añadido `eslint-plugin-react` con `react/jsx-uses-vars`
+  (elimina los 17 falsos "motion sin usar"). Las reglas estrictas del compilador de React y de
+  fast-refresh quedan como advertencias (señalan patrones mejorables, no bugs): 0 errores,
+  11 avisos.
+- **Menores**: efectos secundarios del temporizador de Trivia movidos fuera del updater (buzzer
+  doble en StrictMode); `value` de `AudioContext` memoizado; ids de notificaciones con contador
+  (colisión de `Date.now()`); `TouchOrder` ya no duplica nombres cuando hay más dedos que
+  alumnos; `catch` vacíos comentados; `useRef` sin usar eliminado en `Dice.jsx`.
+- **Limpieza**: carpeta `assets/` duplicada eliminada (~1.7 MB); favicon propio (`favicon.ico`)
+  en vez del logo de Vite; CSP sin `cdn.jsdelivr.net` y unificado entre `index.html` y
+  `public/_headers`; `wrangler.toml` con la clave oficial `pages_build_output_dir`.

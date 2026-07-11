@@ -64,7 +64,7 @@ const TouchOrder = ({ pickerItems = [] }) => {
         shuffled.forEach((id, i) => {
             res[id] = {
                 turn: startTurn + i,
-                name: names[i % names.length] || null,
+                name: names[i] ?? null,
                 x: touchesRef.current[id]?.x ?? 0,
                 y: touchesRef.current[id]?.y ?? 0,
             };

@@ -65,10 +65,14 @@ const App = () => {
       if (!t) return;
       if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return;
 
+      // El Examen Grupal usa 1-9 para responder opciones: ahí las teclas
+      // numéricas no deben cambiar el semáforo.
+      const numericShortcutsEnabled = activeTab !== 'exam';
+
       switch(e.key.toLowerCase()) {
-        case '1': updateState({ traffic: 'green' }); break;
-        case '2': updateState({ traffic: 'yellow' }); break;
-        case '3': updateState({ traffic: 'red' }); break;
+        case '1': if (numericShortcutsEnabled) updateState({ traffic: 'green' }); break;
+        case '2': if (numericShortcutsEnabled) updateState({ traffic: 'yellow' }); break;
+        case '3': if (numericShortcutsEnabled) updateState({ traffic: 'red' }); break;
         case 'r':
           if (state.isRedCodeActive) {
             updateState({ isRedCodeActive: false, redCodeEndTime: null });
@@ -82,7 +86,7 @@ const App = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.isRedCodeActive, updateState]);
+  }, [state.isRedCodeActive, updateState, activeTab]);
 
   const pickerItems = state.pickerItems && state.pickerItems.length > 0 
     ? state.pickerItems 
