@@ -9,8 +9,13 @@ export const RNG = {
 
     int(min, max) {
         const range = max - min + 1;
+        // Rejection sampling: descartar valores por encima del último múltiplo
+        // completo de `range` para no sesgar los primeros valores del rango.
+        const limit = Math.floor(4294967296 / range) * range;
         const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
+        do {
+            crypto.getRandomValues(array);
+        } while (array[0] >= limit);
         return min + (array[0] % range);
     },
 

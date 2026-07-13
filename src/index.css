@@ -37,7 +37,7 @@
   --glass: rgba(255, 255, 255, 0.95);
   --glass-border: #000000;
 
-  font-family: 'Poppins', 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Poppins', 'Outfit Variable', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* THEMES */
@@ -126,7 +126,7 @@ body {
   overflow-x: hidden;
   line-height: 1.5;
   touch-action: pan-y;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Outfit Variable', sans-serif;
 }
 
 #root {

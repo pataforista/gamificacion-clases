@@ -90,7 +90,7 @@ const Ruleta = ({ items = [] }) => {
       ctx.rotate(start + arc / 2);
       ctx.textAlign = 'right';
       const fontSize = Math.max(10, Math.min(15, 120 / n));
-      ctx.font = `bold ${fontSize}px Outfit, sans-serif`;
+      ctx.font = `bold ${fontSize}px "Outfit Variable", sans-serif`;
       ctx.fillStyle = textCol;
       const maxChars = Math.max(6, Math.floor(180 / n));
       const label = opt.length > maxChars ? opt.slice(0, maxChars - 1) + '…' : opt;
