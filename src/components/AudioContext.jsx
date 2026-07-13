@@ -10,14 +10,17 @@ export const useAudio = () => {
     return context;
 };
 
-// Colección de canciones de espera/transición estables
+// Colección de canciones de espera/transición estables.
+// Todas son locales (las sintetizadas se regeneran con
+// `node scripts/generate-sounds.mjs`), así que funcionan offline
+// desde la primera carga.
 export const WAITING_TRACKS = {
     jeopardy: { name: 'Jeopardy Tema', url: '/sounds/Jeopardy-Theme.mp3' },
     cien_mexicanos: { name: '100 Mexicanos Dijeron', url: '/sounds/100-Mexicanos-dijieron-Tiempo-en-el-Relo.mp3' },
-    fun: { name: 'Divertido', url: 'https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3' },
-    tension: { name: 'Tensión Máxima', url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
-    dance: { name: 'Energía', url: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3' },
-    thinking: { name: 'Pensando...', url: 'https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3' },
+    fun: { name: 'Divertido', url: '/sounds/musica-divertida.mp3' },
+    tension: { name: 'Tensión Máxima', url: '/sounds/musica-tension.mp3' },
+    dance: { name: 'Energía', url: '/sounds/musica-energia.mp3' },
+    thinking: { name: 'Pensando...', url: '/sounds/musica-pensando.mp3' },
 };
 
 export const GAME_SFX = {
@@ -26,14 +29,14 @@ export const GAME_SFX = {
   correct_alt: '/sounds/buena.mp3',
   incorrect: '/sounds/error 2.mp3',
   incorrect_heavy: '/sounds/error.mp3',
-  lose: 'https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-game-over-470.mp3',
-  click: 'https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3',
-  boing: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-toy-whistle-316.mp3',
+  lose: '/sounds/sfx-lose.mp3',
+  click: '/sounds/sfx-click.mp3',
+  boing: '/sounds/sfx-boing.mp3',
   applause: '/sounds/aplausos.mp3',
   victory: '/sounds/100-Mexicanos-Dijeron-Musica-de-triunfo_Media.mp3',
-  buzzer: 'https://assets.mixkit.co/sfx/preview/mixkit-classic-alarm-995.mp3',
-  drumroll: 'https://assets.mixkit.co/sfx/preview/mixkit-drum-roll-566.mp3',
-  tick: 'https://assets.mixkit.co/sfx/preview/mixkit-tick-tock-clock-timer-1045.mp3',
+  buzzer: '/sounds/sfx-buzzer.mp3',
+  drumroll: '/sounds/sfx-drumroll.mp3',
+  tick: '/sounds/sfx-tick.mp3',
 };
 
 // Cache for SFX elements to prevent memory leaks

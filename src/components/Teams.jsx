@@ -20,6 +20,12 @@ const Teams = ({ pickerItems = [] }) => {
         if (items.length === 0) {
             return await alert("Sin Alumnos", "Primero ingresa nombres en la pestaña Sorteo para generar equipos.");
         }
+        if (teamCount > items.length) {
+            return await alert(
+                "Más equipos que alumnos",
+                `Pediste ${teamCount} equipos pero solo hay ${items.length} alumno(s). Reduce el número de equipos.`
+            );
+        }
 
         // Shuffle items
         for (let i = items.length - 1; i > 0; i--) {

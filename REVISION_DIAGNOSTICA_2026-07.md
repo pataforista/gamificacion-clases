@@ -130,7 +130,7 @@ a rutas locales, y ampliar `workbox.globPatterns` en `vite.config.js` para inclu
 | # | Hallazgo | Impacto | Estado |
 |---|----------|---------|--------|
 | 1 | Gran Final: apuesta pisa el bono; +0 XP con mensaje engañoso | Alto (confunde en clase) | ✅ Corregido |
-| 2 | Sonidos externos (mixkit) + precache sin mp3/png → offline roto | Alto (aula sin internet) | ✅ Mitigado |
+| 2 | Sonidos externos (mixkit) + precache sin mp3/png → offline roto | Alto (aula sin internet) | ✅ Corregido (100% offline) |
 | 3 | Atajos 1-9 del examen chocan con el semáforo global | Medio | ✅ Corregido |
 | 4 | Ranking del examen ordena por tablero pero muestra XP | Medio | ✅ Corregido |
 | 5 | Config de ESLint sin soporte JSX (28 falsos errores) | Medio (higiene) | ✅ Corregido |
@@ -154,6 +154,34 @@ navegador (13 pestañas + examen completo, con captura confirmando "+13 XP" en l
   `assets.mixkit.co` y Google Fonts — tras el primer uso con internet, todo sobrevive offline.
   *Pendiente opcional:* auto-hospedar los 10 SFX de mixkit y la fuente Outfit para que funcionen
   offline desde la primera carga (no fue posible descargarlos desde este entorno).
+
+## Cierre del plan (segunda pasada, julio 2026)
+
+Con esta pasada quedan resueltos los pendientes y los menores que la tabla daba por corregidos
+pero seguían en el código. Verificado con `npm run build` (precache: 66 entradas, ~4.2 MB),
+`npm run lint` (0 errores, 11 avisos) y prueba en navegador real sobre el build de producción
+(13 pestañas sin errores de consola, **cero peticiones a hosts externos**, los 10 audios nuevos
+decodifican correctamente y la fuente local carga).
+
+- **App 100% offline desde la primera carga.** Los 10 sonidos que apuntaban a
+  `assets.mixkit.co` (no descargables desde este entorno por política de red) fueron
+  reemplazados por SFX y pistas de espera **sintetizados localmente** con
+  `scripts/generate-sounds.mjs` (nuevo; reproducible con `node scripts/generate-sounds.mjs`,
+  usa `@breezystack/lamejs` como dependencia de desarrollo): `sfx-click`, `sfx-tick`,
+  `sfx-boing`, `sfx-buzzer`, `sfx-drumroll`, `sfx-lose` y las pistas `musica-pensando`,
+  `musica-tension`, `musica-divertida`, `musica-energia` (~1.1 MB en total). Si se prefieren
+  otros sonidos, basta con sustituir los archivos en `public/sounds/` conservando el nombre.
+- **Fuente Outfit auto-hospedada** con `@fontsource-variable/outfit` (importada en `main.jsx`;
+  los `font-family` ahora usan `'Outfit Variable'`). Se eliminaron los `<link>` a Google Fonts.
+- **CSP sin hosts externos** y de nuevo unificado entre `index.html` y `public/_headers`
+  (se quitaron `fonts.googleapis.com`, `fonts.gstatic.com` y `assets.mixkit.co`; se añadió
+  `data:` a `media-src` para el audio silencioso de desbloqueo). El runtime caching de mixkit
+  y Google Fonts en `vite.config.js` ya no era necesario y se eliminó; el precache ahora
+  incluye también los `woff2` de la fuente.
+- **`Teams.jsx`**: ahora avisa cuando se piden más equipos que alumnos en lugar de generar
+  equipos vacíos (verificado en navegador).
+- **`rng.js`**: `int()` usa rejection sampling — sin sesgo de módulo.
+- **`package.json`**: `"name"` pasa de `temp-vite` a `medclass-pro`.
 - **ESLint** (`eslint.config.js`): añadido `eslint-plugin-react` con `react/jsx-uses-vars`
   (elimina los 17 falsos "motion sin usar"). Las reglas estrictas del compilador de React y de
   fast-refresh quedan como advertencias (señalan patrones mejorables, no bugs): 0 errores,
