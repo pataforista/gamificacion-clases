@@ -509,8 +509,14 @@ const GroupExam = ({ pickerItems = [] }) => {
 
             setScores(prev => ({ ...prev, [team]: (prev[team] || 0) + xp }));
 
-            const baseVisual = 100 / (exam?.questions.length || 10);
-            const visualMove = Math.max(1, baseVisual + RNG.int(-2, 4));
+            // El tablero tiene 100 casillas y cada pregunta la responde UN solo
+            // equipo: el avance se escala a los turnos que le tocan a cada equipo
+            // (preguntas ÷ equipos). El extra aleatorio es no-negativo para que
+            // quien acierte todos sus turnos llegue garantizado a la meta.
+            const totalQuestions = exam?.questions.length || 10;
+            const turnsPerTeam = Math.max(1, Math.floor(totalQuestions / Math.max(1, pickerItems.length)));
+            const baseVisual = 100 / turnsPerTeam;
+            const visualMove = baseVisual + RNG.int(0, 4);
             setVisualScores(prev => ({ ...prev, [team]: (prev[team] || 0) + visualMove }));
 
             if (navigator.vibrate) navigator.vibrate([60, 30, 60]);

@@ -182,6 +182,13 @@ decodifican correctamente y la fuente local carga).
   equipos vacíos (verificado en navegador).
 - **`rng.js`**: `int()` usa rejection sampling — sin sesgo de módulo.
 - **`package.json`**: `"name"` pasa de `temp-vite` a `medclass-pro`.
+- **Tablero del examen: la meta ahora es alcanzable.** Antes cada acierto avanzaba
+  `100 ÷ total de preguntas`, pero cada pregunta la responde un solo equipo, así que con 2+
+  equipos nadie podía llegar a la casilla 100 (con 4 equipos y 10 preguntas el máximo era ~la
+  casilla 30). Ahora el paso se escala a los turnos de cada equipo (`100 ÷ (preguntas ÷
+  equipos)`) y el extra aleatorio es no-negativo: quien acierte todos sus turnos llega
+  garantizado a la meta (verificado en navegador: 4 preguntas, 2 equipos, ambas fichas en la
+  casilla final).
 - **ESLint** (`eslint.config.js`): añadido `eslint-plugin-react` con `react/jsx-uses-vars`
   (elimina los 17 falsos "motion sin usar"). Las reglas estrictas del compilador de React y de
   fast-refresh quedan como advertencias (señalan patrones mejorables, no bugs): 0 errores,
