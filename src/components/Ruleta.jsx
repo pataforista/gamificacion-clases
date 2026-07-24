@@ -51,10 +51,10 @@ const Ruleta = ({ items = [] }) => {
     const arc = (2 * Math.PI) / n;
 
     // Resolve theme palette (canvas can't read CSS vars directly)
-    const palette = COLOR_VARS.map((v, i) => readVar(v, ['#FF006E', '#00D9FF', '#CCFF00', '#FFD60A', '#FF6B9D'][i]));
-    const lineCol = readVar('--line', '#000');
-    const primaryCol = readVar('--primary', '#FF006E');
-    const secondaryCol = readVar('--secondary', '#00D9FF');
+    const palette = COLOR_VARS.map((v, i) => readVar(v, ['#FF87AB', '#8FD3EC', '#93E2BE', '#FFDE93', '#B9A7F0'][i]));
+    const lineCol = readVar('--line', '#5A4750');
+    const primaryCol = readVar('--primary', '#FF7EA8');
+    const secondaryCol = readVar('--secondary', '#6EC6DC');
     const bgCol = readVar('--bg', '#FFF');
     const textCol = readVar('--text', '#000');
 

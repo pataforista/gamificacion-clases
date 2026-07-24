@@ -66,7 +66,7 @@ const PolyhedralDice = ({ value, type, isRolling, theme, isCrit, isFumble }) => 
                 damping: 10
             }}
             style={{
-                filter: isCrit ? 'drop-shadow(0 0 15px #FFD60A)' : isFumble ? 'drop-shadow(0 0 15px #FF006E)' : 'none'
+                filter: isCrit ? 'drop-shadow(0 0 15px var(--warn))' : isFumble ? 'drop-shadow(0 0 15px var(--error))' : 'none'
             }}
         >
             <svg viewBox="0 0 100 100" className="poly-dice-svg">
