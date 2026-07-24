@@ -4,6 +4,8 @@ import { registerSW } from 'virtual:pwa-register'
 // Fuente Outfit auto-hospedada (registra la familia 'Outfit Variable'):
 // funciona offline desde la primera carga, sin depender de Google Fonts.
 import '@fontsource-variable/outfit'
+// Fuente Fredoka auto-hospedada (redondeada, estilo kawaii) para títulos.
+import '@fontsource-variable/fredoka'
 import './index.css'
 import App from './App.jsx'
 import { NotificationProvider } from './components/NotificationContext'

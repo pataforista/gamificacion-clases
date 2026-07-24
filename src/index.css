@@ -1,43 +1,67 @@
 :root {
-  /* Memphis Design - Background colors - Soft, warm tones */
-  --bg: #FFF8F3;
-  --bg-secondary: #FFE5CC;
+  /* ============================================================
+     Kawaii Scrapbook — soft, modern & cute default theme
+     Warm paper tones, pastel palette, rounded type, soft shadows
+     ============================================================ */
 
-  /* Memphis color palette - Bold, playful & colorful */
-  --memphis-magenta: #FF006E;
-  --memphis-cyan: #00D9FF;
-  --memphis-yellow: #FFD60A;
-  --memphis-orange: #FF9500;
-  --memphis-lime: #CCFF00;
-  --memphis-purple: #8338EC;
-  --memphis-coral: #FF6B9D;
-  --memphis-mint: #38B6A8;
+  /* Backgrounds — warm paper + white card stock */
+  --bg: #FDF4EE;
+  --bg-secondary: #FFFFFF;
+  --bg-tint: #FFF1F5;
 
-  /* Text colors - Pure Black for high contrast */
-  --text: #000000;
-  --text-secondary: #222222;
-  --muted: #444444;
+  /* Kawaii pastel accents */
+  --kawaii-pink: #FF87AB;
+  --kawaii-lavender: #B9A7F0;
+  --kawaii-peach: #FFB59E;
+  --kawaii-lemon: #FFDE93;
+  --kawaii-sky: #8FD3EC;
+  --kawaii-mint: #93E2BE;
 
-  /* Primary colors mapping */
-  --primary: #FF006E;
-  --primary-rgb: 255, 0, 110;
-  --secondary: #00D9FF;
-  --good: #CCFF00;
-  --warn: #FFD60A;
-  --error: #FF6B9D;
-  --accent-glow: rgba(255, 0, 110, 0.4);
+  /* Legacy memphis-* tokens remapped to the soft palette so older
+     components keep working without a harsh neon look. */
+  --memphis-magenta: #FF87AB;
+  --memphis-cyan: #8FD3EC;
+  --memphis-yellow: #FFDE93;
+  --memphis-orange: #FFB59E;
+  --memphis-lime: #93E2BE;
+  --memphis-purple: #B9A7F0;
+  --memphis-coral: #FF9BA3;
+  --memphis-mint: #93E2BE;
+
+  /* Text — soft plum-charcoal instead of pure black */
+  --text: #4A3B44;
+  --text-secondary: #6B5560;
+  --muted: #9A8890;
+
+  /* Primary mapping */
+  --primary: #FF7EA8;
+  --primary-rgb: 255, 126, 168;
+  --secondary: #6EC6DC;
+  --good: #57C99A;
+  --warn: #F2B65A;
+  --error: #FF8FA0;
+  --accent-glow: rgba(255, 126, 168, 0.35);
 
   /* Traffic-light colors (high-contrast on any theme) */
-  --traffic-green: #22c55e;
-  --traffic-yellow: #FFD60A;
-  --traffic-red: #ef4444;
+  --traffic-green: #3ecf8e;
+  --traffic-yellow: #f7c948;
+  --traffic-red: #ff6b6b;
 
-  /* Borders and lines - Solid & Bold */
-  --line: #000000;
-  --glass: rgba(255, 255, 255, 0.95);
-  --glass-border: #000000;
+  /* Outlines — soft dark plum, not pure black */
+  --line: #5A4750;
+  --line-soft: rgba(90, 71, 80, 0.14);
+  --glass: rgba(255, 255, 255, 0.96);
+  --glass-border: #5A4750;
 
-  font-family: 'Poppins', 'Outfit Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  /* Soft, layered shadows (replace the hard memphis offset shadows) */
+  --shadow-sm: 0 3px 10px rgba(150, 100, 120, 0.12);
+  --shadow-md: 0 10px 24px rgba(150, 100, 120, 0.16);
+  --shadow-lg: 0 20px 46px rgba(150, 100, 120, 0.20);
+  --radius: 24px;
+
+  --font-display: 'Fredoka Variable', 'Outfit Variable', system-ui, sans-serif;
+
+  font-family: 'Outfit Variable', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* THEMES */
@@ -121,12 +145,37 @@
 
 body {
   background-color: var(--bg);
+  /* Scrapbook paper: faint dotted grid over the warm base */
+  background-image: radial-gradient(circle at 1px 1px, var(--line-soft) 1px, transparent 0);
+  background-size: 22px 22px;
+  background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
   touch-action: pan-y;
   font-family: 'Outfit Variable', sans-serif;
+}
+
+/* Soft pastel light-blobs floating behind everything (kawaii glow) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38vw 38vw at 8% 4%, rgba(255, 135, 171, 0.16), transparent 60%),
+    radial-gradient(42vw 42vw at 96% 12%, rgba(143, 211, 236, 0.16), transparent 60%),
+    radial-gradient(45vw 45vw at 50% 108%, rgba(185, 167, 240, 0.15), transparent 60%);
+}
+
+/* Dark themes drop the paper texture in favour of their flat backgrounds */
+.theme-lipari, .theme-tokyo {
+  background-image: none;
+}
+.theme-lipari::before, .theme-tokyo::before, .theme-lisbon::before {
+  opacity: 0.5;
 }
 
 #root {
@@ -147,27 +196,56 @@ header {
 }
 
 .title {
+  font-family: var(--font-display);
   font-size: clamp(2.5rem, 10vw, 4.5rem);
-  font-weight: 900;
-  color: var(--primary);
-  margin-bottom: 0.5rem;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
   position: relative;
-  text-transform: uppercase;
+  display: inline-block;
+  /* Soft pastel gradient text — modern & kawaii */
+  background: linear-gradient(120deg, var(--primary) 0%, var(--kawaii-lavender) 55%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--primary);
+  filter: drop-shadow(0 3px 6px rgba(255, 126, 168, 0.25));
+}
+
+/* Dark themes: gradient text can wash out, so use a solid primary fill */
+.theme-lipari .title,
+.theme-tokyo .title,
+.theme-lisbon .title {
+  background: none;
+  -webkit-text-fill-color: var(--primary);
+  color: var(--primary);
 }
 
 .card {
   background: var(--bg-secondary);
   color: var(--text);
-  border: 4px solid var(--line);
-  border-radius: 24px;
+  border: 2px solid var(--line-soft);
+  border-radius: var(--radius);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 8px 8px 0px var(--line);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
+}
+
+/* Scrapbook accent: a soft pastel ribbon peeking along the card top */
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--primary), var(--kawaii-lavender), var(--secondary));
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .theme-lipari .card,
@@ -178,8 +256,8 @@ header {
 }
 
 .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 12px 12px 0px var(--line);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .theme-lipari .card:hover,
@@ -190,12 +268,12 @@ header {
 }
 
 h2 {
-  font-size: 1.4rem;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
   margin-bottom: 1.5rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  color: var(--text);
+  letter-spacing: 0.01em;
 }
 
 .grid {
@@ -212,21 +290,22 @@ h2 {
 }
 
 .btn {
-  padding: 0.7rem 1.4rem;
-  border-radius: 16px;
-  border: 3px solid var(--line);
-  background: transparent;
+  padding: 0.72rem 1.5rem;
+  border-radius: 999px;
+  border: 2px solid var(--line-soft);
+  background: var(--bg-secondary);
   color: var(--text);
-  font-weight: 800;
-  font-size: 0.9rem;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease, background 0.18s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  box-shadow: 4px 4px 0px var(--line);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-lipari .btn,
@@ -243,21 +322,22 @@ h2 {
 }
 
 .btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0px var(--line);
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:hover {
   border-color: var(--primary);
-  filter: brightness(1.1);
-  transform: translateY(-2px);
+  filter: brightness(1.02);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn.primary {
-  background: var(--primary);
-  border-color: var(--line);
+  background: linear-gradient(135deg, var(--primary), var(--kawaii-lavender));
+  border-color: transparent;
   color: white;
-  box-shadow: 4px 4px 0px var(--line);
+  box-shadow: 0 8px 18px var(--accent-glow);
 }
 
 .theme-lipari .btn.primary,
@@ -267,49 +347,45 @@ h2 {
 }
 
 .btn.primary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.2);
+  transform: translateY(-3px);
+  filter: brightness(1.05);
+  box-shadow: 0 12px 26px var(--accent-glow);
 }
 
 .btn.good {
-  background: transparent;
-  color: var(--good);
-  border-color: var(--good);
-  box-shadow: 4px 4px 0px rgba(204, 255, 0, 0.2);
-}
-
-/* Fix contrast for memphis green button */
-.theme-memphis .btn.good {
-  color: #556B2F; /* Dark olive green for better contrast on beige */
-  border-color: #556B2F;
+  background: var(--bg-secondary);
+  color: #2f9e6f;
+  border-color: rgba(87, 201, 154, 0.55);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn.good:hover {
-  box-shadow: 6px 6px 0px rgba(204, 255, 0, 0.3);
+  border-color: var(--good);
+  box-shadow: 0 10px 22px rgba(87, 201, 154, 0.28);
 }
 
 .btn.warn {
-  background: transparent;
-  color: var(--warn);
-  border-color: var(--warn);
-  box-shadow: 4px 4px 0px rgba(255, 214, 10, 0.2);
+  background: var(--bg-secondary);
+  color: #b7791f;
+  border-color: rgba(242, 182, 90, 0.6);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn.warn:hover {
-  box-shadow: 6px 6px 0px rgba(255, 214, 10, 0.3);
+  border-color: var(--warn);
+  box-shadow: 0 10px 22px rgba(242, 182, 90, 0.28);
 }
 
 .pill {
-  padding: 0.4rem 0.9rem;
+  padding: 0.45rem 1rem;
   background: var(--bg-secondary);
-  border: 2px solid var(--line);
-  border-radius: 20px;
+  border: 2px solid var(--line-soft);
+  border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text);
-  box-shadow: 3px 3px 0px var(--line);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-lipari .pill,
@@ -330,9 +406,9 @@ h2 {
   font-size: 1rem;
   color: var(--text);
   padding: 1rem;
-  background: var(--bg-secondary);
-  border: 2px solid var(--line);
-  border-radius: 12px;
+  background: var(--bg-tint);
+  border: 2px solid var(--line-soft);
+  border-radius: 14px;
   font-weight: 600;
 }
 
@@ -362,14 +438,14 @@ h2 {
 }
 
 .tab {
-  padding: 0.75rem 1.5rem;
-  border-radius: 14px;
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
   border: 2px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-weight: 800;
-  font-size: 0.85rem;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
@@ -377,16 +453,15 @@ h2 {
 
 .tab:hover {
   color: var(--primary);
-  border-color: var(--primary);
-  background: var(--bg-secondary);
+  background: var(--bg-tint);
 }
 
 .tab.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--kawaii-lavender));
   color: #FFFFFF;
-  border-color: var(--line);
-  box-shadow: 4px 4px 0px var(--line);
-  font-weight: 900;
+  border-color: transparent;
+  box-shadow: 0 6px 16px var(--accent-glow);
+  font-weight: 600;
 }
 
 .theme-lipari .tab.active,
@@ -398,17 +473,17 @@ h2 {
 /* Specific component styles */
 .health-container {
   height: 32px;
-  background: rgba(0,0,0,0.1);
-  border: 3px solid var(--line);
+  background: var(--bg-tint);
+  border: 2px solid var(--line-soft);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
-  box-shadow: 4px 4px 0px var(--line);
+  box-shadow: inset 0 2px 5px rgba(90, 71, 80, 0.12);
 }
 
 .health-bar {
   height: 100%;
-  background: linear-gradient(90deg, #ff006e, #ff9500, #ccff00);
+  background: linear-gradient(90deg, var(--kawaii-pink), var(--kawaii-peach), var(--kawaii-lemon), var(--good));
   transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -432,26 +507,26 @@ h2 {
 
 .badge {
   aspect-ratio: 1;
-  background: var(--bg);
-  border: 3px solid var(--line);
+  background: var(--bg-tint);
+  border: 2px solid var(--line-soft);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
-  opacity: 0.3;
+  opacity: 0.4;
   filter: grayscale(1);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 4px 4px 0px var(--line);
+  box-shadow: var(--shadow-sm);
 }
 
 .badge.unlocked {
   opacity: 1;
   filter: grayscale(0);
   border-color: var(--warn);
-  box-shadow: 6px 6px 0px var(--line);
+  box-shadow: 0 8px 20px rgba(242, 182, 90, 0.3);
   background: var(--bg-secondary);
 }
 
@@ -472,25 +547,27 @@ h2 {
 .traffic-btn {
   flex: 1;
   height: 80px;
-  border-radius: 20px;
-  border: 4px solid var(--line);
-  opacity: 0.4;
+  border-radius: 22px;
+  border: 2px solid var(--line-soft);
+  opacity: 0.5;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  font-weight: 900;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-  background: transparent;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
   position: relative;
-  box-shadow: 4px 4px 0px var(--line);
+  box-shadow: var(--shadow-sm);
 }
 
 .traffic-btn.active {
   opacity: 1;
   color: white;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  box-shadow: 8px 8px 0px var(--line);
-  transform: translateY(-5px) scale(1.05);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px) scale(1.04);
 }
 
 .traffic-btn.active::before {
@@ -789,10 +866,10 @@ h2 {
   line-height: 1.5;
   margin-bottom: clamp(0.5rem, 1vh, 1.5rem);
   padding: clamp(0.6rem, 1.2vw, 1rem);
-  background: var(--bg-secondary);
+  background: var(--bg-tint);
   border-radius: 14px;
   border-left: 5px solid var(--primary);
-  box-shadow: 4px 4px 0px var(--line);
+  box-shadow: var(--shadow-sm);
 }
 
 .exam-options {
@@ -807,18 +884,19 @@ h2 {
   height: auto;
   white-space: normal;
   line-height: 1.4;
-  border: 2px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg);
+  border: 2px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--bg-secondary);
   transition: all 0.2s ease;
   cursor: pointer;
   font-weight: 600;
   color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .exam-option:hover {
   border-color: var(--secondary);
-  box-shadow: 3px 3px 0px var(--accent-glow);
+  box-shadow: 0 8px 18px var(--accent-glow);
   transform: translateY(-2px);
 }
 
