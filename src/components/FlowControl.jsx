@@ -41,6 +41,16 @@ const FlowControl = ({ pickerItems = [] }) => {
         }
     }, [state.isRedCodeActive, enableAudio, audio]);
 
+    // Detener la música si el componente se desmonta (cambio de pestaña) mientras
+    // sonaba: sin esto la pista de "thinking" seguía reproduciéndose sin control,
+    // ya que el estado local `enableAudio` se reinicia al volver a montar.
+    useEffect(() => () => {
+        if (audioStartedRef.current) {
+            audio.stop();
+            audioStartedRef.current = false;
+        }
+    }, [audio]);
+
     // tick is read here only to keep `remaining` fresh on rerender
     void tick;
 
