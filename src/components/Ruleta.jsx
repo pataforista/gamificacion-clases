@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cleanLines, RNG } from '../utils/rng';
 import { useAudio } from './AudioContext';
 import { useNotifications } from './NotificationContext';
+import { useFullscreen } from '../hooks/useFullscreen';
 
 const COLOR_VARS = ['--primary', '--secondary', '--good', '--warn', '--error'];
 
@@ -19,6 +20,8 @@ const Ruleta = ({ items = [] }) => {
   const { playSFX } = useAudio();
   const { alert } = useNotifications();
   const canvasRef = useRef(null);
+  const fsRef = useRef(null);
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(fsRef);
   const rotationRef = useRef(0);
   const velocityRef = useRef(0);
   const animRef = useRef(null);
@@ -199,8 +202,13 @@ const Ruleta = ({ items = [] }) => {
 
   return (
     <div className="grid">
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-        <h2>Ruleta de Decisiones</h2>
+      <div ref={fsRef} className="card fs-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+        <div className="row" style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0 }}>Ruleta de Decisiones</h2>
+          <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={toggleFullscreen}>
+            {isFullscreen ? '🔳 Salir' : '📺 Proyector'}
+          </button>
+        </div>
         <p className="muted" style={{ marginBottom: '1rem' }}>Gira la ruleta para elegir un tema, una actividad o un estudiante al azar.</p>
 
         <canvas

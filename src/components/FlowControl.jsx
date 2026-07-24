@@ -3,6 +3,7 @@ import { usePersistence } from '../hooks/usePersistence';
 import { useNotifications } from './NotificationContext';
 import { useAudio } from './AudioContext';
 import { RNG } from '../utils/rng';
+import { useFullscreen } from '../hooks/useFullscreen';
 import Cubes from './Cubes';
 
 const FlowControl = ({ pickerItems = [] }) => {
@@ -14,6 +15,8 @@ const FlowControl = ({ pickerItems = [] }) => {
     const [enableAudio, setEnableAudio] = useState(false);
     const [tick, setTick] = useState(0);
     const audioStartedRef = useRef(false);
+    const fsRef = useRef(null);
+    const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(fsRef);
 
     // Live tick for displayed timer
     useEffect(() => {
@@ -94,8 +97,13 @@ const FlowControl = ({ pickerItems = [] }) => {
 
     return (
         <div className="grid">
-            <div className={`card ${state.traffic === 'red' && state.isRedCodeActive ? 'code-red' : ''}`}>
-                <h2>Temporizador de "Código Rojo"</h2>
+            <div ref={fsRef} className={`card fs-card ${state.traffic === 'red' && state.isRedCodeActive ? 'code-red' : ''}`}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0 }}>Temporizador de "Código Rojo"</h2>
+                    <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={toggleFullscreen}>
+                        {isFullscreen ? '🔳 Salir' : '📺 Proyector'}
+                    </button>
+                </div>
                 <div className="out">{remaining}s</div>
                 <div className="divider"></div>
                 <div style={{ marginBottom: '20px' }}>

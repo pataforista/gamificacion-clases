@@ -13,6 +13,31 @@ const isImageAvatar = (value) =>
 
 const emptyJokers = () => ({ fifty: false, shield: false, freeze: false });
 
+// Lee una imagen desde un archivo, la reduce a un máximo razonable y devuelve un
+// data URL. Acotar el tamaño evita que el examen exportado/guardado crezca sin
+// control (una foto de móvil puede pesar varios MB en base64).
+const readImageAsDataURL = (file, maxDim = 1200, quality = 0.85) =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('El archivo no es una imagen válida.'));
+            img.onload = () => {
+                const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                const w = Math.round(img.width * scale);
+                const h = Math.round(img.height * scale);
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
 const GroupExam = ({ pickerItems = [] }) => {
     const { alert, confirm } = useNotifications();
     const audio = useAudio();
@@ -90,6 +115,9 @@ const GroupExam = ({ pickerItems = [] }) => {
             }
             if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
                 throw new Error(`La pregunta ${idx + 1} tiene un 'correctIndex' inválido (${q.correctIndex}). Debe corresponder al índice de una de sus opciones (0 a ${q.options.length - 1}).`);
+            }
+            if (q.image != null && typeof q.image !== 'string') {
+                throw new Error(`La pregunta ${idx + 1} tiene una imagen inválida (debe ser una URL o quedar vacía).`);
             }
         });
     };
@@ -349,6 +377,18 @@ const GroupExam = ({ pickerItems = [] }) => {
             return { ...q, options: newOpts, correctIndex: newCorrect };
         }));
         audio.playSFX('click');
+    };
+
+    const handleQuestionImage = async (qIndex, file) => {
+        if (!file) return;
+        try {
+            const dataUrl = await readImageAsDataURL(file);
+            updateQuestion(qIndex, 'image', dataUrl);
+            audio.playSFX('click');
+        } catch (err) {
+            audio.playSFX('incorrect');
+            await alert('Imagen no válida', err.message || 'No se pudo procesar la imagen.');
+        }
     };
 
     const saveAndStart = async () => {
@@ -742,6 +782,7 @@ const GroupExam = ({ pickerItems = [] }) => {
   "questions": [
     {
       "text": "¿Pregunta?",
+      "image": "https://ejemplo.com/imagen.png",
       "options": ["A", "B", "C", "D"],
       "correctIndex": 0,
       "explanation": "Retroalimentación de la pregunta."
@@ -749,6 +790,7 @@ const GroupExam = ({ pickerItems = [] }) => {
   ]
 }`}
                                 </pre>
+                                <div style={{ marginTop: '8px' }}>El campo <strong>image</strong> es opcional (una URL, o añádela desde el editor para incrustarla y que funcione sin conexión).</div>
                             </div>
                         )}
 
@@ -832,6 +874,21 @@ const GroupExam = ({ pickerItems = [] }) => {
                                             onChange={e => updateQuestion(qIdx, 'text', e.target.value)}
                                             style={{ width: '100%', padding: '8px', border: '1px solid var(--line)', borderRadius: '8px', background: 'var(--bg)', color: 'var(--text)' }}
                                         />
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                                        <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Imagen (opcional):</label>
+                                        {q.image ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                <img src={q.image} alt="Vista previa" style={{ maxHeight: '90px', maxWidth: '160px', borderRadius: '8px', border: '2px solid var(--line)', objectFit: 'cover' }} />
+                                                <button className="btn error" style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'var(--error)', color: 'white' }} onClick={() => updateQuestion(qIdx, 'image', null)}>✕ Quitar imagen</button>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <input type="file" accept="image/*" style={{ display: 'none' }} id={`q-img-${qIdx}`} onChange={e => handleQuestionImage(qIdx, e.target.files?.[0])} />
+                                                <label htmlFor={`q-img-${qIdx}`} className="btn" style={{ cursor: 'pointer', padding: '4px 10px', fontSize: '0.8rem' }}>🖼️ Añadir imagen</label>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.8rem' }}>
@@ -1062,6 +1119,21 @@ const GroupExam = ({ pickerItems = [] }) => {
                                     <div className="exam-question" style={{ background: 'var(--bg-secondary)', fontSize: questionFont, lineHeight: 1.3, color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.7rem, 1.3vw, 1.4rem)' }}>
                                         {question.text}
                                     </div>
+                                    {question.image && (
+                                        <img
+                                            src={question.image}
+                                            alt="Imagen de la pregunta"
+                                            style={{
+                                                display: 'block',
+                                                margin: 'clamp(0.4rem, 0.7vh, 0.8rem) auto 0',
+                                                maxWidth: '100%',
+                                                maxHeight: projectorMode ? '42vh' : '30vh',
+                                                borderRadius: '12px',
+                                                border: '3px solid var(--line)',
+                                                objectFit: 'contain',
+                                            }}
+                                        />
+                                    )}
                                     <div className="exam-options" style={{ gap: 'clamp(5px, 0.7vh, 10px)', marginTop: 'clamp(0.4rem, 0.7vh, 1rem)' }}>
                                         {question.options.map((opt, i) => {
                                             const isResolved = feedback && feedback.type !== 'incorrect_temporary';

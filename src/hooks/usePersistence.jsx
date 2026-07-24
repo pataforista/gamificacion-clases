@@ -44,6 +44,18 @@ export const PersistenceProvider = ({ children }) => {
         setState((prev) => ({ ...prev, ...updates }));
     }, []);
 
+    // Reemplaza el estado completo desde un respaldo importado. Se fusiona sobre
+    // los valores por defecto para tolerar respaldos antiguos a los que les
+    // falten claves nuevas (y descartar cualquier clave desconocida sobrante).
+    const importState = useCallback((incoming) => {
+        if (!incoming || typeof incoming !== 'object') return;
+        setState({
+            ...DEFAULT_STATE,
+            ...incoming,
+            lastReset: incoming.lastReset || new Date().toISOString(),
+        });
+    }, []);
+
     const resetState = useCallback((preserveRoster = false) => {
         setState((prev) => ({
             ...DEFAULT_STATE,
@@ -56,7 +68,7 @@ export const PersistenceProvider = ({ children }) => {
     }, []);
 
     return (
-        <PersistenceContext.Provider value={{ state, updateState, resetState }}>
+        <PersistenceContext.Provider value={{ state, updateState, resetState, importState }}>
             {children}
         </PersistenceContext.Provider>
     );
