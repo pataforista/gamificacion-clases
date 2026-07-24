@@ -337,6 +337,39 @@ h2 {
   outline-offset: 4px;
 }
 
+/* Foco de teclado visible en el resto de controles interactivos que no son
+   .btn/.tab: semáforo, pills, selects tipo pill y textos editables. Sin esto,
+   navegar con Tab por el proyector no mostraba dónde estaba el foco. */
+.traffic-btn:focus-visible,
+.pill:focus-visible,
+select.pill:focus-visible,
+[contenteditable]:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* ---- Modo pantalla completa (proyector) para herramientas sueltas ---- */
+.fs-card:fullscreen {
+  background: var(--bg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3vmin;
+  border-radius: 0;
+}
+.fs-card:fullscreen canvas {
+  width: min(82vmin, 720px) !important;
+  height: min(82vmin, 720px) !important;
+}
+.fs-card:fullscreen .out {
+  font-size: clamp(6rem, 30vmin, 22rem);
+}
+.fs-card:fullscreen .bingo-number {
+  font-size: clamp(8rem, 30vmin, 20rem) !important;
+}
+
 .btn:active {
   transform: translateY(1px) scale(0.98);
   box-shadow: var(--shadow-sm);

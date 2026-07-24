@@ -15,9 +15,9 @@ const BADGES = [
     { id: 'fast', name: 'Velocidad', nameGen: 'Rayos', icon: '⚡', detail: 'Resolver bajo presión' },
 ];
 
-const RPGDash = () => {
-    const { state, updateState, resetState } = usePersistence();
-    const { notify, confirm } = useNotifications();
+const RPGDash = ({ theme, updateTheme }) => {
+    const { state, updateState, resetState, importState } = usePersistence();
+    const { notify, confirm, alert } = useNotifications();
     const [promotion, setPromotion] = useState(null);
     const prevRankRef = useRef(null);
     const prevModeRef = useRef(state.rpgMode || 'medical');
@@ -109,14 +109,54 @@ const RPGDash = () => {
         }
     };
 
+    // Respaldo total: progreso + lista de alumnos + títulos + tema, en un archivo.
     const exportData = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const backup = {
+            app: 'medclass-pro',
+            type: 'backup',
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            state,
+            theme: theme || localStorage.getItem('app-theme') || 'theme-memphis',
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "quickrand_progress.json");
+        downloadAnchorNode.setAttribute("download", `medclass-respaldo-${new Date().toISOString().slice(0, 10)}.json`);
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
+        notify('Respaldo exportado', 'achievement', '💾');
+    };
+
+    const importData = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = ''; // permitir volver a importar el mismo archivo
+        if (!file) return;
+
+        let data;
+        try {
+            data = JSON.parse(await file.text());
+        } catch {
+            return await alert('Archivo inválido', 'No se pudo leer el archivo. Debe ser un respaldo .json de MedClass Pro.');
+        }
+
+        // Acepta el respaldo nuevo ({ state, theme }) y también exportaciones
+        // antiguas donde el archivo era el estado plano.
+        const incoming = data && typeof data.state === 'object' ? data.state : data;
+        if (!incoming || typeof incoming !== 'object' || (incoming.xp === undefined && incoming.pickerItems === undefined)) {
+            return await alert('Archivo no reconocido', 'El archivo no parece un respaldo de progreso de MedClass Pro.');
+        }
+
+        const ok = await confirm(
+            'Restaurar respaldo',
+            'Esto reemplazará el progreso, la lista de alumnos, los títulos y el tema actuales por los del respaldo. ¿Continuar?'
+        );
+        if (!ok) return;
+
+        importState(incoming);
+        if (data && data.theme && updateTheme) updateTheme(data.theme);
+        notify('Respaldo restaurado', 'achievement', '✅');
     };
 
     const handleReset = async () => {
@@ -233,10 +273,12 @@ const RPGDash = () => {
 
                 <div className="card">
                     <h2>Gestión de Datos</h2>
-                    <div className="smallout">Exporta el progreso para usarlo en otra clase.</div>
+                    <div className="smallout">Respalda o restaura todo (progreso, alumnos, títulos y tema) en un archivo. Ideal para pasar del proyector a tu celular sin nube.</div>
                     <div className="divider"></div>
-                    <div className="row">
-                        <button className="btn primary" onClick={exportData}>Exportar JSON</button>
+                    <div className="row" style={{ flexWrap: 'wrap' }}>
+                        <button className="btn primary" onClick={exportData}>💾 Exportar respaldo</button>
+                        <input type="file" accept=".json,application/json" onChange={importData} style={{ display: 'none' }} id="rpg-import-input" />
+                        <label htmlFor="rpg-import-input" className="btn" style={{ cursor: 'pointer' }}>📥 Importar respaldo</label>
                         <button className="btn warn" onClick={handleReset}>Reset Total</button>
                     </div>
                 </div>

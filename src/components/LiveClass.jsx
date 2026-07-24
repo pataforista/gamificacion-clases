@@ -49,6 +49,15 @@ const LiveClass = ({ pickerItems = [] }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state.isRedCodeActive, state.redCodeEndTime]);
 
+    // Detener la música si se sale de esta pestaña mientras seguía sonando el
+    // temporizador (evita que la pista quede reproduciéndose tras desmontar).
+    useEffect(() => () => {
+        if (wasActiveRef.current) {
+            audio.stop();
+            wasActiveRef.current = false;
+        }
+    }, [audio]);
+
     const startRedCode = (seconds = 30) => {
         const endTime = Date.now() + (seconds * 1000);
         updateState({

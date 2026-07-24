@@ -209,7 +209,7 @@ const App = () => {
               >
                 <Suspense fallback={<div className="card pulse" style={{ textAlign: 'center', padding: '2rem' }}>Cargando módulo premium...</div>}>
                   {activeTab === 'live' && <LiveClass pickerItems={pickerItems} />}
-                  {activeTab === 'progreso' && <RPGDash />}
+                  {activeTab === 'progreso' && <RPGDash theme={theme} updateTheme={updateTheme} />}
                   {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
                   {activeTab === 'dice' && <Dice />}
                   {activeTab === 'touch' && <TouchOrder pickerItems={pickerItems} />}

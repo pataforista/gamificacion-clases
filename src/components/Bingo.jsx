@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RNG } from '../utils/rng';
 import { useAudio } from './AudioContext';
+import { useFullscreen } from '../hooks/useFullscreen';
 
 const RANGES = [20, 30, 50, 75, 90];
 
@@ -13,6 +14,8 @@ const Bingo = () => {
   const [current, setCurrent] = useState(null);
   const [rolling, setRolling] = useState(false);
   const timerRef = useRef(null);
+  const fsRef = useRef(null);
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(fsRef);
 
   const remaining = Array.from({ length: maxNum }, (_, i) => i + 1).filter(n => !called.includes(n));
   const done = remaining.length === 0;
@@ -72,8 +75,13 @@ const Bingo = () => {
   return (
     <div className="grid">
       {/* Left: caller panel */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h2>Bingo — Cantador</h2>
+      <div ref={fsRef} className="card fs-card" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0 }}>Bingo — Cantador</h2>
+          <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={toggleFullscreen}>
+            {isFullscreen ? '🔳 Salir' : '📺 Proyector'}
+          </button>
+        </div>
         <p className="muted" style={{ marginBottom: '1rem' }}>Genera números al azar sin repeticiones para dinámicas de bingo en clase.</p>
 
         <div className="row" style={{ marginBottom: '1rem' }}>
@@ -115,7 +123,7 @@ const Bingo = () => {
                 type: "spring",
                 repeat: rolling ? Infinity : 0
               }}
-              className="mono"
+              className="mono bingo-number"
               style={{
                 fontSize: 'clamp(5rem, 18vw, 8rem)',
                 fontWeight: 900,
