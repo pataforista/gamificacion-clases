@@ -697,13 +697,13 @@ input[type="range"] {
 .orderitem:hover {
   border-color: var(--secondary);
   background: var(--bg-secondary);
-  box-shadow: 3px 3px 0px var(--accent-glow);
+  box-shadow: var(--shadow-sm);
 }
 
 .orderitem.active {
   background: var(--bg-secondary);
   border-color: var(--secondary);
-  box-shadow: 4px 4px 0px var(--accent-glow);
+  box-shadow: var(--shadow-md);
   font-weight: 700;
 }
 
@@ -811,61 +811,6 @@ input[type="range"] {
   }
 }
 
-/* Winner circle pulse animation */
-@keyframes pulse-winner {
-  0%, 100% {
-    box-shadow: 8px 8px 0px var(--primary);
-  }
-  50% {
-    box-shadow: 12px 12px 0px var(--secondary);
-  }
-}
-
-/* Memphis magenta glow */
-@keyframes memphis-glow {
-  0%, 100% {
-    box-shadow: 4px 4px 0px var(--primary);
-  }
-  50% {
-    box-shadow: 6px 6px 0px var(--primary);
-  }
-}
-
-/* Memphis yellow glow */
-@keyframes memphis-glow-yellow {
-  0%, 100% {
-    box-shadow: 4px 4px 0px var(--warn), 8px 8px 0px var(--warn);
-  }
-  50% {
-    box-shadow: 5px 5px 0px var(--warn), 10px 10px 0px var(--warn);
-  }
-}
-
-/* Memphis colorful pulse */
-@keyframes memphis-pulse {
-  0% {
-    box-shadow: 4px 4px 0px var(--primary);
-  }
-  25% {
-    box-shadow: 6px 6px 0px var(--secondary);
-  }
-  50% {
-    box-shadow: 4px 4px 0px var(--warn);
-  }
-  75% {
-    box-shadow: 6px 6px 0px var(--good);
-  }
-  100% {
-    box-shadow: 4px 4px 0px var(--primary);
-  }
-}
-
-/* Traffic button pulse */
-@keyframes memphis-traffic-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.9; }
-}
-
 /* Utility classes */
 .mono {
   font-family: 'Courier New', Courier, monospace;
@@ -932,13 +877,13 @@ input[type="range"] {
 /* Code Red timer highlight */
 .code-red {
   border-color: var(--error) !important;
-  box-shadow: 4px 4px 0px var(--primary), 8px 8px 0px var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(255, 143, 160, 0.35), 0 12px 30px rgba(255, 143, 160, 0.35) !important;
   animation: code-red-pulse 1s ease-in-out infinite;
 }
 
 @keyframes code-red-pulse {
-  0%, 100% { box-shadow: 4px 4px 0px var(--error), 8px 8px 0px var(--line); }
-  50%       { box-shadow: 5px 5px 0px var(--primary), 10px 10px 0px var(--line); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255, 143, 160, 0.30), 0 12px 30px rgba(255, 143, 160, 0.28); }
+  50%       { box-shadow: 0 0 0 5px rgba(255, 143, 160, 0.45), 0 16px 40px rgba(255, 143, 160, 0.40); }
 }
 
 /* Group Exam styles */
@@ -987,27 +932,27 @@ input[type="range"] {
 }
 
 .exam-option.correct {
-  background: rgba(204, 255, 0, 0.12) !important;
+  background: rgba(87, 201, 154, 0.14) !important;
   border-color: var(--good) !important;
   color: var(--text) !important;
-  box-shadow: 4px 4px 0px rgba(204, 255, 0, 0.4);
+  box-shadow: 0 8px 20px rgba(87, 201, 154, 0.3);
   font-weight: 700;
 }
 
 .smallout.correct {
-  background: rgba(204, 255, 0, 0.12);
+  background: rgba(87, 201, 154, 0.14);
   border: 2px solid var(--good);
   color: var(--text);
   font-weight: 700;
-  box-shadow: 3px 3px 0px rgba(204, 255, 0, 0.3);
+  box-shadow: 0 6px 16px rgba(87, 201, 154, 0.22);
 }
 
 .smallout.incorrect {
-  background: rgba(255, 107, 157, 0.12);
+  background: rgba(255, 143, 160, 0.14);
   border: 2px solid var(--error);
   color: var(--error);
   font-weight: 700;
-  box-shadow: 3px 3px 0px rgba(255, 107, 157, 0.3);
+  box-shadow: 0 6px 16px rgba(255, 143, 160, 0.22);
 }
 
 /* Win text (Picker result) */
@@ -1328,7 +1273,7 @@ input[type="range"] {
 .giant-timer {
   font-size: clamp(8rem, 25vw, 18rem);
   font-weight: 900;
-  font-family: 'Fredoka', sans-serif;
+  font-family: var(--font-display);
   line-height: 1;
   text-shadow: 0 0 50px var(--traffic-red);
   margin-bottom: 2rem;
@@ -1414,7 +1359,7 @@ input[type="range"] {
 
 /* TouchOrder Podium & Feedback */
 .podium-overlay h3 {
-  font-family: 'Fredoka', sans-serif;
+  font-family: var(--font-display);
   letter-spacing: 0.2em;
 }
 

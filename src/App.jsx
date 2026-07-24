@@ -170,7 +170,7 @@ const App = () => {
               className="pill"
               style={{ background: 'var(--bg-secondary)', border: '2px solid var(--line)', padding: '2px 10px', cursor: 'pointer' }}
             >
-              <option value="theme-memphis">Estilo Memphis</option>
+              <option value="theme-memphis">Estilo Kawaii 🎀</option>
               <option value="theme-lipari">Tema Lipari 🛋️</option>
               <option value="theme-tokyo">Tema Tokyo ✈️</option>
               <option value="theme-lisbon">Tema Lisbon 🌿</option>

@@ -183,7 +183,7 @@ const EXTRAS = [
   {
     icon: '🎨',
     title: 'Temas visuales',
-    body: 'Con el selector de la parte superior cambia entre los estilos Memphis, Lipari, Tokyo y Lisbon para adaptar los colores a tu gusto o al proyector.',
+    body: 'Con el selector de la parte superior cambia entre los estilos Kawaii, Lipari, Tokyo y Lisbon para adaptar los colores a tu gusto o al proyector.',
   },
   {
     icon: '✏️',
