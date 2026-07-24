@@ -9,6 +9,7 @@ const DEFAULT_STATE = {
     traffic: "green",
     rollHistory: [],
     pickerItems: ["Opción A", "Opción B", "Opción C", "Opción D"],
+    savedRosters: [], // [{ id, name, items: string[] }] — listas de clase guardadas
     redCodeEndTime: null,
     isRedCodeActive: false,
     customTitle: "",
@@ -60,6 +61,7 @@ export const PersistenceProvider = ({ children }) => {
         setState((prev) => ({
             ...DEFAULT_STATE,
             pickerItems: preserveRoster ? prev.pickerItems : DEFAULT_STATE.pickerItems,
+            savedRosters: preserveRoster ? (prev.savedRosters || []) : [],
             customTitle: preserveRoster ? prev.customTitle : "",
             customSubtitle: preserveRoster ? prev.customSubtitle : "",
             rpgMode: prev.rpgMode,

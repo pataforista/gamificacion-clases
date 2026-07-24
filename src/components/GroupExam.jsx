@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from './NotificationContext';
 import { useAudio, WAITING_TRACKS } from './AudioContext';
@@ -6,6 +6,7 @@ import { RNG } from '../utils/rng';
 import confetti from 'canvas-confetti';
 import BoardGame from './BoardGame';
 import AvatarSelector from './AvatarSelector';
+import { listExams, getExam, saveExam, deleteExam } from '../utils/examStore';
 
 // Helper: detect whether an avatar value is an image (path/data) or an emoji
 const isImageAvatar = (value) =>
@@ -39,8 +40,13 @@ const readImageAsDataURL = (file, maxDim = 1200, quality = 0.85) =>
     });
 
 const GroupExam = ({ pickerItems = [] }) => {
-    const { alert, confirm } = useNotifications();
+    const { alert, confirm, notify } = useNotifications();
     const audio = useAudio();
+
+    // Biblioteca local de exámenes (IndexedDB)
+    const [savedExams, setSavedExams] = useState([]);
+    const [examName, setExamName] = useState('');
+    const [currentExamId, setCurrentExamId] = useState(null);
 
     const [exam, setExam] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -298,6 +304,8 @@ const GroupExam = ({ pickerItems = [] }) => {
 
                 setExam(buildExam(data.questions));
                 setEditedQuestions(data.questions);
+                setExamName(file.name.replace(/\.json$/i, ''));
+                setCurrentExamId(null);
                 setCurrentQuestion(0);
                 setFeedback(null);
                 resetScoreboards();
@@ -433,6 +441,88 @@ const GroupExam = ({ pickerItems = [] }) => {
         audio.playSFX('click');
         if (exam && exam.questions) setEditedQuestions(exam.questions);
         setSetupPhase('edit');
+    };
+
+    // ---- Biblioteca local de exámenes ----
+    const refreshExams = useCallback(async () => {
+        try {
+            setSavedExams(await listExams());
+        } catch (err) {
+            console.warn('No se pudo leer la biblioteca de exámenes:', err);
+        }
+    }, []);
+
+    useEffect(() => { refreshExams(); }, [refreshExams]);
+
+    const saveToLibrary = async () => {
+        try {
+            validateExamJSON({ questions: editedQuestions });
+        } catch (err) {
+            return await alert('No se puede guardar', err.message || 'Las preguntas tienen errores.');
+        }
+        const name = examName.trim() || `Examen ${new Date().toLocaleDateString()}`;
+        try {
+            const saved = await saveExam({ id: currentExamId, name, questions: editedQuestions });
+            setCurrentExamId(saved.id);
+            setExamName(saved.name);
+            await refreshExams();
+            audio.playSFX('correct');
+            notify(`Examen "${saved.name}" guardado`, 'achievement', '📚');
+        } catch (err) {
+            await alert('Error al guardar', err.message || 'No se pudo guardar el examen en este dispositivo.');
+        }
+    };
+
+    const loadExamToEdit = async (id) => {
+        try {
+            const rec = await getExam(id);
+            if (!rec) return;
+            setEditedQuestions(rec.questions);
+            setExamName(rec.name);
+            setCurrentExamId(rec.id);
+            setSetupPhase('edit');
+            audio.playSFX('click');
+        } catch (err) {
+            await alert('Error', err.message || 'No se pudo abrir el examen.');
+        }
+    };
+
+    const playSavedExam = async (id) => {
+        try {
+            const rec = await getExam(id);
+            if (!rec) return;
+            validateExamJSON({ questions: rec.questions });
+            setExam(buildExam(rec.questions));
+            setEditedQuestions(rec.questions);
+            setExamName(rec.name);
+            setCurrentExamId(rec.id);
+            setCurrentQuestion(0);
+            setFeedback(null);
+            resetScoreboards();
+            audio.playSFX('intro');
+            setSetupPhase('avatar');
+        } catch (err) {
+            await alert('No se puede jugar', err.message || 'El examen guardado tiene errores.');
+        }
+    };
+
+    const deleteSavedExam = async (id, name) => {
+        const ok = await confirm('Borrar examen', `¿Borrar el examen "${name}" de la biblioteca? Esta acción no se puede deshacer.`);
+        if (!ok) return;
+        try {
+            await deleteExam(id);
+            if (currentExamId === id) setCurrentExamId(null);
+            await refreshExams();
+        } catch (err) {
+            await alert('Error', err.message || 'No se pudo borrar el examen.');
+        }
+    };
+
+    const newExamDraft = () => {
+        setEditedQuestions([{ text: "", options: ["Opción A", "Opción B", "Opción C", "Opción D"], correctIndex: 0, explanation: "" }]);
+        setExamName('');
+        setCurrentExamId(null);
+        audio.playSFX('click');
     };
 
     // ---- Gameplay ----
@@ -774,6 +864,26 @@ const GroupExam = ({ pickerItems = [] }) => {
                             </button>
                         </div>
 
+                        {savedExams.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <h3 style={{ marginBottom: '0.5rem' }}>📚 Mis exámenes guardados</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+                                    {savedExams.map(ex => (
+                                        <div key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', border: '2px solid var(--line)', borderRadius: '12px', flexWrap: 'wrap' }}>
+                                            <div style={{ flex: 1, minWidth: '140px' }}>
+                                                <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ex.name}</div>
+                                                <div className="muted" style={{ fontSize: '0.75rem' }}>{ex.count} pregunta(s)</div>
+                                            </div>
+                                            <button className="btn good" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => playSavedExam(ex.id)}>🎮 Jugar</button>
+                                            <button className="btn" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={() => loadExamToEdit(ex.id)}>✏️ Editar</button>
+                                            <button className="btn" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => deleteSavedExam(ex.id, ex.name)} title="Borrar examen">🗑️</button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="divider"></div>
+                            </div>
+                        )}
+
                         {showGuide && (
                             <div className="smallout" style={{ textAlign: 'left', background: 'var(--bg-secondary)', border: '2px dashed var(--line)', color: 'var(--text)', padding: '1rem', borderRadius: '12px' }}>
                                 <strong>Estructura requerida:</strong>
@@ -844,6 +954,15 @@ const GroupExam = ({ pickerItems = [] }) => {
                             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                                 <button className="btn primary" onClick={addQuestion}>➕ Añadir Pregunta</button>
                                 <button className="btn good" style={{ background: 'var(--good)', color: 'white' }} onClick={saveAndStart}>🎮 Guardar y Jugar</button>
+                                <input
+                                    type="text"
+                                    value={examName}
+                                    onChange={e => setExamName(e.target.value)}
+                                    placeholder="Nombre del examen"
+                                    style={{ minWidth: '150px' }}
+                                />
+                                <button className="btn" onClick={saveToLibrary} disabled={editedQuestions.length === 0}>💾 Guardar en biblioteca</button>
+                                <button className="btn" onClick={newExamDraft} title="Empezar un examen nuevo en blanco">🆕 Nuevo</button>
                                 <button className="btn" onClick={exportExamJSON} disabled={editedQuestions.length === 0}>📥 Exportar JSON</button>
                                 <span className="pill" style={{ fontSize: '0.8rem' }}>{editedQuestions.length} pregunta{editedQuestions.length !== 1 ? 's' : ''}</span>
                             </div>
