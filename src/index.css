@@ -61,6 +61,10 @@
 
   --font-display: 'Fredoka Variable', 'Outfit Variable', system-ui, sans-serif;
 
+  /* Glassy panel used for grouped toolbars / nav */
+  --panel: rgba(255, 255, 255, 0.62);
+  --panel-border: rgba(90, 71, 80, 0.10);
+
   font-family: 'Outfit Variable', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -135,6 +139,18 @@
   --traffic-green: #2a9d8f;
   --traffic-yellow: #e9c46a;
   --traffic-red: #e76f51;
+}
+
+/* Dark & alt themes: darker glass panels + softer text controls */
+.theme-lipari, .theme-tokyo {
+  --panel: rgba(255, 255, 255, 0.05);
+  --panel-border: rgba(255, 255, 255, 0.10);
+  --line-soft: rgba(255, 255, 255, 0.12);
+}
+.theme-lisbon {
+  --panel: rgba(255, 255, 255, 0.6);
+  --panel-border: rgba(0, 0, 0, 0.06);
+  --line-soft: rgba(0, 0, 0, 0.10);
 }
 
 * {
@@ -419,41 +435,76 @@ h2 {
   opacity: 0.2;
 }
 
+/* ---- Form controls: consistent soft, rounded, kawaii inputs ---- */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select:not(.pill) {
+  font-family: 'Outfit Variable', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg-secondary);
+  border: 2px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 0.6rem 0.9rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  outline: none;
+  accent-color: var(--primary);
+}
+
+textarea {
+  border-radius: 16px;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 2.6rem;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+textarea:focus,
+select:not(.pill):focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  padding: 0.5rem 0.25rem;
-}
-
-.tabs::-webkit-scrollbar {
-  height: 4px;
-  display: block;
-}
-
-.tabs::-webkit-scrollbar-thumb {
-  background: var(--line);
-  border-radius: 10px;
+  gap: 0.4rem;
+  margin-bottom: 0;
+  padding: 0;
 }
 
 .tab {
-  padding: 0.6rem 1.25rem;
+  padding: 0.55rem 1.15rem;
   border-radius: 999px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 500;
+  font-size: 0.88rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
 }
 
 .tab:hover {
   color: var(--primary);
-  background: var(--bg-tint);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .tab.active {
@@ -501,8 +552,8 @@ h2 {
 
 .badge-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .badge {
@@ -514,12 +565,14 @@ h2 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
   opacity: 0.4;
   filter: grayscale(1);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: var(--shadow-sm);
+  padding: 0.4rem;
+  text-align: center;
 }
 
 .badge.unlocked {
@@ -1021,32 +1074,48 @@ h2 {
   50% { opacity: 0.7; transform: scale(1.05); }
 }
 
-/* Grouped Tabs */
+/* Grouped Tabs — one floating glass nav panel, sticky for quick access */
 .tab-categories {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.9rem;
   margin-bottom: 2rem;
+  position: sticky;
+  top: 0.6rem;
+  z-index: 50;
+  padding: 0.9rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.tab-category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .tab-category-title {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--muted);
-  margin-bottom: 0.5rem;
-  letter-spacing: 0.1em;
+  margin: 0 0 0 0.4rem;
+  letter-spacing: 0.12em;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .tab-category-title::after {
   content: '';
   flex: 1;
-  height: 2px;
+  height: 1px;
   background: var(--line);
-  opacity: 0.1;
+  opacity: 0.12;
 }
 
 /* Quick Dice in Live Dashboard */
