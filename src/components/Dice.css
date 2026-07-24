@@ -1,10 +1,10 @@
 /* Dice Container */
 .dice-tray-container {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg, var(--bg-secondary), var(--bg-tint));
     border-radius: 20px;
-    border: 3px solid var(--line);
+    border: 2px solid var(--line-soft);
     margin-bottom: 20px;
-    box-shadow: 4px 4px 0px var(--line);
+    box-shadow: var(--shadow-sm), inset 0 2px 8px rgba(90, 71, 80, 0.06);
 }
 
 .poly-dice-container {
@@ -101,14 +101,14 @@
     border-color: var(--secondary);
     color: var(--text);
     background: var(--bg-secondary);
-    box-shadow: 4px 4px 0px var(--line);
+    box-shadow: var(--shadow-sm);
 }
 
 .theme-classic .face {
     background: var(--bg-secondary);
     border-color: var(--primary);
     color: var(--text);
-    box-shadow: 4px 4px 0px var(--line);
+    box-shadow: var(--shadow-sm);
 }
 
 .front {
@@ -151,14 +151,14 @@
 
 .dice-result-pill {
     background: var(--bg-secondary);
-    border: 3px solid var(--line);
-    border-radius: 20px;
+    border: 2px solid var(--line-soft);
+    border-radius: 18px;
     padding: 12px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-width: 80px;
-    box-shadow: 4px 4px 0px var(--line);
+    box-shadow: var(--shadow-sm);
 }
 
 .dice-shape {
@@ -187,7 +187,7 @@
 }
 
 .history-item:hover {
-    background: rgba(255, 0, 110, 0.08);
+    background: var(--accent-glow);
 }
 
 @media (max-width: 600px) {

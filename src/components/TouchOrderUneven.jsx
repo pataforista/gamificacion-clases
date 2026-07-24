@@ -236,7 +236,7 @@ const TouchOrderUneven = ({ pickerItems = [] }) => {
                         borderRadius: '24px',
                         border: phase === 'counting' ? '3px dashed var(--primary)'
                               : phase === 'done'     ? '3px solid #fbbf24'
-                              :                        '3px dashed var(--line)',
+                              :                        '2.5px dashed rgba(var(--primary-rgb), 0.4)',
                         overflow: 'hidden',
                         touchAction: 'none',
                         transition: 'border-color 0.3s ease',
