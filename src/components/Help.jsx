@@ -151,26 +151,14 @@ const HERRAMIENTAS = [
     icon: '✋',
     title: 'Orden por toque',
     tag: 'Táctil',
-    what: 'Decide rápidamente el ORDEN de intervención: todos ponen el dedo en la pantalla y la app asigna los turnos.',
+    what: 'Sortea turnos sin listas: cada participante apoya un dedo en la mesa táctil y la app decide. Tiene dos modos: “Orden completo” (reparte 1º, 2º, 3º…) y “Elegir a uno” (marca sólo a un elegido).',
     steps: [
-      'Pide a los participantes que coloquen un dedo dentro de la zona.',
-      'Mantengan los dedos presionados unos 3 segundos.',
-      'La app asignará el orden de intervención a cada dedo.',
+      'Elige el modo: Orden completo o Elegir a uno.',
+      'Cada participante apoya un dedo dentro de la mesa oscura; cada dedo nuevo reinicia la cuenta, así nadie se queda fuera.',
+      'Sin mover los dedos, espera a que los anillos de color se completen (2.5 s desde el último dedo).',
+      'Cada círculo muestra su número (o la estrella del elegido). Toca de nuevo, o pulsa “Otra ronda”, para repetir.',
     ],
-    tip: 'Funciona mejor en tabletas o pantallas táctiles grandes.',
-  },
-  {
-    id: 'touch-uneven',
-    icon: '🎯',
-    title: 'Dedo Disparejo',
-    tag: 'Táctil',
-    what: 'Elige a UNA sola persona al azar: todos ponen un dedo y la app selecciona al “elegido”.',
-    steps: [
-      'Todos colocan un dedo en la pantalla al mismo tiempo.',
-      'Espera a que la app haga la selección.',
-      'El dedo marcado es el elegido para participar.',
-    ],
-    tip: 'Ideal para escoger a un único voluntario de forma divertida.',
+    tip: 'Pulsa ⛶ para poner la mesa a pantalla completa: en tableta o pizarrón caben muchas más manos y los círculos se ven desde el fondo del aula.',
   },
 ];
 
@@ -256,7 +244,7 @@ const Help = () => {
       </div>
 
       <p className="smallout help-foot">
-        ¿Lista para empezar? Vuelve a <strong>Clase en Vivo ⚡</strong> y proyecta la app en tu aula.
+        ¿Lista para empezar? Vuelve a <strong>Clase en Vivo</strong> y proyecta la app en tu aula.
       </p>
     </div>
   );

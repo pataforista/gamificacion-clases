@@ -53,11 +53,11 @@
   --glass: rgba(255, 255, 255, 0.96);
   --glass-border: #5A4750;
 
-  /* Soft, layered shadows (replace the hard memphis offset shadows) */
-  --shadow-sm: 0 3px 10px rgba(150, 100, 120, 0.12);
-  --shadow-md: 0 10px 24px rgba(150, 100, 120, 0.16);
-  --shadow-lg: 0 20px 46px rgba(150, 100, 120, 0.20);
-  --radius: 24px;
+  /* Sombras suaves y discretas (una sola capa, poco contraste) */
+  --shadow-sm: 0 1px 3px rgba(150, 100, 120, 0.08);
+  --shadow-md: 0 4px 14px rgba(150, 100, 120, 0.10);
+  --shadow-lg: 0 10px 28px rgba(150, 100, 120, 0.14);
+  --radius: 20px;
 
   --font-display: 'Fredoka Variable', 'Outfit Variable', system-ui, sans-serif;
 
@@ -161,29 +161,28 @@
 
 body {
   background-color: var(--bg);
-  /* Scrapbook paper: faint dotted grid over the warm base */
-  background-image: radial-gradient(circle at 1px 1px, var(--line-soft) 1px, transparent 0);
-  background-size: 22px 22px;
+  /* Papel de scrapbook: retícula de puntos casi imperceptible */
+  background-image: radial-gradient(circle at 1px 1px, rgba(90, 71, 80, 0.055) 1px, transparent 0);
+  background-size: 26px 26px;
   background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
   touch-action: pan-y;
+  /* En móvil, mantener el dedo sobre la app no debe recargar la página. */
+  overscroll-behavior-y: contain;
   font-family: 'Outfit Variable', sans-serif;
 }
 
-/* Soft pastel light-blobs floating behind everything (kawaii glow) */
+/* Un solo halo pastel muy tenue arriba, en lugar de tres manchas de color */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(38vw 38vw at 8% 4%, rgba(255, 135, 171, 0.16), transparent 60%),
-    radial-gradient(42vw 42vw at 96% 12%, rgba(143, 211, 236, 0.16), transparent 60%),
-    radial-gradient(45vw 45vw at 50% 108%, rgba(185, 167, 240, 0.15), transparent 60%);
+  background: radial-gradient(70vw 40vh at 50% -8%, rgba(255, 135, 171, 0.10), transparent 70%);
 }
 
 /* Dark themes drop the paper texture in favour of their flat backgrounds */
@@ -191,7 +190,7 @@ body::before {
   background-image: none;
 }
 .theme-lipari::before, .theme-tokyo::before, .theme-lisbon::before {
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 #root {
@@ -203,19 +202,19 @@ body::before {
 main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem 1.5rem 2.5rem;
 }
 
 header {
-  padding: 2rem 0;
+  padding: 1.1rem 0 0.9rem;
   text-align: center;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 10vw, 4.5rem);
+  font-size: clamp(1.7rem, 5vw, 2.6rem);
   font-weight: 700;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
   line-height: 1.05;
   letter-spacing: -0.01em;
   position: relative;
@@ -226,7 +225,6 @@ header {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--primary);
-  filter: drop-shadow(0 3px 6px rgba(255, 126, 168, 0.25));
 }
 
 /* Dark themes: gradient text can wash out, so use a solid primary fill */
@@ -241,53 +239,27 @@ header {
 .card {
   background: var(--bg-secondary);
   color: var(--text);
-  border: 2px solid var(--line-soft);
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
-}
-
-/* Scrapbook accent: a soft pastel ribbon peeking along the card top */
-.card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, var(--primary), var(--kawaii-lavender), var(--secondary));
-  opacity: 0.85;
-  pointer-events: none;
 }
 
 .theme-lipari .card,
 .theme-tokyo .card,
 .theme-lisbon .card {
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  border: 1px solid var(--line);
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.theme-lipari .card:hover,
-.theme-tokyo .card:hover,
-.theme-lisbon .card:hover {
-  box-shadow: 0 15px 40px var(--accent-glow);
-  transform: translateY(-8px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+  border: 1px solid var(--line-soft);
 }
 
 h2 {
   font-family: var(--font-display);
-  font-size: 1.55rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   color: var(--text);
   letter-spacing: 0.01em;
 }
@@ -295,7 +267,7 @@ h2 {
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  gap: 1.25rem;
 }
 
 .row {
@@ -371,14 +343,11 @@ select.pill:focus-visible,
 }
 
 .btn:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow: var(--shadow-sm);
+  transform: scale(0.98);
 }
 
 .btn:hover {
   border-color: var(--primary);
-  filter: brightness(1.02);
-  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
@@ -386,7 +355,7 @@ select.pill:focus-visible,
   background: linear-gradient(135deg, var(--primary), var(--kawaii-lavender));
   border-color: transparent;
   color: white;
-  box-shadow: 0 8px 18px var(--accent-glow);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-lipari .btn.primary,
@@ -396,9 +365,8 @@ select.pill:focus-visible,
 }
 
 .btn.primary:hover {
-  transform: translateY(-3px);
   filter: brightness(1.05);
-  box-shadow: 0 12px 26px var(--accent-glow);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .btn.good {
@@ -426,21 +394,14 @@ select.pill:focus-visible,
 }
 
 .pill {
-  padding: 0.45rem 1rem;
-  background: var(--bg-secondary);
-  border: 2px solid var(--line-soft);
+  padding: 0.35rem 0.85rem;
+  background: var(--bg-tint);
+  border: 1px solid var(--line-soft);
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--text-secondary);
-  box-shadow: var(--shadow-sm);
-}
-
-.theme-lipari .pill,
-.theme-tokyo .pill,
-.theme-lisbon .pill {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .out {
@@ -452,13 +413,13 @@ select.pill:focus-visible,
 }
 
 .smallout {
-  font-size: 1rem;
-  color: var(--text);
-  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 0.7rem 0.9rem;
   background: var(--bg-tint);
-  border: 2px solid var(--line-soft);
-  border-radius: 14px;
-  font-weight: 600;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  font-weight: 500;
 }
 
 .divider {
@@ -512,12 +473,29 @@ input[type="range"] {
   cursor: pointer;
 }
 
+/* Navegación: una sola barra pegajosa, discreta. */
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0;
-  padding: 0;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 0.6rem;
+  position: sticky;
+  top: 0.4rem;
+  z-index: 50;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.tab-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.15rem 0.35rem;
+  background: var(--line-soft);
 }
 
 .tab {
@@ -537,21 +515,13 @@ input[type="range"] {
 .tab:hover {
   color: var(--primary);
   background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
 }
 
 .tab.active {
-  background: linear-gradient(135deg, var(--primary), var(--kawaii-lavender));
+  background: var(--primary);
   color: #FFFFFF;
   border-color: transparent;
-  box-shadow: 0 6px 16px var(--accent-glow);
   font-weight: 600;
-}
-
-.theme-lipari .tab.active,
-.theme-tokyo .tab.active,
-.theme-lisbon .tab.active {
-  box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 /* Specific component styles */
@@ -1293,50 +1263,6 @@ input[type="range"] {
   50% { opacity: 0.7; transform: scale(1.05); }
 }
 
-/* Grouped Tabs — one floating glass nav panel, sticky for quick access */
-.tab-categories {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  margin-bottom: 2rem;
-  position: sticky;
-  top: 0.6rem;
-  z-index: 50;
-  padding: 0.9rem 1rem;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: 22px;
-  box-shadow: var(--shadow-md);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
-}
-
-.tab-category {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.tab-category-title {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--muted);
-  margin: 0 0 0 0.4rem;
-  letter-spacing: 0.12em;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.tab-category-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--line);
-  opacity: 0.12;
-}
-
 /* Quick Dice in Live Dashboard */
 .quick-dice-grid {
   display: grid;
@@ -1357,10 +1283,318 @@ input[type="range"] {
   }
 }
 
-/* TouchOrder Podium & Feedback */
-.podium-overlay h3 {
+/* ============================================================
+   Orden por toque — mesa táctil
+   La mesa es siempre oscura (en cualquier tema) para que los
+   círculos de color y los números se lean en proyector.
+   ============================================================ */
+.touch-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  /* Altura fija: que aparezca el botón "Reiniciar" no debe mover la mesa
+     ni un pixel mientras hay dedos apoyados. */
+  min-height: 2.25rem;
+  margin-bottom: 0.9rem;
+}
+
+.touch-head h2 {
+  margin: 0;
+}
+
+.touch-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.touch-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.touch-round {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.touch-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.touch-label-input {
+  width: 8.5rem;
+  padding: 0.35rem 0.7rem !important;
+  font-size: 0.85rem !important;
+  border-radius: 999px !important;
+}
+
+.touch-pad {
+  position: relative;
+  height: clamp(300px, 56vh, 620px);
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 110% at 50% -10%, #272341 0%, #16151f 55%, #0e0d15 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: crosshair;
+  transition: box-shadow 0.25s ease;
+}
+
+.touch-pad.is-counting { box-shadow: inset 0 0 0 2px rgba(var(--primary-rgb), 0.55); }
+.touch-pad.is-done     { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22); }
+
+/* ── Mesa expandida (celular y proyector) ──────────────────────────────────
+   Capa fija de 100dvh: funciona en iPhone/iPad, donde la Fullscreen API no
+   está disponible para elementos normales. En escritorio y Android se combina
+   con :fullscreen. */
+.touch-stage.is-immersive,
+.touch-stage:fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 9500;
+  background: #0b0a11;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-left))
+           max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+  gap: 6px;
+}
+
+.touch-stage.is-immersive .touch-pad,
+.touch-stage:fullscreen .touch-pad {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  border-radius: 14px;
+}
+
+.touch-stage.is-immersive .touch-hint,
+.touch-stage:fullscreen .touch-hint { display: none; }
+
+/* Controles legibles sobre el fondo oscuro de la mesa expandida */
+.touch-stage.is-immersive .touch-round { color: rgba(255, 255, 255, 0.5); }
+
+.touch-stage.is-immersive .seg {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.touch-stage.is-immersive .seg button { color: rgba(255, 255, 255, 0.72); }
+.touch-stage.is-immersive .seg button.on { background: var(--primary); color: #fff; }
+
+.touch-stage.is-immersive .icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.touch-stage.is-immersive .touch-label-input {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+}
+
+.touch-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-display);
-  letter-spacing: 0.2em;
+  font-size: clamp(6rem, 26vmin, 16rem);
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.touch-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  text-align: center;
+  padding: 1rem;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.touch-empty strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.touch-empty span { font-size: 0.85rem; }
+
+.touch-empty-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+/* Círculo de dedo: diámetro constante, sin transform de escala en reposo. */
+.touch-dot {
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  pointer-events: none;
+  /* Centrado con `translate` (propiedad aparte) para no pelear con el
+     `transform: scale()` que anima motion al aparecer/desaparecer. */
+  translate: -50% -50%;
+}
+
+.touch-dot.is-first {
+  animation: touch-first-pulse 1.8s ease-in-out infinite;
+}
+
+.touch-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  text-align: center;
+}
+
+.touch-ring {
+  position: absolute;
+  inset: -12px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.touch-again {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.touch-again:hover { background: rgba(255, 255, 255, 0.2); }
+
+.touch-hint {
+  min-height: 1.6rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@keyframes touch-first-pulse {
+  0%, 100% { box-shadow: 0 0 30px currentColor; }
+  50%      { box-shadow: 0 0 60px currentColor; }
+}
+
+/* ── Celular ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* En móvil los botones ocupan el 100 % del ancho; en la barra táctil no. */
+  .touch-head .btn,
+  .touch-bar .btn { width: auto; }
+  .touch-label-input { font-size: 16px !important; } /* evita el zoom de iOS */
+  /* Mesa sin expandir: lo más alta posible sin tapar la navegación. */
+  .touch-pad { height: min(58dvh, 460px); }
+  .touch-bar { gap: 0.4rem; }
+}
+
+@media (max-width: 480px) {
+  .seg button { padding: 0.34rem 0.62rem; font-size: 0.76rem; }
+  .touch-label-input { width: 6.5rem; }
+  .touch-round { display: none; }   /* el número de dedos ya se ve en la mesa */
+  .touch-head h2 { font-size: 1.05rem; }
+}
+
+/* Respeta a quien pide menos animación: sin pulso ni parpadeos. */
+@media (prefers-reduced-motion: reduce) {
+  .touch-dot.is-first { animation: none; }
+}
+
+/* Control segmentado reutilizable */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-tint);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+}
+
+.seg button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.83rem;
+  padding: 0.38rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.seg button:hover { color: var(--primary); }
+
+.seg button.on {
+  background: var(--primary);
+  color: #fff;
+}
+
+.icon-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.icon-btn:hover { border-color: var(--primary); }
+
+.btn.subtle {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.78rem;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-secondary);
 }
 
 @keyframes pulse {

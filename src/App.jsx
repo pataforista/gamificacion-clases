@@ -13,7 +13,6 @@ const Dice = lazy(() => import('./components/Dice'));
 const Picker = lazy(() => import('./components/Picker'));
 const Teams = lazy(() => import('./components/Teams'));
 const TouchOrder = lazy(() => import('./components/TouchOrder'));
-const TouchOrderUneven = lazy(() => import('./components/TouchOrderUneven'));
 const GroupExam = lazy(() => import('./components/GroupExam'));
 const Ruleta = lazy(() => import('./components/Ruleta'));
 const Bingo = lazy(() => import('./components/Bingo'));
@@ -94,30 +93,22 @@ const App = () => {
 
   const setPickerItems = (items) => updateState({ pickerItems: items });
 
-  const categories = [
-    {
-      title: "Gestión de Clase",
-      tabs: [
-        { id: 'live', label: 'Clase en Vivo ⚡' },
-        { id: 'progreso', label: 'Progreso RPG' },
-        { id: 'control', label: 'Control de Flujo' },
-        { id: 'picker', label: 'Sorteo' },
-        { id: 'teams', label: 'Equipos' },
-      ]
-    },
-    {
-      title: "Herramientas",
-      tabs: [
-        { id: 'dice', label: 'Dado' },
-        { id: 'exam', label: 'Examen grupal' },
-        { id: 'ruleta', label: 'Ruleta' },
-        { id: 'bingo', label: 'Bingo' },
-        { id: 'trivia', label: 'Trivia ⚡' },
-        { id: 'touch', label: 'Orden por toque' },
-        { id: 'touch-uneven', label: 'Toque Disparejo' },
-        { id: 'help', label: 'Ayuda' },
-      ]
-    }
+  // Una sola fila de pestañas: los dos grupos se separan con un divisor
+  // discreto en vez de dos bloques con título (menos ruido visual).
+  const tabs = [
+    { id: 'live', label: 'Clase en Vivo' },
+    { id: 'progreso', label: 'Progreso RPG' },
+    { id: 'control', label: 'Control de Flujo' },
+    { id: 'picker', label: 'Sorteo' },
+    { id: 'teams', label: 'Equipos' },
+    { divider: true },
+    { id: 'dice', label: 'Dado' },
+    { id: 'exam', label: 'Examen grupal' },
+    { id: 'ruleta', label: 'Ruleta' },
+    { id: 'bingo', label: 'Bingo' },
+    { id: 'trivia', label: 'Trivia' },
+    { id: 'touch', label: 'Orden por toque' },
+    { id: 'help', label: 'Ayuda' },
   ];
 
   return (
@@ -179,24 +170,22 @@ const App = () => {
         </header>
 
         <main>
-          <div className="tab-categories">
-            {categories.map(cat => (
-              <div key={cat.title} className="tab-category">
-                <div className="tab-category-title">{cat.title}</div>
-                <div className="tabs">
-                  {cat.tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      className={`tab ${activeTab === tab.id ? 'active' : ''}`}
-                      onClick={() => setActiveTab(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <nav className="tabs" aria-label="Herramientas">
+            {tabs.map((tab, i) => (
+              tab.divider
+                ? <span key={`div-${i}`} className="tab-divider" aria-hidden />
+                : (
+                  <button
+                    key={tab.id}
+                    className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+                    aria-current={activeTab === tab.id ? 'page' : undefined}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                )
             ))}
-          </div>
+          </nav>
 
           <div className="content">
             <AnimatePresence mode="wait">
@@ -212,8 +201,7 @@ const App = () => {
                   {activeTab === 'progreso' && <RPGDash theme={theme} updateTheme={updateTheme} />}
                   {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
                   {activeTab === 'dice' && <Dice />}
-                  {activeTab === 'touch' && <TouchOrder pickerItems={pickerItems} />}
-                  {activeTab === 'touch-uneven' && <TouchOrderUneven pickerItems={pickerItems} />}
+                  {activeTab === 'touch' && <TouchOrder />}
                   {activeTab === 'picker' && <Picker items={pickerItems} onItemsChange={setPickerItems} />}
                   {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
                   {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
