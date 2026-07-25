@@ -2,478 +2,481 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { RNG } from '../utils/rng';
+import { useFullscreen } from '../hooks/useFullscreen';
+import { useAudio } from './AudioContext';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+// Tiempo de espera desde el ÚLTIMO dedo que se apoya. Cada dedo nuevo reinicia
+// la cuenta, así nadie se queda fuera por llegar tarde.
+const HOLD_MS = 2500;
 
-// Color scheme by position within a round
-const posStyle = (pos, total) => {
-    if (pos === 0) return { border: 'var(--primary)',  bg: 'rgba(99,102,241,0.35)',  glow: 'rgba(99,102,241,0.5)' };
-    if (pos === 1) return { border: '#c0c0c0',         bg: 'rgba(192,192,192,0.2)',  glow: 'rgba(192,192,192,0.3)' };
-    if (pos === 2) return { border: '#cd7f32',         bg: 'rgba(205,127,50,0.2)',   glow: 'rgba(205,127,50,0.3)' };
-    if (pos === total - 1 && total > 3) return { border: '#f87171', bg: 'rgba(248,113,113,0.15)', glow: 'rgba(248,113,113,0.25)' };
-    return             { border: 'var(--good)',        bg: 'rgba(45,212,191,0.2)',   glow: 'rgba(45,212,191,0.3)' };
-};
+// Un color estable por dedo: cada participante reconoce su propio círculo.
+const FINGER_COLORS = [
+    '#ff5c8a', '#4cc9f0', '#ffd166', '#8be28b', '#b28dff', '#ff9f5a',
+    '#5eead4', '#f472b6', '#a3e635', '#60a5fa', '#fb7185', '#facc15',
+];
 
-const TouchOrder = ({ pickerItems = [] }) => {
-    const [touches,   setTouches]   = useState({});      // { id: {x, y} }
-    const [results,   setResults]   = useState({});      // { id: {turn, name} }
-    const [countdown, setCountdown] = useState(null);    // 3 | 2 | 1 | null
-    const [nextTurn,  setNextTurn]  = useState(1);       // next turn number to assign
-    const [history,   setHistory]   = useState([]);      // [{ startTurn, count }]
-    const [phase,     setPhase]     = useState('waiting'); // 'waiting' | 'counting' | 'done'
+const clamp = (min, v, max) => Math.min(max, Math.max(min, v));
 
-    // Refs — stable references that avoid stale closures in event handlers
-    const touchesRef  = useRef({});
-    const nextTurnRef = useRef(1);
-    const phaseRef    = useRef('waiting');
-    const padRef      = useRef(null);
-    const timerRef    = useRef(null);
-    const intervalRef = useRef(null);
+const TouchOrder = () => {
+    const { playSFX } = useAudio();
 
-    // Helper: keep phase state and ref in sync
-    const setPhaseSync = (p) => { phaseRef.current = p; setPhase(p); };
+    const [mode,      setMode]      = useState(() => (localStorage.getItem('touch-mode') === 'one' ? 'one' : 'order'));
+    const [soundOn,   setSoundOn]   = useState(() => localStorage.getItem('touch-sound') !== 'off');
+    const [pickLabel, setPickLabel] = useState(() => localStorage.getItem('touch-label') || 'Sale');
 
-    // ─── Reset for next round ───────────────────────────────────────────
-    const resetRound = useCallback(() => {
-        setResults({});
-        setPhaseSync('waiting');
+    const [touches,  setTouches]  = useState({});   // { pointerId: { nx, ny, color } } — coords normalizadas 0..1
+    const [results,  setResults]  = useState(null); // null | { pointerId: { rank, nx, ny, color } }
+    const [phase,    setPhase]    = useState('waiting'); // 'waiting' | 'counting' | 'done'
+    const [progress, setProgress] = useState(0);    // 0..1 de la cuenta atrás
+    const [round,    setRound]    = useState(0);
+    const [pad,      setPad]      = useState({ w: 0, h: 0 }); // tamaño REAL medido de la mesa
+    // Modo inmersivo: la mesa ocupa TODA la pantalla del teléfono. No usa la
+    // Fullscreen API (iOS no la soporta en elementos que no sean <video>), sino
+    // una capa fija de 100dvh; en escritorio/Android se pide además fullscreen.
+    // En teléfonos y tabletas se abre expandida de entrada: es donde más falta
+    // hace el espacio. Si el usuario la cierra, se recuerda.
+    const [immersive, setImmersive] = useState(() => (
+        // Pantalla pequeña o dispositivo táctil (celular, tableta, pizarrón):
+        // ahí la mesa vale más que el resto de la interfaz.
+        window.matchMedia('(max-width: 900px), (pointer: coarse)').matches
+        && localStorage.getItem('touch-immersive') !== 'off'
+    ));
+
+    const stageRef   = useRef(null);
+    const padRef     = useRef(null);
+    const rectRef    = useRef(null);
+    const touchesRef = useRef({});
+    const phaseRef   = useRef('waiting');
+    const deadlineRef = useRef(0);
+    const rafRef     = useRef(null);
+    const tickRef    = useRef(-1);
+    const colorRef   = useRef(0);
+
+    // Espejos en refs para que los handlers de puntero sean estables y no haya
+    // que re-suscribir los listeners al cambiar de modo.
+    const soundRef = useRef(soundOn);
+    const modeRef  = useRef(mode);
+
+    const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(stageRef);
+
+    // Con la mesa expandida, la página de detrás no debe poder desplazarse
+    // (evita el "rebote" y el arrastre para recargar en el móvil).
+    useEffect(() => {
+        if (!immersive) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = prev; };
+    }, [immersive]);
+
+    const toggleImmersive = useCallback(() => {
+        const next = !immersive;
+        setImmersive(next);
+        localStorage.setItem('touch-immersive', next ? 'on' : 'off');
+        // La Fullscreen API es un extra (escritorio/Android): si falla o no
+        // existe, la capa fija ya ocupa toda la pantalla.
+        if (next !== isFullscreen) toggleFullscreen();
+    }, [immersive, isFullscreen, toggleFullscreen]);
+
+    useEffect(() => { soundRef.current = soundOn; localStorage.setItem('touch-sound', soundOn ? 'on' : 'off'); }, [soundOn]);
+    useEffect(() => { modeRef.current = mode;    localStorage.setItem('touch-mode', mode); }, [mode]);
+    useEffect(() => { localStorage.setItem('touch-label', pickLabel); }, [pickLabel]);
+
+    // ─── Medición real de la mesa ────────────────────────────────────────────
+    // El tamaño de los círculos y la posición de los dedos se calculan SIEMPRE
+    // a partir de esta medición (no de un valor supuesto durante el render), y
+    // se recalculan al redimensionar, rotar o entrar en pantalla completa.
+    useEffect(() => {
+        const el = padRef.current;
+        if (!el) return;
+        const measure = () => {
+            const r = el.getBoundingClientRect();
+            rectRef.current = r;
+            setPad(prev => (Math.abs(prev.w - r.width) < 0.5 && Math.abs(prev.h - r.height) < 0.5
+                ? prev
+                : { w: r.width, h: r.height }));
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        window.addEventListener('resize', measure);
+        window.addEventListener('scroll', measure, { passive: true });
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', measure);
+            window.removeEventListener('scroll', measure);
+        };
     }, []);
 
-    // ─── Cancel a running countdown ──────────────────────────────────────────
-    const cancelCountdown = useCallback(() => {
-        clearTimeout(timerRef.current);  timerRef.current  = null;
-        clearInterval(intervalRef.current); intervalRef.current = null;
-        setCountdown(null);
-        setPhaseSync('waiting');
-    }, []); 
+    // Diámetro ÚNICO para todos los círculos: no cambia al asignar turnos ni al
+    // entrar un dedo nuevo, sólo si cambia el tamaño de la mesa.
+    const dotSize = useMemo(() => {
+        const base = Math.min(pad.w || 420, pad.h || 420);
+        return Math.round(clamp(64, base * 0.2, 148));
+    }, [pad.w, pad.h]);
 
-    // ─── Assign turns after countdown reaches 0 ──────────────────────────────
-    const assignTurns = useCallback(() => {
-        timerRef.current = null;
+    const setPhaseSync = useCallback((p) => { phaseRef.current = p; setPhase(p); }, []);
+
+    const stopTicker = useCallback(() => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+    }, []);
+
+    // ─── Sorteo ──────────────────────────────────────────────────────────────
+    const finish = useCallback(() => {
+        stopTicker();
+        setProgress(0);
+
         const ids = Object.keys(touchesRef.current);
         if (!ids.length) { setPhaseSync('waiting'); return; }
 
-        // Random shuffle using RNG
-        const shuffled = RNG.shuffle(ids);
-        const startTurn = nextTurnRef.current;
+        const order = RNG.shuffle(ids);
         const res = {};
-        
-        // Pick names if available
-        const names = pickerItems.length > 0 ? RNG.shuffle(pickerItems) : [];
-
-        shuffled.forEach((id, i) => {
-            res[id] = {
-                turn: startTurn + i,
-                name: names[i] ?? null,
-                x: touchesRef.current[id]?.x ?? 0,
-                y: touchesRef.current[id]?.y ?? 0,
-            };
+        order.forEach((id, i) => {
+            const t = touchesRef.current[id];
+            res[id] = { rank: i, nx: t.nx, ny: t.ny, color: t.color };
         });
-
-        const newNext = startTurn + shuffled.length;
-        nextTurnRef.current = newNext;
 
         setResults(res);
-        setNextTurn(newNext);
-        setHistory(h => [...h, { startTurn, count: shuffled.length, details: Object.values(res) }]);
-        setCountdown(null);
+        setRound(r => r + 1);
         setPhaseSync('done');
 
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        
-        // Voice announcement
-        if ('speechSynthesis' in window) {
-            const winner = Object.values(res).find(r => r.turn === startTurn);
-            if (winner) {
-                const msg = new SpeechSynthesisUtterance(`¡Eso cuate! El ganador es ${winner.name || 'el número ' + winner.turn}`);
-                msg.lang = 'es-MX';
-                msg.rate = 1.1;
-                window.speechSynthesis.speak(msg);
-            }
+        if (navigator.vibrate) navigator.vibrate([120, 60, 180]);
+        if (soundRef.current) playSFX(modeRef.current === 'one' ? 'correct_alt' : 'boing');
+
+        // Confeti desde el dedo ganador, no desde el centro de la pantalla.
+        const first = res[order[0]];
+        const r = rectRef.current;
+        if (first && r) {
+            confetti({
+                particleCount: 70,
+                spread: 65,
+                startVelocity: 32,
+                scalar: 0.9,
+                origin: {
+                    x: clamp(0, (r.left + first.nx * r.width) / window.innerWidth, 1),
+                    y: clamp(0, (r.top + first.ny * r.height) / window.innerHeight, 1),
+                },
+                colors: [first.color, '#ffffff', '#ffd166'],
+            });
         }
+    }, [playSFX, setPhaseSync, stopTicker]);
 
-        confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.5 },
-            colors: ['#6366f1', '#2dd4bf', '#f59e0b'],
-        });
-    }, [pickerItems]); 
-
-    // ─── Start 3-second countdown ────────────────────────────────────────────
-    const startCountdown = useCallback(() => {
-        if (timerRef.current) return; // already running
-        setResults({});
-        setCountdown(3);
+    // Arranca (o reinicia) la cuenta atrás. Cada dedo nuevo la reinicia.
+    const arm = useCallback(() => {
+        deadlineRef.current = performance.now() + HOLD_MS;
+        tickRef.current = -1;
         setPhaseSync('counting');
+        if (rafRef.current) return; // el bucle ya corre: sólo se movió la meta
 
-        let count = 3;
-        intervalRef.current = setInterval(() => {
-            count--;
-            if (count > 0) {
-                setCountdown(count);
-                if (navigator.vibrate) navigator.vibrate(50);
-            } else {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
+        const loop = () => {
+            const left = deadlineRef.current - performance.now();
+            if (left <= 0) { rafRef.current = null; finish(); return; }
+
+            const p = 1 - left / HOLD_MS;
+            setProgress(prev => (Math.abs(prev - p) > 0.015 ? p : prev));
+
+            const sec = Math.ceil(left / 1000);
+            if (sec !== tickRef.current) {
+                tickRef.current = sec;
+                if (navigator.vibrate) navigator.vibrate(15);
+                if (soundRef.current) playSFX('tick');
             }
-        }, 1000);
+            rafRef.current = requestAnimationFrame(loop);
+        };
+        rafRef.current = requestAnimationFrame(loop);
+    }, [finish, playSFX, setPhaseSync]);
 
-        timerRef.current = setTimeout(assignTurns, 3000);
-    }, [assignTurns]);
+    const cancel = useCallback(() => {
+        stopTicker();
+        setProgress(0);
+        setPhaseSync('waiting');
+    }, [setPhaseSync, stopTicker]);
 
-    // ─── Pointer event handlers ───────
-    const handlePointerDown = useCallback((e) => {
-        const pad = padRef.current;
-        if (pad) {
-            try {
-                pad.setPointerCapture(e.pointerId);
-            } catch { /* setPointerCapture no soportado en este navegador */ }
-        }
+    const newRound = useCallback(() => {
+        stopTicker();
+        setProgress(0);
+        setResults(null);
+        if (Object.keys(touchesRef.current).length) arm();
+        else setPhaseSync('waiting');
+    }, [arm, setPhaseSync, stopTicker]);
+
+    // ─── Punteros (dedos, lápiz o ratón) ─────────────────────────────────────
+    const onDown = useCallback((e) => {
+        const el = padRef.current;
+        // Los controles que viven dentro de la mesa (botón "Otra ronda") no
+        // cuentan como dedo.
+        if (!el || e.target !== el) return;
+
+        const r = el.getBoundingClientRect();
+        rectRef.current = r;
+        if (!r.width || !r.height) return;
+
+        e.preventDefault();
+        try { el.setPointerCapture(e.pointerId); } catch { /* no soportado */ }
+
+        // Un dedo nuevo tras un resultado empieza ronda nueva al instante.
+        if (phaseRef.current === 'done') setResults(null);
+
         const t = { ...touchesRef.current };
-        t[e.pointerId] = { x: e.clientX, y: e.clientY };
+        t[e.pointerId] = {
+            nx: clamp(0, (e.clientX - r.left) / r.width, 1),
+            ny: clamp(0, (e.clientY - r.top) / r.height, 1),
+            color: FINGER_COLORS[colorRef.current++ % FINGER_COLORS.length],
+        };
         touchesRef.current = t;
-        setTouches({ ...t });
+        setTouches(t);
+        arm();
+    }, [arm]);
 
-        // Start countdown on first pointer down
-        if (phaseRef.current === 'waiting') startCountdown();
-        
-        // GESTURE: If 2 pointers touch in 'done' state -> reset round
-        if (phaseRef.current === 'done' && Object.keys(t).length >= 2) {
-            resetRound();
-        }
-    }, [startCountdown, resetRound]);
-
-    const handlePointerMove = useCallback((e) => {
+    const onMove = useCallback((e) => {
+        const prev = touchesRef.current[e.pointerId];
+        const r = rectRef.current;
+        if (!prev || !r || !r.width || !r.height) return;
         const t = { ...touchesRef.current };
-        if (t[e.pointerId]) {
-            t[e.pointerId] = { x: e.clientX, y: e.clientY };
-            touchesRef.current = t;
-            setTouches({ ...t });
-        }
+        t[e.pointerId] = {
+            ...prev,
+            nx: clamp(0, (e.clientX - r.left) / r.width, 1),
+            ny: clamp(0, (e.clientY - r.top) / r.height, 1),
+        };
+        touchesRef.current = t;
+        setTouches(t);
     }, []);
 
-    const handlePointerUp = useCallback((e) => {
-        const pad = padRef.current;
-        if (pad) {
-            try {
-                pad.releasePointerCapture(e.pointerId);
-            } catch { /* setPointerCapture no soportado en este navegador */ }
-        }
+    const onUp = useCallback((e) => {
+        const el = padRef.current;
+        if (el) { try { el.releasePointerCapture(e.pointerId); } catch { /* no soportado */ } }
+        if (!touchesRef.current[e.pointerId]) return;
+
         const t = { ...touchesRef.current };
         delete t[e.pointerId];
         touchesRef.current = t;
-        setTouches({ ...t });
+        setTouches(t);
 
-        // When ALL pointers are removed:
-        if (Object.keys(t).length === 0) {
-            if (phaseRef.current === 'counting') {
-                cancelCountdown();
-            }
-            // PERSISTENCE: If in 'done' state, we DO NOT reset to 'waiting' automatically.
-            // The results stay until resetRound() is called.
-        }
-    }, [cancelCountdown]);
+        // Si se levantan todos los dedos antes del final, se cancela el sorteo.
+        if (!Object.keys(t).length && phaseRef.current === 'counting') cancel();
+    }, [cancel]);
 
     useEffect(() => {
-        const pad = padRef.current;
-        if (!pad) return;
-        pad.addEventListener('pointerdown',   handlePointerDown);
-        pad.addEventListener('pointermove',   handlePointerMove);
-        pad.addEventListener('pointerup',     handlePointerUp);
-        pad.addEventListener('pointercancel', handlePointerUp);
+        const el = padRef.current;
+        if (!el) return;
+        el.addEventListener('pointerdown', onDown);
+        el.addEventListener('pointermove', onMove);
+        el.addEventListener('pointerup', onUp);
+        el.addEventListener('pointercancel', onUp);
         return () => {
-            pad.removeEventListener('pointerdown',   handlePointerDown);
-            pad.removeEventListener('pointermove',   handlePointerMove);
-            pad.removeEventListener('pointerup',     handlePointerUp);
-            pad.removeEventListener('pointercancel', handlePointerUp);
+            el.removeEventListener('pointerdown', onDown);
+            el.removeEventListener('pointermove', onMove);
+            el.removeEventListener('pointerup', onUp);
+            el.removeEventListener('pointercancel', onUp);
         };
-    }, [handlePointerDown, handlePointerMove, handlePointerUp]);
+    }, [onDown, onMove, onUp]);
 
-    useEffect(() => () => {
-        clearTimeout(timerRef.current);
-        clearInterval(intervalRef.current);
-    }, []);
+    useEffect(() => () => stopTicker(), [stopTicker]);
 
-    const resetAll = () => {
-        cancelCountdown();
-        touchesRef.current  = {};
-        nextTurnRef.current = 1;
-        setTouches({});
-        setResults({});
-        setHistory([]);
-        setNextTurn(1);
+    const switchMode = (next) => {
+        if (next === mode) return;
+        stopTicker();
+        setProgress(0);
+        setResults(null);
+        setRound(0);
+        setMode(next);
+        if (Object.keys(touchesRef.current).length) arm();
+        else setPhaseSync('waiting');
     };
 
-    const touchCount  = Object.keys(touches).length;
-    const hasHistory  = history.length > 0;
-    const sortedResults = useMemo(() => 
-        Object.values(results).sort((a, b) => a.turn - b.turn), 
-    [results]);
+    const resetAll = () => {
+        stopTicker();
+        touchesRef.current = {};
+        setTouches({});
+        setResults(null);
+        setProgress(0);
+        setRound(0);
+        setPhaseSync('waiting');
+    };
 
-    // Responsive circle calculation
-    const padWidth = padRef.current?.clientWidth || 400;
-    const baseSize = Math.max(90, padWidth * 0.15);
-    const winnerSize = baseSize * 1.5;
+    const touchCount = Object.keys(touches).length;
+    const done = phase === 'done' && !!results;
 
-    const activeDots = phase === 'done'
-        ? Object.entries(results).map(([id, res]) => ({ id, pos: { x: res.x, y: res.y }, res }))
-        : Object.entries(touches).map(([id, t]) => ({ id, pos: t, res: results[id] }));
+    const dots = useMemo(() => (done
+        ? Object.entries(results).map(([id, r]) => ({ id, ...r, assigned: true }))
+        : Object.entries(touches).map(([id, t]) => ({ id, ...t, assigned: false, rank: -1 }))
+    ), [done, results, touches]);
+
+    const secondsLeft = Math.max(1, Math.ceil(((1 - progress) * HOLD_MS) / 1000));
+
+    const hint = done
+        ? (mode === 'one'
+            ? `⭐ ${pickLabel || 'Sale'}: el dedo marcado. Toca otra vez para repetir.`
+            : 'Turnos asignados. Toca de nuevo para una ronda nueva.')
+        : phase === 'counting'
+            ? `Sin mover los dedos… ${secondsLeft}`
+            : `Cada participante apoya un dedo. El sorteo salta ${HOLD_MS / 1000} s después del último dedo.`;
 
     return (
         <div className="grid">
-            <div className="card" style={{ position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ margin: 0 }}>Orden por toque</h2>
-                    <div className="row">
-                        {phase === 'done' && (
-                             <button className="btn primary good" onClick={resetRound}>
-                                Siguiente Ronda
+            <div className="card">
+                <div className="touch-head">
+                    <h2>Orden por toque</h2>
+                    {round > 0 && (
+                        <button className="btn subtle" onClick={resetAll}>↺ Reiniciar</button>
+                    )}
+                </div>
+
+                <div className={`touch-stage${immersive ? ' is-immersive' : ''}`} ref={stageRef}>
+                    <div className="touch-bar">
+                        <div className="seg" role="group" aria-label="Modo de sorteo">
+                            <button type="button" className={mode === 'order' ? 'on' : ''} onClick={() => switchMode('order')}>
+                                Orden completo
                             </button>
+                            <button type="button" className={mode === 'one' ? 'on' : ''} onClick={() => switchMode('one')}>
+                                Elegir a uno
+                            </button>
+                        </div>
+
+                        {mode === 'one' && (
+                            <input
+                                className="touch-label-input"
+                                value={pickLabel}
+                                onChange={(e) => setPickLabel(e.target.value)}
+                                maxLength={18}
+                                aria-label="Qué le toca al elegido"
+                                placeholder="Sale"
+                            />
                         )}
-                        {nextTurn > 1 && (
-                            <button className="btn warn" onClick={resetAll} style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }}>
-                                ↺ Reiniciar todo
+
+                        <span className="touch-round">
+                            {touchCount > 0
+                                ? `${touchCount} ${touchCount === 1 ? 'dedo' : 'dedos'}`
+                                : round > 0 ? `Ronda ${round}` : ''}
+                        </span>
+
+                        <div className="touch-actions">
+                            <button
+                                type="button"
+                                className="icon-btn"
+                                onClick={() => setSoundOn(s => !s)}
+                                aria-pressed={soundOn}
+                                title={soundOn ? 'Silenciar' : 'Activar sonido'}
+                            >
+                                {soundOn ? '🔊' : '🔇'}
+                            </button>
+                            <button
+                                type="button"
+                                className="icon-btn"
+                                onClick={toggleImmersive}
+                                title={immersive ? 'Salir de pantalla completa' : 'Mesa a pantalla completa'}
+                                aria-label={immersive ? 'Salir de pantalla completa' : 'Mesa a pantalla completa'}
+                            >
+                                {immersive ? '✕' : '⛶'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        ref={padRef}
+                        className={`touch-pad ${phase === 'counting' ? 'is-counting' : ''} ${done ? 'is-done' : ''}`}
+                        onContextMenu={(e) => e.preventDefault()}
+                    >
+                        {/* Cuenta atrás de fondo: se ve de lejos sin tapar los dedos */}
+                        {phase === 'counting' && (
+                            <div className="touch-countdown" aria-hidden>{secondsLeft}</div>
+                        )}
+
+                        {/* Estado vacío */}
+                        {touchCount === 0 && !done && (
+                            <div className="touch-empty">
+                                <span className="touch-empty-icon" aria-hidden>👆</span>
+                                <strong>Un dedo cada uno, aquí dentro</strong>
+                                <span>
+                                    {mode === 'one'
+                                        ? `Sólo uno ${(pickLabel || 'sale').toLowerCase()}`
+                                        : 'Se reparte el orden de participación'}
+                                </span>
+                            </div>
+                        )}
+
+                        <AnimatePresence>
+                            {dots.map((d) => {
+                                const half = dotSize / 2 + 4;
+                                const cx = clamp(half, d.nx * pad.w, Math.max(half, pad.w - half));
+                                const cy = clamp(half, d.ny * pad.h, Math.max(half, pad.h - half));
+
+                                const isFirst = d.assigned && d.rank === 0;
+                                const isOut   = d.assigned && mode === 'one' && !isFirst;
+                                // Anillo de progreso POR FUERA del círculo, para que no
+                                // se confunda con el borde de color del dedo.
+                                const ringBox = dotSize + 18;
+                                const ringR   = ringBox / 2 - 4;
+
+                                return (
+                                    <motion.div
+                                        key={d.id}
+                                        className={`touch-dot${isFirst ? ' is-first' : ''}`}
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: isOut ? 0.34 : 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        // Muelle sin rebote: el círculo aparece y se queda del
+                                        // MISMO tamaño, nunca crece ni se encoge después.
+                                        transition={{ type: 'spring', stiffness: 420, damping: 42 }}
+                                        style={{
+                                            left: cx,
+                                            top: cy,
+                                            width: dotSize,
+                                            height: dotSize,
+                                            borderColor: d.color,
+                                            color: d.color, // lo usa el pulso (currentColor)
+                                            background: `${d.color}2b`,
+                                            boxShadow: isFirst ? `0 0 46px ${d.color}` : 'none',
+                                            zIndex: isFirst ? 4 : 3,
+                                        }}
+                                    >
+                                        {/* Anillo de progreso mientras se cuenta */}
+                                        {!d.assigned && phase === 'counting' && (
+                                            <svg className="touch-ring" viewBox={`0 0 ${ringBox} ${ringBox}`} aria-hidden>
+                                                <circle
+                                                    cx={ringBox / 2} cy={ringBox / 2} r={ringR}
+                                                    fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5"
+                                                />
+                                                <circle
+                                                    cx={ringBox / 2} cy={ringBox / 2} r={ringR}
+                                                    fill="none" stroke={d.color} strokeWidth="5" strokeLinecap="round"
+                                                    strokeDasharray={2 * Math.PI * ringR}
+                                                    strokeDashoffset={2 * Math.PI * ringR * (1 - progress)}
+                                                />
+                                            </svg>
+                                        )}
+
+                                        {d.assigned && mode === 'order' && (
+                                            <span className="touch-num" style={{ fontSize: dotSize * 0.46 }}>
+                                                {d.rank + 1}
+                                            </span>
+                                        )}
+
+                                        {d.assigned && mode === 'one' && (isFirst ? (
+                                            <>
+                                                <span style={{ fontSize: dotSize * 0.3, lineHeight: 1 }} aria-hidden>⭐</span>
+                                                <span className="touch-num" style={{ fontSize: dotSize * 0.15, letterSpacing: '0.04em' }}>
+                                                    {(pickLabel || 'Sale').toUpperCase()}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <span className="touch-num" style={{ fontSize: dotSize * 0.3, opacity: 0.7 }}>✗</span>
+                                        ))}
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
+
+                        {done && (
+                            <button type="button" className="touch-again" onClick={newRound}>
+                                Otra ronda
                             </button>
                         )}
                     </div>
-                </div>
 
-                <div
-                    ref={padRef}
-                    style={{
-                        position: 'relative',
-                        background: 'var(--bg)',
-                        height: 'clamp(260px, 55vmin, 450px)',
-                        borderRadius: '24px',
-                        border: phase === 'counting' ? '3px dashed var(--primary)'
-                              : phase === 'done'     ? '3px solid var(--good)'
-                              :                        '2.5px dashed rgba(var(--primary-rgb), 0.4)',
-                        overflow: 'hidden',
-                        touchAction: 'none',
-                        transition: 'border-color 0.3s ease',
-                        userSelect: 'none',
-                    }}
-                >
-                    {/* Giant Countdown Overlay */}
-                    <AnimatePresence>
-                        {countdown !== null && (
-                            <motion.div 
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: [1, 1.2, 1], opacity: 1 }}
-                                exit={{ scale: 2, opacity: 0 }}
-                                key={countdown}
-                                style={{
-                                    position: 'absolute', inset: 0,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 'clamp(4rem, 20vmin, 12rem)', fontWeight: 900,
-                                    color: 'var(--primary)', textShadow: '0 0 50px var(--primary)',
-                                    pointerEvents: 'none', zIndex: 10,
-                                }}
-                            >
-                                {countdown}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Podium Summary Overlay */}
-                    <AnimatePresence>
-                        {phase === 'done' && sortedResults.length > 0 && (
-                            <motion.div
-                                initial={{ y: -100, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                className="podium-overlay"
-                                style={{
-                                    position: 'absolute', top: '8%', left: '50%',
-                                    transform: 'translateX(-50%)', zIndex: 20,
-                                    background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)',
-                                    padding: '1rem 1.4rem', borderRadius: '20px',
-                                    border: '2px solid var(--primary)', textAlign: 'center',
-                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                                    maxWidth: 'min(340px, 88vw)', width: 'max-content',
-                                    maxHeight: '75%', overflowY: 'auto',
-                                }}
-                            >
-                                <h3 style={{ marginBottom: '0.75rem', color: 'var(--primary)', letterSpacing: '0.08em', fontSize: '0.95rem' }}>🏆 TURNO ASIGNADO</h3>
-                                {sortedResults.map((res, i) => {
-                                    const isFirst = i === 0;
-                                    const isLast  = i === sortedResults.length - 1 && sortedResults.length > 1;
-                                    return (
-                                        <div key={i} style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                            fontSize: isFirst ? '1.3rem' : '0.95rem', fontWeight: 900,
-                                            marginBottom: '0.35rem', opacity: isLast && !isFirst ? 0.75 : 1,
-                                        }}>
-                                            <span>{i < 3 ? MEDALS[i] : isLast ? '🔴' : '🎯'}</span>
-                                            <span style={{ color: isFirst ? '#fbbf24' : isLast ? '#f87171' : 'white', flex: 1, textAlign: 'left' }}>
-                                                {res.name || `Turno #${res.turn}`}
-                                            </span>
-                                            {isFirst && (
-                                                <span style={{ fontSize: '0.55rem', background: 'rgba(250,204,21,0.2)', color: '#fbbf24', padding: '2px 5px', borderRadius: '4px', fontWeight: 900, whiteSpace: 'nowrap' }}>
-                                                    PRIMERO
-                                                </span>
-                                            )}
-                                            {isLast && (
-                                                <span style={{ fontSize: '0.55rem', background: 'rgba(248,113,113,0.15)', color: '#f87171', padding: '2px 5px', borderRadius: '4px', fontWeight: 900, whiteSpace: 'nowrap' }}>
-                                                    ÚLTIMO
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                                <button className="btn primary good" style={{ marginTop: '0.75rem', width: '100%' }} onClick={resetRound}>
-                                    LISTO PARA OTRA
-                                </button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Empty-state hint */}
-                    {touchCount === 0 && phase === 'waiting' && (
-                        <div style={{
-                            position: 'absolute', inset: 0,
-                            display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center',
-                            gap: '0.75rem', color: 'var(--muted)',
-                            pointerEvents: 'none', opacity: 0.6,
-                        }}>
-                            <span style={{ fontSize: '4.5rem', animation: 'pulse 2s infinite' }}>👆</span>
-                            <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-                                {hasHistory ? `Próximo: #${nextTurn}` : 'Coloca tus dedos para sortear'}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Touch dots — rendered from results when done (persist after lifting fingers) */}
-                    <AnimatePresence>
-                        {activeDots.map(({ id, pos, res }) => {
-                            const rect = padRef.current?.getBoundingClientRect();
-                            if (!rect) return null;
-
-                            const hasTurn    = res !== undefined;
-                            const turnNum    = hasTurn ? res.turn : -1;
-                            const posInRound = hasTurn ? sortedResults.findIndex(r => r.turn === turnNum) : -1;
-                            const total      = sortedResults.length;
-                            const isLast     = hasTurn && posInRound === total - 1 && total > 1;
-                            const styles     = hasTurn ? posStyle(posInRound, total) : null;
-
-                            const isWinner  = posInRound === 0;
-                            const finalSize = hasTurn ? (isWinner ? winnerSize : baseSize) : baseSize * 0.8;
-
-                            return (
-                                <motion.div
-                                    key={id}
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{
-                                        scale: 1,
-                                        opacity: 1,
-                                        left: pos.x - rect.left,
-                                        top: pos.y - rect.top,
-                                        width: finalSize,
-                                        height: finalSize,
-                                    }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    transition={{
-                                        scale: { type: 'spring', stiffness: 300, damping: 20 },
-                                        default: { duration: 0.2 }
-                                    }}
-                                    style={{
-                                        position:     'absolute',
-                                        borderRadius: '50%',
-                                        border:       hasTurn
-                                                        ? `${isWinner ? '6px' : '4px'} solid ${styles.border}`
-                                                        : '3px solid rgba(255,255,255,0.4)',
-                                        transform:    'translate(-50%, -50%)',
-                                        background:   hasTurn ? styles.bg : 'rgba(255,255,255,0.1)',
-                                        boxShadow:    hasTurn
-                                                        ? `0 0 ${isWinner ? '60px' : '40px'} ${styles.glow}`
-                                                        : 'none',
-                                        display:      'flex',
-                                        flexDirection:'column',
-                                        alignItems:   'center',
-                                        justifyContent:'center',
-                                        gap:          '2px',
-                                        pointerEvents:'none',
-                                        zIndex:       isWinner ? 5 : 2,
-                                        animation:    isWinner ? 'winner-glow-pulsar 2s infinite' : 'none'
-                                    }}
-                                >
-                                    {hasTurn && (
-                                        <motion.div
-                                            initial={{ scale: 0, rotate: -20 }}
-                                            animate={{ scale: 1, rotate: 0 }}
-                                            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}
-                                        >
-                                            <span style={{ fontSize: isWinner ? '2.5rem' : '1.6rem', lineHeight: 1 }}>
-                                                {posInRound < 3 ? MEDALS[posInRound] : isLast ? '🔴' : '🎯'}
-                                            </span>
-                                            <span style={{
-                                                color: '#fff', fontWeight: 900,
-                                                fontSize: isWinner ? '1.3rem' : '0.9rem',
-                                                lineHeight: 1, textAlign: 'center', padding: '0 5px'
-                                            }}>
-                                                {res.name || `#${res.turn}`}
-                                            </span>
-                                            {isWinner && (
-                                                <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontWeight: 900, letterSpacing: '0.05em' }}>
-                                                    ¡PRIMERO!
-                                                </span>
-                                            )}
-                                            {isLast && (
-                                                <span style={{ fontSize: '0.55rem', color: '#f87171', fontWeight: 900, letterSpacing: '0.05em' }}>
-                                                    ÚLTIMO
-                                                </span>
-                                            )}
-                                        </motion.div>
-                                    )}
-                                </motion.div>
-                            );
-                        })}
-                    </AnimatePresence>
-                </div>
-
-                <div className="smallout" style={{ marginTop: '1rem' }}>
-                    {phase === 'done'
-                        ? '✅ Resultados fijados. Pulsa "Siguiente Ronda" o toca con 2 dedos para reiniciar.'
-                        : phase === 'counting'
-                        ? '⏳ ¡No te muevas! Calculando justicia...'
-                        : 'Mantén los dedos presionados 3 segundos para asignar turnos.'}
+                    <p className="touch-hint">{hint}</p>
                 </div>
             </div>
-
-            {/* ── History panel ─────────────── */}
-            {hasHistory && (
-                <div className="card">
-                    <h2>Historial de Rondas</h2>
-                    <div className="orderlist">
-                        {history.slice().reverse().map(({ count, details }, ri) => (
-                            <div key={ri} style={{
-                                padding: '1rem',
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid var(--line)',
-                                borderRadius: '16px',
-                                marginBottom: '1rem'
-                            }}>
-                                <div className="muted" style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '0.5rem' }}>
-                                    RONDA {history.length - ri} · {count} PARTICIPANTES
-                                </div>
-                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {details.map((res, i) => (
-                                        <span key={i} className="pill" style={{ 
-                                            background: i === 0 ? 'rgba(99,102,241,0.2)' : 'var(--bg-secondary)',
-                                            border: `1px solid ${i === 0 ? 'var(--primary)' : 'var(--line)'}`,
-                                            fontWeight: 800
-                                        }}>
-                                            {i < 3 ? MEDALS[i] : '🎯'} {res.name || `#${res.turn}`}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

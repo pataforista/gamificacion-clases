@@ -5,6 +5,10 @@ import { useAudio } from './AudioContext';
 import { RNG } from '../utils/rng';
 import { motion, AnimatePresence } from 'motion/react';
 
+// Etiquetas del semáforo en español (antes se mostraba el valor interno
+// "GREEN/YELLOW/RED" tal cual en la insignia de estado).
+const TRAFFIC_LABELS = { green: 'LIBRE', yellow: 'DUDAS', red: 'SILENCIO' };
+
 // Lightweight "NdM" dice roller for the quick dice in this view. Avoids pulling
 // the heavy rpg-dice-roller (and mathjs) into the initial bundle — the full
 // notation engine lives in the dedicated, lazy-loaded "Dado" tab.
@@ -115,7 +119,7 @@ const LiveClass = ({ pickerItems = [] }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2>Gestión de Clase en Vivo</h2>
                     <div className={`pill active-${state.traffic || 'green'}`} style={{ background: `var(--traffic-${state.traffic || 'green'})`, color: 'black' }}>
-                        {(state.traffic || 'green').toUpperCase()}
+                        {TRAFFIC_LABELS[state.traffic] || TRAFFIC_LABELS.green}
                     </div>
                 </div>
 
