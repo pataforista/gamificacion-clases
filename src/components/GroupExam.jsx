@@ -554,7 +554,18 @@ const GroupExam = ({ pickerItems = [] }) => {
     const startRoboPhase = () => {
         stopTimer();
         const otherTeams = pickerItems.filter(t => t !== activeTeam);
-        if (otherTeams.length === 0) return;
+        if (otherTeams.length === 0) {
+            // Sin otro equipo al que rebotar (p. ej. un solo equipo jugando):
+            // se cierra la pregunta como incorrecta en vez de dejar el rebote colgado.
+            audio.playSFX('incorrect_heavy');
+            setFeedback({
+                type: 'incorrect',
+                msg: `¡Incorrecto! ${RNG.getFlavor('wrong')}`,
+                explanation: question?.explanation || ""
+            });
+            setRoboTeam(null);
+            return;
+        }
 
         const robo = otherTeams[RNG.pickBalancedIndex(otherTeams.length, "robo_balance")];
         setRoboTeam(robo);
