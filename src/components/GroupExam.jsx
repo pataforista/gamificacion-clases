@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from './NotificationContext';
 import { useAudio, WAITING_TRACKS } from './AudioContext';
@@ -13,6 +13,20 @@ const isImageAvatar = (value) =>
     typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('/') || value.startsWith('http') || value.includes('.png'));
 
 const emptyJokers = () => ({ fifty: false, shield: false, freeze: false });
+
+// El juego identifica a cada equipo por su nombre (marcador, avatares, comodines,
+// tablero...), así que dos equipos con el mismo nombre (p. ej. copiar/pegar
+// "Equipo 1" dos veces en el Sorteo) colisionarían y dejarían el selector de
+// avatares bloqueado sin poder completarse. Se distinguen añadiendo un sufijo
+// a partir de la segunda aparición.
+const dedupeTeamNames = (names) => {
+    const seen = new Map();
+    return names.map(name => {
+        const count = (seen.get(name) || 0) + 1;
+        seen.set(name, count);
+        return count === 1 ? name : `${name} (${count})`;
+    });
+};
 
 // Lee una imagen desde un archivo, la reduce a un máximo razonable y devuelve un
 // data URL. Acotar el tamaño evita que el examen exportado/guardado crezca sin
@@ -42,6 +56,9 @@ const readImageAsDataURL = (file, maxDim = 1200, quality = 0.85) =>
 const GroupExam = ({ pickerItems = [] }) => {
     const { alert, confirm, notify } = useNotifications();
     const audio = useAudio();
+
+    // Nombres de equipo únicos para este módulo (ver dedupeTeamNames arriba).
+    const teams = useMemo(() => dedupeTeamNames(pickerItems), [pickerItems]);
 
     // Biblioteca local de exámenes (IndexedDB)
     const [savedExams, setSavedExams] = useState([]);
@@ -151,7 +168,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         const initialScores = {};
         const initialVisual = {};
         const initialJokers = {};
-        pickerItems.forEach(item => {
+        teams.forEach(item => {
             initialScores[item] = 0;
             initialVisual[item] = 0;
             initialJokers[item] = emptyJokers();
@@ -527,7 +544,7 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     // ---- Gameplay ----
     const nextTurn = async () => {
-        if (pickerItems.length === 0) {
+        if (teams.length === 0) {
             return await alert("Sin Equipos", "Ingresa nombres o equipos en la pestaña Sorteo para asignar turnos.");
         }
 
@@ -540,7 +557,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         setRoboTeam(null);
 
         audio.play(selectedTrack);
-        const chosen = RNG.pick(pickerItems, "exam_turn");
+        const chosen = RNG.pick(teams, "exam_turn");
         setActiveTeam(chosen);
 
         if (settings.timer && !settings.quickMode && !isLastQuestion) {
@@ -553,7 +570,7 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     const startRoboPhase = () => {
         stopTimer();
-        const otherTeams = pickerItems.filter(t => t !== activeTeam);
+        const otherTeams = teams.filter(t => t !== activeTeam);
         if (otherTeams.length === 0) {
             // Sin otro equipo al que rebotar (p. ej. un solo equipo jugando):
             // se cierra la pregunta como incorrecta en vez de dejar el rebote colgado.
@@ -655,7 +672,7 @@ const GroupExam = ({ pickerItems = [] }) => {
             // (preguntas ÷ equipos). El extra aleatorio es no-negativo para que
             // quien acierte todos sus turnos llegue garantizado a la meta.
             const totalQuestions = exam?.questions.length || 10;
-            const turnsPerTeam = Math.max(1, Math.floor(totalQuestions / Math.max(1, pickerItems.length)));
+            const turnsPerTeam = Math.max(1, Math.floor(totalQuestions / Math.max(1, teams.length)));
             const baseVisual = 100 / turnsPerTeam;
             const visualMove = baseVisual + RNG.int(0, 4);
             setVisualScores(prev => ({ ...prev, [team]: (prev[team] || 0) + visualMove }));
@@ -1071,7 +1088,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                 {/* ===================== AVATAR PHASE ===================== */}
                 {setupPhase === 'avatar' && (
                     <AvatarSelector
-                        teams={pickerItems}
+                        teams={teams}
                         onComplete={(selections) => {
                             setTeamAvatars(selections);
                             setSetupPhase('game');
@@ -1125,7 +1142,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                         <div style={{ gridArea: projectorMode ? 'board' : undefined, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <div style={{ background: 'var(--bg-secondary)', padding: '5px', borderRadius: '18px', border: '4px solid var(--line)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', width: '100%' }}>
                                 <BoardGame
-                                    teams={pickerItems}
+                                    teams={teams}
                                     totalSteps={100}
                                     scores={visualScores}
                                     avatars={teamAvatars}
