@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
-
-const POKEMONS = [
-  '/personajes/abra.png',
-  '/personajes/charmander.png',
-  '/personajes/drowzee.png',
-  '/personajes/dugtrio.png',
-  '/personajes/electrode.png',
-  '/personajes/gengar.png',
-  '/personajes/gloom-f.png',
-  '🩺', '🧠', '🫀', '💊', '🧬', '🔬', '🦴', '🩹', '🌡️', '🏥', '⚕️', '🦷', '🧪', '👁️', '👂', '🦠'
-];
+import { SPRITE_CATEGORIES, ALL_SPRITES, isEmojiAvatar } from '../utils/sprites';
 
 const AvatarSelector = ({ teams = [], onComplete }) => {
   const [selections, setSelections] = useState({});
   const [activeTeamIdx, setActiveTeamIdx] = useState(0);
+  const [categoryId, setCategoryId] = useState(SPRITE_CATEGORIES[0].id);
 
   const handleSelect = (pokemonPath) => {
     const team = teams[activeTeamIdx];
@@ -29,9 +20,12 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
 
   if (!currentTeam) return null;
 
+  const category = SPRITE_CATEGORIES.find(c => c.id === categoryId) || SPRITE_CATEGORIES[0];
+  const currentPick = selections[currentTeam];
+
   return (
     <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h2 style={{ textAlign: 'center', color: 'var(--primary)' }}>🎭 ¡Elige tu Pokémon!</h2>
+      <h2 style={{ textAlign: 'center', color: 'var(--primary)' }}>🎭 ¡Elige tu personaje!</h2>
       <div className="divider"></div>
       
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
@@ -41,26 +35,42 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
         <div className="pill">Paso {activeTeamIdx + 1} de {teams.length}</div>
       </div>
 
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '0.75rem' }}>
+        {SPRITE_CATEGORIES.map(c => (
+          <button
+            key={c.id}
+            className={`btn${c.id === category.id ? ' primary' : ''}`}
+            style={{ padding: '0.35rem 0.8rem', fontSize: '0.85rem' }}
+            onClick={() => setCategoryId(c.id)}
+          >
+            {c.label} <span style={{ opacity: 0.7 }}>({c.items.length})</span>
+          </button>
+        ))}
+      </div>
+
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', 
         gap: '1rem',
-        maxHeight: '300px',
+        maxHeight: '340px',
         overflowY: 'auto',
         padding: '1rem',
         border: '2px dashed var(--line)',
         borderRadius: '12px',
         background: 'rgba(255,255,255,0.05)'
       }}>
-        {POKEMONS.map((path, i) => {
-          // Check if this pokemon is already selected by another team
-          const isTaken = (teams.length <= POKEMONS.length) && Object.values(selections).includes(path);
-          const isEmoji = !path.startsWith('/') && !path.startsWith('http') && !path.includes('.');
+        {category.items.map((path) => {
+          // Un avatar tomado por OTRO equipo no se puede repetir (siempre alcanzan:
+          // hay muchos más avatares que equipos posibles).
+          const isMine = currentPick === path;
+          const isTaken = !isMine && teams.length <= ALL_SPRITES.length && Object.values(selections).includes(path);
+          const isEmoji = isEmojiAvatar(path);
           return (
             <button
-              key={i}
+              key={path}
               className="btn"
               disabled={isTaken}
+              aria-pressed={isMine}
               style={{ 
                 padding: '0.5rem', 
                 background: 'var(--bg)',
@@ -68,13 +78,13 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: isTaken ? '2px solid rgba(255,0,0,0.5)' : '2px solid var(--line)',
+                border: isTaken ? '2px solid rgba(255,0,0,0.5)' : isMine ? '2px solid var(--primary)' : '2px solid var(--line)',
                 opacity: isTaken ? 0.3 : 1,
                 fontSize: isEmoji ? '2.2rem' : 'inherit'
               }}
               onClick={() => handleSelect(path)}
             >
-              {isEmoji ? path : <img src={path} alt="pokemon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+              {isEmoji ? path : <img src={path} alt="avatar" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
             </button>
           );
         })}
@@ -83,7 +93,10 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
       <div className="divider"></div>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="btn" onClick={() => setActiveTeamIdx(Math.max(0, activeTeamIdx - 1))} disabled={activeTeamIdx === 0}>Anterior</button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn" onClick={() => setActiveTeamIdx(Math.max(0, activeTeamIdx - 1))} disabled={activeTeamIdx === 0}>Anterior</button>
+          <button className="btn" onClick={() => setActiveTeamIdx(Math.min(teams.length - 1, activeTeamIdx + 1))} disabled={activeTeamIdx >= teams.length - 1 || !currentPick}>Siguiente</button>
+        </div>
         <button 
             className="btn primary" 
             disabled={Object.keys(selections).length < teams.length}
@@ -98,7 +111,7 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
               {teams.map(t => {
                   const sel = selections[t];
                   if (!sel) return null;
-                  const isEmoji = !sel.startsWith('/') && !sel.startsWith('http') && !sel.includes('.');
+                  const isEmoji = isEmojiAvatar(sel);
                   return (
                       <div key={t} className="pill" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px' }}>
                           <span style={{ fontWeight: 900 }}>{t}:</span>

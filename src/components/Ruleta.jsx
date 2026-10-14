@@ -242,7 +242,10 @@ const Ruleta = ({ items = [] }) => {
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)',
+                // motion compone su propio transform (scale): el centrado va en x/y
+                // para que no lo pise.
+                x: '-50%',
+                y: '-50%',
                 background: 'var(--bg)',
                 color: 'var(--text)',
                 padding: '2rem 3rem',
@@ -270,6 +273,7 @@ const Ruleta = ({ items = [] }) => {
         <textarea
           value={inputText}
           onChange={handleTextChange}
+          disabled={spinning}
           rows={10}
           placeholder="Escribe las opciones aquí&#10;Opción A&#10;Opción B&#10;Opción C"
           style={{ width: '100%', marginTop: '0.5rem' }}

@@ -18,11 +18,42 @@ const DEFAULT_STATE = {
     lastReset: null,
 };
 
+// Un respaldo importado o un localStorage dañado con tipos inesperados (p. ej.
+// `badges` que no es lista) tumbaría la app en cada arranque, porque el estado
+// se vuelve a guardar tal cual. Se corrigen los tipos campo por campo.
+const sanitize = (raw) => {
+    const s = { ...DEFAULT_STATE, ...(raw && typeof raw === 'object' ? raw : {}) };
+    const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+    const strList = (v) => (Array.isArray(v) ? v.filter(x => typeof x === 'string' || typeof x === 'number').map(String) : []);
+    s.xp = Math.max(0, num(s.xp, 0));
+    s.health = Math.min(100, Math.max(0, num(s.health, 100)));
+    s.badges = strList(s.badges);
+    s.pickerItems = strList(s.pickerItems);
+    s.rollHistory = Array.isArray(s.rollHistory) ? s.rollHistory.filter(h => h && typeof h === 'object') : [];
+    s.savedRosters = Array.isArray(s.savedRosters)
+        ? s.savedRosters
+            .filter(r => r && typeof r === 'object' && typeof r.name === 'string')
+            .map(r => ({ ...r, id: r.id || `roster-${r.name}`, items: strList(r.items) }))
+        : [];
+    if (!['green', 'yellow', 'red'].includes(s.traffic)) s.traffic = 'green';
+    if (!['medical', 'general'].includes(s.rpgMode)) s.rpgMode = 'medical';
+    s.customTitle = typeof s.customTitle === 'string' ? s.customTitle : '';
+    s.customSubtitle = typeof s.customSubtitle === 'string' ? s.customSubtitle : '';
+    if (s.triviaQA !== undefined && typeof s.triviaQA !== 'string') delete s.triviaQA;
+    // Un "código rojo" que ya venció (p. ej. se cerró la pestaña a mitad) no
+    // debe reaparecer al abrir la app.
+    if (!s.isRedCodeActive || !num(s.redCodeEndTime, 0) || s.redCodeEndTime < Date.now()) {
+        s.isRedCodeActive = false;
+        s.redCodeEndTime = null;
+    }
+    return s;
+};
+
 const loadInitial = () => {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) return { ...DEFAULT_STATE, lastReset: new Date().toISOString() };
-        return { ...DEFAULT_STATE, ...JSON.parse(saved) };
+        return sanitize(JSON.parse(saved));
     } catch {
         return { ...DEFAULT_STATE, lastReset: new Date().toISOString() };
     }
@@ -50,11 +81,10 @@ export const PersistenceProvider = ({ children }) => {
     // falten claves nuevas (y descartar cualquier clave desconocida sobrante).
     const importState = useCallback((incoming) => {
         if (!incoming || typeof incoming !== 'object') return;
-        setState({
-            ...DEFAULT_STATE,
+        setState(sanitize({
             ...incoming,
             lastReset: incoming.lastReset || new Date().toISOString(),
-        });
+        }));
     }, []);
 
     const resetState = useCallback((preserveRoster = false) => {

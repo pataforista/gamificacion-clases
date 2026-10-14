@@ -227,7 +227,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                     style={{
                       position: 'absolute',
                       top: '-16px',
-                      background: 'linear-gradient(135deg, var(--primary), var(--kawaii-lavender))',
+                      background: 'var(--primary)',
                       color: 'white',
                       padding: '2px 7px',
                       borderRadius: '8px',
@@ -248,7 +248,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                     width: '26px',
                     height: '26px',
                     background: isActive
-                      ? 'linear-gradient(135deg, var(--primary), var(--kawaii-lavender))'
+                      ? 'var(--primary)'
                       : 'var(--bg-secondary)',
                     border: `3px solid ${isActive ? 'white' : accent}`,
                     borderRadius: '50%',

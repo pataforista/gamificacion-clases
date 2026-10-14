@@ -11,8 +11,12 @@ const Teams = ({ pickerItems = [] }) => {
     const copyToClipboard = async () => {
         if (teams.length === 0) return;
         const text = teams.map((team, i) => `EQUIPO ${i + 1}:\n${team.map(m => `- ${m}`).join('\n')}`).join('\n\n');
-        await navigator.clipboard.writeText(text);
-        notify("Equipos copiados al portapapeles", "achievement", "📋");
+        try {
+            await navigator.clipboard.writeText(text);
+            notify("Equipos copiados al portapapeles", "achievement", "📋");
+        } catch {
+            await alert("No se pudo copiar", "El navegador bloqueó el portapapeles. Selecciona los equipos en pantalla y cópialos a mano.");
+        }
     };
 
     const generateTeams = async () => {
@@ -54,7 +58,7 @@ const Teams = ({ pickerItems = [] }) => {
                             min="2"
                             max="10"
                             value={teamCount}
-                            onChange={e => setTeamCount(Math.max(2, parseInt(e.target.value) || 2))}
+                            onChange={e => setTeamCount(Math.min(10, Math.max(2, parseInt(e.target.value) || 2)))}
                             style={{ width: '80px', marginTop: '5px' }}
                         />
                     </div>

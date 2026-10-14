@@ -52,10 +52,13 @@ export const RNG = {
         if (listLength <= 0) return 0;
         const bagKey = `bag-${key}`;
         // Using sessionStorage to avoid multi-window state corruption
-        const state = JSON.parse(sessionStorage.getItem('rng_bags') || '{}');
-        let bag = state[bagKey] || [];
+        let state = {};
+        try { state = JSON.parse(sessionStorage.getItem('rng_bags') || '{}') || {}; } catch { state = {}; }
+        let bag = Array.isArray(state[bagKey]) ? state[bagKey] : [];
 
-        if (bag.length === 0) {
+        // Si la lista cambió de tamaño (p. ej. menos equipos), la bolsa vieja
+        // tiene índices que ya no existen: se rehace en vez de repetir nombres.
+        if (bag.length === 0 || bag.some(i => !Number.isInteger(i) || i >= listLength)) {
             bag = Array.from({ length: listLength }, (_, i) => i);
         }
 
@@ -63,9 +66,9 @@ export const RNG = {
         const resultIdx = bag.splice(randIdx, 1)[0];
 
         state[bagKey] = bag;
-        sessionStorage.setItem('rng_bags', JSON.stringify(state));
+        try { sessionStorage.setItem('rng_bags', JSON.stringify(state)); } catch { /* sin almacenamiento */ }
 
-        return resultIdx % listLength;
+        return resultIdx;
     },
 
     MEXICAN_FLAVOR: {

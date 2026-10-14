@@ -40,4 +40,10 @@ export default defineConfig([
       'react-refresh/only-export-components': 'warn',
     },
   },
+  {
+    // Pruebas de punta a punta y configuración: corren en Node.
+    files: ['tests/**/*.js', 'playwright.config.js', 'vite.config.js', 'scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+    rules: { 'react-hooks/rules-of-hooks': 'off' },
+  },
 ])

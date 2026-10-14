@@ -122,7 +122,7 @@ const RPGDash = ({ theme, updateTheme }) => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `medclass-respaldo-${new Date().toISOString().slice(0, 10)}.json`);
+        downloadAnchorNode.setAttribute("download", `herramientas-didacticas-respaldo-${new Date().toISOString().slice(0, 10)}.json`);
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
@@ -138,14 +138,14 @@ const RPGDash = ({ theme, updateTheme }) => {
         try {
             data = JSON.parse(await file.text());
         } catch {
-            return await alert('Archivo inválido', 'No se pudo leer el archivo. Debe ser un respaldo .json de MedClass Pro.');
+            return await alert('Archivo inválido', 'No se pudo leer el archivo. Debe ser un respaldo .json de Herramientas didácticas.');
         }
 
         // Acepta el respaldo nuevo ({ state, theme }) y también exportaciones
         // antiguas donde el archivo era el estado plano.
         const incoming = data && typeof data.state === 'object' ? data.state : data;
         if (!incoming || typeof incoming !== 'object' || (incoming.xp === undefined && incoming.pickerItems === undefined)) {
-            return await alert('Archivo no reconocido', 'El archivo no parece un respaldo de progreso de MedClass Pro.');
+            return await alert('Archivo no reconocido', 'El archivo no parece un respaldo de progreso de Herramientas didácticas.');
         }
 
         const ok = await confirm(
@@ -246,7 +246,10 @@ const RPGDash = ({ theme, updateTheme }) => {
                         }}
                     >
                         {BADGES.map((b) => (
-                            <motion.div
+                            <motion.button
+                                type="button"
+                                aria-pressed={state.badges.includes(b.id)}
+                                aria-label={`${mode === 'medical' ? b.name : b.nameGen}: ${b.detail}`}
                                 key={b.id}
                                 variants={{
                                     hidden: { scale: 0, opacity: 0 },
@@ -263,7 +266,7 @@ const RPGDash = ({ theme, updateTheme }) => {
                             >
                                 {b.icon}
                                 <div className="badge-name">{mode === 'medical' ? b.name : b.nameGen}</div>
-                            </motion.div>
+                            </motion.button>
                         ))}
                     </motion.div>
                     <div className="muted" style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>

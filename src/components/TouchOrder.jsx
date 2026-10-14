@@ -17,7 +17,7 @@ const FINGER_COLORS = [
 
 const clamp = (min, v, max) => Math.min(max, Math.max(min, v));
 
-const TouchOrder = () => {
+const TouchOrder = ({ isActive = true }) => {
     const { playSFX } = useAudio();
 
     const [mode,      setMode]      = useState(() => (localStorage.getItem('touch-mode') === 'one' ? 'one' : 'order'));
@@ -61,12 +61,14 @@ const TouchOrder = () => {
 
     // Con la mesa expandida, la página de detrás no debe poder desplazarse
     // (evita el "rebote" y el arrastre para recargar en el móvil).
+    // (Sólo mientras esta pestaña está a la vista: el módulo sigue montado al
+    // cambiar de pestaña y no debe bloquear el desplazamiento de las demás.)
     useEffect(() => {
-        if (!immersive) return;
+        if (!immersive || !isActive) return;
         const prev = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = prev; };
-    }, [immersive]);
+    }, [immersive, isActive]);
 
     const toggleImmersive = useCallback(() => {
         const next = !immersive;

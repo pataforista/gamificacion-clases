@@ -53,12 +53,17 @@ const readImageAsDataURL = (file, maxDim = 1200, quality = 0.85) =>
         reader.readAsDataURL(file);
     });
 
-const GroupExam = ({ pickerItems = [] }) => {
+const GroupExam = ({ pickerItems = [], isActive = true }) => {
     const { alert, confirm, notify } = useNotifications();
     const audio = useAudio();
 
     // Nombres de equipo únicos para este módulo (ver dedupeTeamNames arriba).
-    const teams = useMemo(() => dedupeTeamNames(pickerItems), [pickerItems]);
+    const liveTeams = useMemo(() => dedupeTeamNames(pickerItems), [pickerItems]);
+    // El módulo sigue montado al cambiar de pestaña: si durante una partida se
+    // edita la lista del Sorteo, los equipos en juego no deben cambiar (el
+    // marcador, los avatares y el tablero van por nombre). Se fijan al pasar
+    // a elegir avatares y se liberan al volver a la pantalla inicial.
+    const [lockedTeams, setLockedTeams] = useState(null);
 
     // Biblioteca local de exámenes (IndexedDB)
     const [savedExams, setSavedExams] = useState([]);
@@ -113,6 +118,13 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     const [teamAvatars, setTeamAvatars] = useState({});
     const [setupPhase, setSetupPhase] = useState('upload'); // upload, edit, avatar, game
+    const inMatch = setupPhase === 'avatar' || setupPhase === 'game';
+    const teams = inMatch && lockedTeams ? lockedTeams : liveTeams;
+    useEffect(() => {
+        setLockedTeams(inMatch ? liveTeams : null);
+        // Sólo al entrar o salir de la partida, no con cada cambio de la lista.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [inMatch]);
     const [projectorMode, setProjectorMode] = useState(false); // big question/options for projection
 
     // Audio volume control
@@ -121,6 +133,7 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     const timerRef = useRef(null);
     const handleTimeOutRef = useRef(null);
+    const audioRef = useRef(audio);
 
     const validateExamJSON = (data) => {
         if (!data.questions || !Array.isArray(data.questions)) {
@@ -188,32 +201,55 @@ const GroupExam = ({ pickerItems = [] }) => {
     // Keep handleTimeOut reference fresh to avoid stale closures inside the interval
     useEffect(() => {
         handleTimeOutRef.current = handleTimeOut;
+        audioRef.current = audio;
     });
 
-    // Timer countdown
+    // Al salir de la pestaña con un examen a medias, apaga la música de espera.
+    useEffect(() => () => audioRef.current.stop(), []);
+
+    // Al ir a otra pestaña a mitad de una pregunta: la música se apaga y el
+    // reloj se pausa (abajo); al volver, ambos continúan donde estaban.
+    const wasActiveRef = useRef(isActive);
     useEffect(() => {
-        if (isTimerActive) {
+        if (wasActiveRef.current === isActive) return;
+        wasActiveRef.current = isActive;
+        if (!isActive) {
+            audioRef.current.stop();
+        } else if (setupPhase === 'game' && exam && (activeTeam || roboTeam) && !feedback) {
+            audioRef.current.play(selectedTrack);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isActive]);
+
+    // Timer countdown. El intervalo solo resta; los efectos secundarios (tick,
+    // zumbido, rebote) viven en el efecto de abajo para no ejecutarse dentro de
+    // un updater de estado (React puede invocarlos dos veces en StrictMode).
+    useEffect(() => {
+        if (isTimerActive && isActive) {
             timerRef.current = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timerRef.current);
-                        if (handleTimeOutRef.current) handleTimeOutRef.current();
-                        return 0;
-                    }
-                    if (prev <= 5) audio.playSFX('tick');
-                    return prev - 1;
-                });
+                setTimeLeft(prev => Math.max(0, prev - 1));
             }, 1000);
         }
         return () => clearInterval(timerRef.current);
-    }, [isTimerActive, currentQuestion, activeTeam, roboTeam, audio]);
+    }, [isTimerActive, isActive, currentQuestion, activeTeam, roboTeam]);
+
+    useEffect(() => {
+        if (!isTimerActive) return;
+        if (timeLeft <= 0) {
+            stopTimer();
+            if (handleTimeOutRef.current) handleTimeOutRef.current();
+        } else if (timeLeft <= 4) {
+            audioRef.current.playSFX('tick');
+        }
+    }, [timeLeft, isTimerActive]);
 
     const question = exam?.questions?.[currentQuestion];
     const isLastQuestion = !!exam && currentQuestion === exam.questions.length - 1;
 
     // Keyboard shortcuts for projector/classroom use: 1-9 answer, Enter advances feedback.
     useEffect(() => {
-        if (setupPhase !== 'game' || !exam) return;
+        // Oculto en otra pestaña, las teclas 1-9 no deben responder el examen.
+        if (!isActive || setupPhase !== 'game' || !exam) return;
         const handler = (e) => {
             if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
 
@@ -237,7 +273,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [setupPhase, exam, feedback, isRevealing, activeTeam, roboTeam, hiddenOptions, wrongOptions, wagerConfirmed, currentQuestion]);
+    }, [isActive, setupPhase, exam, feedback, isRevealing, activeTeam, roboTeam, hiddenOptions, wrongOptions, wagerConfirmed, currentQuestion]);
 
     // Celebrate the podium when the game ends
     useEffect(() => {
@@ -312,6 +348,8 @@ const GroupExam = ({ pickerItems = [] }) => {
     // ---- Editor ----
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
+        // Permite volver a elegir el mismo archivo tras corregirlo.
+        e.target.value = '';
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (evt) => {
@@ -442,7 +480,7 @@ const GroupExam = ({ pickerItems = [] }) => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `examen-medclass-${new Date().toISOString().slice(0, 10)}.json`;
+            a.download = `examen-herramientas-didacticas-${new Date().toISOString().slice(0, 10)}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -543,7 +581,7 @@ const GroupExam = ({ pickerItems = [] }) => {
     };
 
     // ---- Gameplay ----
-    const nextTurn = async () => {
+    const nextTurn = async (isLast = isLastQuestion) => {
         if (teams.length === 0) {
             return await alert("Sin Equipos", "Ingresa nombres o equipos en la pestaña Sorteo para asignar turnos.");
         }
@@ -560,7 +598,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         const chosen = RNG.pick(teams, "exam_turn");
         setActiveTeam(chosen);
 
-        if (settings.timer && !settings.quickMode && !isLastQuestion) {
+        if (settings.timer && !settings.quickMode && !isLast) {
             setTimeLeft(settings.duration);
             setIsTimerActive(true);
         }
@@ -755,7 +793,8 @@ const GroupExam = ({ pickerItems = [] }) => {
         setRoboTeam(null);
         setSetupPhase('game');
         audio.playSFX('intro');
-        nextTurn();
+        // currentQuestion pasa a 0 en este mismo ciclo: la "última" es la única.
+        nextTurn(editedQuestions.length === 1);
     };
 
     const renderAvatar = (team, size = 24) => {
@@ -879,14 +918,18 @@ const GroupExam = ({ pickerItems = [] }) => {
                             <button className="btn" onClick={() => setShowGuide(!showGuide)}>
                                 {showGuide ? 'Ocultar Guía' : 'Ver Estructura JSON'}
                             </button>
-                            <button className="btn" onClick={() => {
+                            <button className="btn" onClick={async () => {
                                 const template = {
                                     questions: [
                                         { text: "¿Pregunta de ejemplo?", options: ["A", "B", "C", "D"], correctIndex: 0, explanation: "Retroalimentación opcional." }
                                     ]
                                 };
-                                navigator.clipboard.writeText(JSON.stringify(template, null, 2));
-                                alert("Copiado al portapapeles", "Pega el código en un archivo .json");
+                                try {
+                                    await navigator.clipboard.writeText(JSON.stringify(template, null, 2));
+                                    alert("Copiado al portapapeles", "Pega el código en un archivo .json");
+                                } catch {
+                                    alert("No se pudo copiar", "Tu navegador bloqueó el portapapeles. Usa «Ver Estructura JSON» y copia el ejemplo a mano.");
+                                }
                             }}>
                                 📋 Copiar Plantilla
                             </button>
@@ -1188,8 +1231,8 @@ const GroupExam = ({ pickerItems = [] }) => {
                             {!roboTeam && !activeTeam && !feedback && (
                                 <div className="card" style={{ textAlign: 'center', padding: 'clamp(0.6rem, 1.2vh, 1.5rem)', marginBottom: 0, background: 'var(--bg-secondary)', border: '4px dashed var(--primary)', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
                                     <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text)', fontSize: 'clamp(0.85rem, 1.4vw, 1rem)' }}>Siguiente Participante</h3>
-                                    <button className="btn primary" style={{ width: '100%', fontSize: 'clamp(1rem, 1.7vw, 1.2rem)', padding: 'clamp(0.5rem, 1vh, 1rem)' }} onClick={nextTurn}>
-                                        🎲 ASIGNAR TURNO
+                                    <button className="btn primary" style={{ width: '100%', fontSize: 'clamp(1rem, 1.7vw, 1.2rem)', padding: 'clamp(0.5rem, 1vh, 1rem)' }} onClick={() => nextTurn()}>
+                                        🎲 Asignar turno
                                     </button>
                                 </div>
                             )}
