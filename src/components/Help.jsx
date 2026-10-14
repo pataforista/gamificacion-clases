@@ -210,7 +210,7 @@ const Help = () => {
     <div className="help-guide">
       <div className="card help-hero">
         <div className="help-hero-emoji" aria-hidden>📖</div>
-        <h2>Guía de uso de MedClass Pro</h2>
+        <h2>Guía de uso de Herramientas didácticas</h2>
         <p>
           Aquí encontrarás, paso a paso, para qué sirve y cómo usar cada parte de la app.
           Toca cualquier herramienta del índice para saltar directo a su explicación.

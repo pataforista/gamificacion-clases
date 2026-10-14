@@ -180,11 +180,11 @@ const App = () => {
 
         <div className="app-shell">
         <aside className="sidebar">
-          <div className="brand" aria-label="MedClass Pro">
+          <div className="brand" aria-label="Herramientas didácticas">
             <svg className="pulse-mark" viewBox="0 0 44 22" aria-hidden>
               <path d="M1 12h10l3-6 4 13 5-17 3 10h3l2-3 2 3h10" />
             </svg>
-            <span className="brand-name">MedClass Pro</span>
+            <span className="brand-name">Herramientas didácticas</span>
           </div>
 
           <nav aria-label="Herramientas">
@@ -217,7 +217,7 @@ const App = () => {
               suppressContentEditableWarning
               onBlur={(e) => updateState({ customTitle: e.target.innerText.trim() })}
             >
-              {state.customTitle || "MedClass Pro"}
+              {state.customTitle || "Herramientas didácticas"}
             </h1>
             <div
               className="subtitle editable-text"

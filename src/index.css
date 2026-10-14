@@ -320,10 +320,10 @@ h4 { letter-spacing: 0.01em; }
 
 .brand-name {
   font-family: var(--font-display);
-  font-size: 1.45rem;
+  font-size: 1.3rem;
+  line-height: 1;
   letter-spacing: 0.02em;
   color: var(--sidebar-text, #FBF6E9);
-  white-space: nowrap;
 }
 
 /* El trazo de ECG: lo único que se anima solo, una vez, al abrir la app. */
@@ -437,7 +437,7 @@ h4 { letter-spacing: 0.01em; }
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.01em;
-  line-height: 0.95;
+  line-height: 1.05;
   color: var(--primary);
   text-shadow: 3px 3px 0 var(--secondary);
   max-width: 100%;
@@ -671,7 +671,8 @@ label { color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; }
     overflow: visible;
   }
   .brand { padding: 0 0.25rem; }
-  .brand-name { font-size: 1.2rem; }
+  /* El título grande ya nombra la app: en móvil basta el trazo de ECG. */
+  .brand-name { display: none; }
 
   .sidebar nav {
     display: flex;

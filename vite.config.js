@@ -22,8 +22,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       manifest: {
-        name: 'MedClass Pro: Gamificación Médica',
-        short_name: 'MedClass Pro',
+        name: 'Herramientas didácticas',
+        short_name: 'Herramientas',
         description: 'Herramienta de gamificación para clases con dados 3D y RPG',
         theme_color: '#060608',
         background_color: '#060608',
