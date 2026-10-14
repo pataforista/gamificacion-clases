@@ -6,6 +6,8 @@ import { registerSW } from 'virtual:pwa-register'
 import '@fontsource-variable/outfit'
 // Fuente Fredoka auto-hospedada (redondeada, estilo kawaii) para títulos.
 import '@fontsource-variable/fredoka'
+// Anton: tipografía condensada de póster para títulos y números grandes.
+import '@fontsource/anton'
 import './index.css'
 import App from './App.jsx'
 import { NotificationProvider } from './components/NotificationContext'
