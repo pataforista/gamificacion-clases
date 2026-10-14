@@ -17,19 +17,21 @@ const Picker = ({ onItemsChange, items = [] }) => {
     const [history, setHistory] = useState([]);
     const lastSyncRef = useRef(items.join('\n'));
 
-    // Keep textarea in sync with shared roster when it changes from another tab
+    // Keep textarea in sync with shared roster when it changes elsewhere (p. ej.
+    // al restaurar un respaldo). Se compara contra el texto LIMPIO: así un salto
+    // de línea recién escrito (que aún no es un nombre) no se borra al teclear.
     useEffect(() => {
         const joined = items.join('\n');
-        if (joined !== lastSyncRef.current && joined !== inputText) {
+        if (joined !== lastSyncRef.current && joined !== cleanLines(inputText).join('\n')) {
             setInputText(joined);
-            lastSyncRef.current = joined;
         }
+        lastSyncRef.current = joined;
     }, [items, inputText]);
 
     const handleTextChange = (e) => {
         const text = e.target.value;
         setInputText(text);
-        lastSyncRef.current = text;
+        lastSyncRef.current = cleanLines(text).join('\n');
         if (onItemsChange) onItemsChange(cleanLines(text));
     };
 
@@ -89,6 +91,7 @@ const Picker = ({ onItemsChange, items = [] }) => {
                     <button className="btn" onClick={() => {
                         const demoNames = ['Ana García', 'Luis Pérez', 'María Rodríguez', 'Juan C.', 'Elena S.', 'Dr. House'];
                         setInputText(demoNames.join('\n'));
+                        lastSyncRef.current = demoNames.join('\n');
                         if (onItemsChange) onItemsChange(demoNames);
                     }}>
                         ✨ Cargar Demo

@@ -15,6 +15,8 @@ const FlowControl = ({ pickerItems = [] }) => {
     const [enableAudio, setEnableAudio] = useState(false);
     const [tick, setTick] = useState(0);
     const audioStartedRef = useRef(false);
+    const audioRef = useRef(audio);
+    useEffect(() => { audioRef.current = audio; });
     const fsRef = useRef(null);
     const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(fsRef);
 
@@ -42,17 +44,20 @@ const FlowControl = ({ pickerItems = [] }) => {
             audio.stop();
             audioStartedRef.current = false;
         }
-    }, [state.isRedCodeActive, enableAudio, audio]);
+        // `audio` cambia de identidad al empezar/parar la pista: depender de él
+        // re-ejecutaba el efecto y la música entraba en un bucle play/pausa.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.isRedCodeActive, enableAudio]);
 
     // Detener la música si el componente se desmonta (cambio de pestaña) mientras
     // sonaba: sin esto la pista de "thinking" seguía reproduciéndose sin control,
     // ya que el estado local `enableAudio` se reinicia al volver a montar.
     useEffect(() => () => {
         if (audioStartedRef.current) {
-            audio.stop();
+            audioRef.current.stop();
             audioStartedRef.current = false;
         }
-    }, [audio]);
+    }, []);
 
     // tick is read here only to keep `remaining` fresh on rerender
     void tick;

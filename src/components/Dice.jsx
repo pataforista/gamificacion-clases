@@ -114,15 +114,6 @@ const Dice = () => {
                 
                 setResult(total);
                 
-                // CRIT / FUMBLE LOGIC
-                if (diceCount === 1 && diceType === "20") {
-                    if (total === 20) setDetail("🏆 ¡ESO, CUATE! ¡CRÍTICO NATAL!");
-                    else if (total === 1) setDetail("💀 ¡PERDISTE CUATE! ¡PIFIA TOTAL!");
-                    else setDetail(`Resultado: ${total}`);
-                } else {
-                    setDetail(`Total: ${total}`);
-                }
-
                 let rolls = [];
                 if (rollResult.rolls && rollResult.rolls[0] && rollResult.rolls[0].results) {
                     rolls = rollResult.rolls[0].results
@@ -130,14 +121,22 @@ const Dice = () => {
                         .map(r => r.value);
                 }
 
+                // CRIT / FUMBLE LOGIC: se mira el dado natural, no el total
+                // (con modificador, 15 + 5 no es un crítico).
+                const natural = rolls[0];
+                const isD20 = diceCount === 1 && diceType === "20";
+                if (isD20 && natural === 20) setDetail("🏆 ¡ESO, CUATE! ¡CRÍTICO NATURAL!");
+                else if (isD20 && natural === 1) setDetail("💀 ¡PERDISTE CUATE! ¡PIFIA TOTAL!");
+                else setDetail(isD20 ? `Resultado: ${total}` : `Total: ${total}`);
+
                 setIndividualRolls(rolls);
                 playSFX('boing');
 
                 // VIBRATION
                 if (navigator.vibrate) {
-                    if (diceCount === 1 && diceType === "20") {
-                        if (total === 20) navigator.vibrate([100, 50, 100, 50, 100]);
-                        else if (total === 1) navigator.vibrate(400);
+                    if (isD20) {
+                        if (natural === 20) navigator.vibrate([100, 50, 100, 50, 100]);
+                        else if (natural === 1) navigator.vibrate(400);
                         else navigator.vibrate(40);
                     } else {
                         navigator.vibrate(40);
@@ -166,7 +165,7 @@ const Dice = () => {
     };
 
     const rollFormula = () => {
-        if (!formula.trim()) return;
+        if (!formula.trim() || isRolling) return;
         setIsRolling(true);
         setResult("...");
         setIndividualRolls([]);
@@ -283,7 +282,7 @@ const Dice = () => {
                     </div>
                     <div>
                         <label>Cantidad</label><br />
-                        <input type="number" min="1" max="20" value={diceCount} onChange={e => setDiceCount(parseInt(e.target.value) || 1)} />
+                        <input type="number" min="1" max="20" value={diceCount} onChange={e => setDiceCount(Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))} />
                     </div>
                     <div>
                         <label>Mod (+/-)</label><br />
@@ -319,9 +318,10 @@ const Dice = () => {
                         placeholder="Fórmula (ej: 2d20kh1 + 5)"
                         value={formula}
                         onChange={e => setFormula(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') rollFormula(); }}
                         style={{ flex: 1 }}
                     />
-                    <button className="btn good" onClick={rollFormula}>Fórmula</button>
+                    <button className="btn good" onClick={rollFormula} disabled={isRolling}>Fórmula</button>
                 </div>
 
                 <div className="row" style={{ marginTop: '15px' }}>
@@ -341,7 +341,7 @@ const Dice = () => {
                     className="out" 
                     style={{ fontSize: '5rem', marginBottom: '10px' }}
                 >
-                    {result || "—"}
+                    {result ?? "—"}
                 </motion.div>
                 <div className="smallout" style={{ marginBottom: '20px' }}>{detail || "Esperando tirada..."}</div>
 

@@ -31,6 +31,8 @@ const LiveClass = ({ pickerItems = [] }) => {
     const [quickResult, setQuickResult] = useState(null);
     const [localTimer, setLocalTimer] = useState(0);
     const wasActiveRef = useRef(false);
+    const audioRef = useRef(audio);
+    useEffect(() => { audioRef.current = audio; });
 
     // Mirror the global red-code timer for display only
     useEffect(() => {
@@ -55,12 +57,14 @@ const LiveClass = ({ pickerItems = [] }) => {
 
     // Detener la música si se sale de esta pestaña mientras seguía sonando el
     // temporizador (evita que la pista quede reproduciéndose tras desmontar).
+    // (vía ref: `audio` cambia de identidad al sonar la pista y con él como
+    // dependencia esta limpieza cortaba la música recién iniciada).
     useEffect(() => () => {
         if (wasActiveRef.current) {
-            audio.stop();
+            audioRef.current.stop();
             wasActiveRef.current = false;
         }
-    }, [audio]);
+    }, []);
 
     const startRedCode = (seconds = 30) => {
         const endTime = Date.now() + (seconds * 1000);

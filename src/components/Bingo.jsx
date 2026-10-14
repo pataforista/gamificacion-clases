@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { RNG } from '../utils/rng';
@@ -59,6 +59,9 @@ const Bingo = () => {
       }
     }, 70);
   }, [done, called, maxNum, playSFX]);
+
+  // Al cambiar de pestaña a mitad de una extracción, detener la animación.
+  useEffect(() => () => clearInterval(timerRef.current), []);
 
   const reset = () => {
     if (timerRef.current) {

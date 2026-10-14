@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { RNG, cleanLines } from '../utils/rng';
 import { useNotifications } from './NotificationContext';
 import { useAudio } from './AudioContext';
+import { usePersistence } from '../hooks/usePersistence';
 
 const DEFAULT_QUESTIONS = [
   { q: '¿Cuál es el hueso más largo del cuerpo humano?', a: 'Fémur' },
@@ -13,15 +14,27 @@ const DEFAULT_QUESTIONS = [
 ];
 
 const DEFAULT_SECONDS = 30;
+const DEFAULT_QA_TEXT = DEFAULT_QUESTIONS.map(q => `${q.q}|${q.a}`).join('\n');
+
+const parseQA = (text) => cleanLines(text)
+  .map(line => {
+    const sep = line.indexOf('|');
+    if (sep === -1) return null;
+    const q = line.slice(0, sep).trim();
+    const a = line.slice(sep + 1).trim();
+    return q && a ? { q, a } : null;
+  })
+  .filter(Boolean);
 
 const Trivia = ({ pickerItems = [] }) => {
   const { alert, notify } = useNotifications();
   const audio = useAudio();
+  const { state, updateState } = usePersistence();
 
-  const [questions, setQuestions] = useState(DEFAULT_QUESTIONS);
-  const [inputQA, setInputQA] = useState(
-    DEFAULT_QUESTIONS.map(q => `${q.q}|${q.a}`).join('\n')
-  );
+  // El banco se guarda en el estado persistente: antes se perdía al cambiar
+  // de pestaña o recargar.
+  const [inputQA, setInputQA] = useState(() => (typeof state.triviaQA === 'string' ? state.triviaQA : DEFAULT_QA_TEXT));
+  const [questions, setQuestions] = useState(() => parseQA(inputQA));
   const [seconds, setSeconds] = useState(DEFAULT_SECONDS);
   const [timeLeft, setTimeLeft] = useState(null);
   const [active, setActive] = useState(false);
@@ -122,16 +135,8 @@ const Trivia = ({ pickerItems = [] }) => {
 
   const handleQAChange = (e) => {
     setInputQA(e.target.value);
-    const parsed = cleanLines(e.target.value)
-      .map(line => {
-        const sep = line.indexOf('|');
-        if (sep === -1) return null;
-        const q = line.slice(0, sep).trim();
-        const a = line.slice(sep + 1).trim();
-        return q && a ? { q, a } : null;
-      })
-      .filter(Boolean);
-    setQuestions(parsed);
+    setQuestions(parseQA(e.target.value));
+    updateState({ triviaQA: e.target.value });
   };
 
   const timerPct = timeLeft != null && seconds > 0 ? (timeLeft / seconds) * 100 : 100;

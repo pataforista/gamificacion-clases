@@ -202,7 +202,7 @@ const App = () => {
                   {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
                   {activeTab === 'dice' && <Dice />}
                   {activeTab === 'touch' && <TouchOrder />}
-                  {activeTab === 'picker' && <Picker items={pickerItems} onItemsChange={setPickerItems} />}
+                  {activeTab === 'picker' && <Picker items={state.pickerItems || []} onItemsChange={setPickerItems} />}
                   {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
                   {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
                   {activeTab === 'ruleta' && <Ruleta items={pickerItems} />}
