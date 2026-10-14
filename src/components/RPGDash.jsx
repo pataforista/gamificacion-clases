@@ -246,7 +246,10 @@ const RPGDash = ({ theme, updateTheme }) => {
                         }}
                     >
                         {BADGES.map((b) => (
-                            <motion.div
+                            <motion.button
+                                type="button"
+                                aria-pressed={state.badges.includes(b.id)}
+                                aria-label={`${mode === 'medical' ? b.name : b.nameGen}: ${b.detail}`}
                                 key={b.id}
                                 variants={{
                                     hidden: { scale: 0, opacity: 0 },
@@ -263,7 +266,7 @@ const RPGDash = ({ theme, updateTheme }) => {
                             >
                                 {b.icon}
                                 <div className="badge-name">{mode === 'medical' ? b.name : b.nameGen}</div>
-                            </motion.div>
+                            </motion.button>
                         ))}
                     </motion.div>
                     <div className="muted" style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>

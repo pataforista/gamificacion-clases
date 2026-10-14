@@ -167,7 +167,7 @@ const LiveClass = ({ pickerItems = [] }) => {
                     ) : (
                         <div style={{ textAlign: 'center' }}>
                             <div className="out" style={{ color: 'var(--traffic-red)', fontSize: '5rem' }}>{localTimer}s</div>
-                            <button className="btn primary error" onClick={stopRedCode}>DETENER CÓDIGO ROJO</button>
+                            <button className="btn primary error" onClick={stopRedCode}>Detener código rojo</button>
                         </div>
                     )}
                 </div>
@@ -189,7 +189,7 @@ const LiveClass = ({ pickerItems = [] }) => {
                     </AnimatePresence>
                 </div>
                 <button className="btn primary good" style={{ width: '100%', padding: '1.2rem' }} onClick={quickPick}>
-                    🎲 SORTEAR AHORA
+                    🎲 Sortear ahora
                 </button>
             </div>
 

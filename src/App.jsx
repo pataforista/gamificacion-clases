@@ -60,10 +60,16 @@ const NAV_GROUPS = [
   },
 ];
 const HELP_TAB = { id: 'help', label: 'Ayuda', Icon: CircleHelp };
+const MODULE_IDS = [...NAV_GROUPS.flatMap(g => g.items.map(t => t.id)), HELP_TAB.id];
 
 const App = () => {
   const { state, updateState } = usePersistence();
   const [activeTab, setActiveTab] = useState('live');
+  const [visited, setVisited] = useState(() => new Set(['live']));
+  const openTab = (id) => {
+    setActiveTab(id);
+    setVisited(prev => (prev.has(id) ? prev : new Set(prev).add(id)));
+  };
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('app-theme');
     return THEMES.some(t => t.id === saved) ? saved : DEFAULT_THEME;
@@ -138,13 +144,31 @@ const App = () => {
 
   const setPickerItems = (items) => updateState({ pickerItems: items });
 
+  const renderModule = (id, isActive) => {
+    switch (id) {
+      case 'live': return <LiveClass pickerItems={pickerItems} />;
+      case 'progreso': return <RPGDash theme={theme} updateTheme={updateTheme} />;
+      case 'control': return <FlowControl pickerItems={pickerItems} />;
+      case 'dice': return <Dice />;
+      case 'touch': return <TouchOrder isActive={isActive} />;
+      case 'picker': return <Picker items={state.pickerItems || []} onItemsChange={setPickerItems} />;
+      case 'teams': return <Teams pickerItems={pickerItems} />;
+      case 'exam': return <GroupExam pickerItems={pickerItems} isActive={isActive} />;
+      case 'ruleta': return <Ruleta items={pickerItems} />;
+      case 'bingo': return <Bingo />;
+      case 'trivia': return <Trivia pickerItems={pickerItems} isActive={isActive} />;
+      case 'help': return <Help />;
+      default: return null;
+    }
+  };
+
   const renderTab = ({ id, label, Icon }) => (
     <button
       key={id}
       className={`tab ${activeTab === id ? 'active' : ''}`}
       aria-current={activeTab === id ? 'page' : undefined}
       onClick={(e) => {
-        setActiveTab(id);
+        openTab(id);
         // En móvil la navegación se desliza: deja la pestaña elegida a la vista.
         e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
       }}
@@ -233,30 +257,22 @@ const App = () => {
 
         <main>
           <div className="content">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
+            {/* Los módulos ya abiertos se quedan montados (sólo se ocultan): así
+                cambiar de pestaña a mitad de un examen, un bingo o un sorteo de
+                equipos no borra el progreso. Cada uno se carga la primera vez
+                que se visita. */}
+            {MODULE_IDS.filter(id => visited.has(id)).map(id => (
+              <section
+                key={id}
+                className="module-pane"
+                hidden={id !== activeTab}
+                aria-hidden={id !== activeTab}
               >
-                <Suspense fallback={<div className="card pulse" style={{ textAlign: 'center', padding: '2rem' }}>Cargando módulo premium...</div>}>
-                  {activeTab === 'live' && <LiveClass pickerItems={pickerItems} />}
-                  {activeTab === 'progreso' && <RPGDash theme={theme} updateTheme={updateTheme} />}
-                  {activeTab === 'control' && <FlowControl pickerItems={pickerItems} />}
-                  {activeTab === 'dice' && <Dice />}
-                  {activeTab === 'touch' && <TouchOrder />}
-                  {activeTab === 'picker' && <Picker items={state.pickerItems || []} onItemsChange={setPickerItems} />}
-                  {activeTab === 'teams' && <Teams pickerItems={pickerItems} />}
-                  {activeTab === 'exam' && <GroupExam pickerItems={pickerItems} />}
-                  {activeTab === 'ruleta' && <Ruleta items={pickerItems} />}
-                  {activeTab === 'bingo' && <Bingo />}
-                  {activeTab === 'trivia' && <Trivia pickerItems={pickerItems} />}
-                  {activeTab === 'help' && <Help />}
+                <Suspense fallback={<div className="card pulse" style={{ textAlign: 'center', padding: '2rem' }}>Cargando…</div>}>
+                  {renderModule(id, id === activeTab)}
                 </Suspense>
-              </motion.div>
-            </AnimatePresence>
+              </section>
+            ))}
           </div>
         </main>
         </div>

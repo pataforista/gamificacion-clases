@@ -1,101 +1,72 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Dialog = ({ isOpen, title, message, onConfirm, onCancel, type = 'alert' }) => {
+    const confirmRef = useRef(null);
+    const cancelRef = useRef(null);
+
+    // Esc cierra (equivale a "Cancelar"). El foco inicial va a "Entendido" en
+    // los avisos y a "Cancelar" en las confirmaciones, para que un Enter
+    // distraído nunca borre nada.
+    useEffect(() => {
+        if (!isOpen) return;
+        (type === 'confirm' ? cancelRef : confirmRef).current?.focus();
+        const onKey = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onCancel?.();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onCancel, type]);
+
     return (
         <AnimatePresence>
             {isOpen && (
-                <div style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '20px',
-                    pointerEvents: 'none'
-                }}>
+                <div
+                    key="dialog"
+                    role={type === 'confirm' ? 'alertdialog' : 'dialog'}
+                    aria-modal="true"
+                    aria-labelledby="dialog-title"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px',
+                        pointerEvents: 'none'
+                    }}
+                >
                     <motion.div
+                        className="dialog-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onCancel}
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'rgba(0, 0, 0, 0.65)',
-                            backdropFilter: 'blur(16px)', // More pronounced blur
-                            pointerEvents: 'auto'
-                        }}
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8, rotateY: -15, rotateX: 5 }}
-                        animate={{ opacity: 1, scale: 1, rotateY: 0, rotateX: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, rotateY: 15 }}
-                        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-                        style={{
-                            position: 'relative',
-                            width: '100%',
-                            maxWidth: '400px',
-                            background: 'var(--bg-secondary)',
-                            border: '3px solid var(--line)',
-                            borderRadius: '28px',
-                            padding: '30px',
-                            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-                            pointerEvents: 'auto',
-                            textAlign: 'center',
-                            perspective: '1000px' // For 3D rotation depth
-                        }}
+                        className="dialog-panel"
+                        initial={{ opacity: 0, y: 16, rotate: -1.5 }}
+                        animate={{ opacity: 1, y: 0, rotate: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ type: 'spring', damping: 22, stiffness: 260 }}
                     >
-                        <div style={{
-                            fontSize: '2.5rem',
-                            marginBottom: '15px'
-                        }}>
+                        <div className="dialog-icon" aria-hidden>
                             {type === 'confirm' ? '❓' : '⚠️'}
                         </div>
-
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 800,
-                            marginBottom: '10px',
-                            color: 'var(--text)'
-                        }}>
-                            {title}
-                        </h2>
-
-                        <p style={{
-                            color: 'var(--text-secondary)',
-                            lineHeight: '1.6',
-                            marginBottom: '25px',
-                            fontSize: '0.95rem'
-                        }}>
-                            {message}
-                        </p>
-
-                        <div style={{
-                            display: 'flex',
-                            gap: '12px',
-                            justifyContent: 'center'
-                        }}>
+                        <h2 id="dialog-title">{title}</h2>
+                        <p>{message}</p>
+                        <div className="dialog-actions">
                             {type === 'confirm' && (
-                                <button
-                                    className="btn"
-                                    onClick={onCancel}
-                                    style={{ flex: 1, padding: '12px' }}
-                                >
+                                <button ref={cancelRef} className="btn" onClick={onCancel}>
                                     Cancelar
                                 </button>
                             )}
-                            <button
-                                className="btn primary"
-                                onClick={onConfirm}
-                                style={{
-                                    flex: 1,
-                                    padding: '12px',
-                                    background: type === 'confirm' ? 'var(--warn)' : 'var(--primary)'
-                                }}
-                            >
+                            <button ref={confirmRef} className="btn primary" onClick={onConfirm}>
                                 {type === 'confirm' ? 'Confirmar' : 'Entendido'}
                             </button>
                         </div>

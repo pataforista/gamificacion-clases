@@ -61,10 +61,10 @@
 
 .top-gradient {
   top: 0;
-  background: linear-gradient(to bottom, var(--bg, #FDF4EE) 0%, transparent 100%);
+  background: linear-gradient(to bottom, var(--bg-secondary, #FBF6E9) 0%, transparent 100%);
 }
 
 .bottom-gradient {
   bottom: 0;
-  background: linear-gradient(to top, var(--bg, #FDF4EE) 0%, transparent 100%);
+  background: linear-gradient(to top, var(--bg-secondary, #FBF6E9) 0%, transparent 100%);
 }

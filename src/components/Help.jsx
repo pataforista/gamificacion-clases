@@ -28,9 +28,9 @@ const GESTION = [
       'Gestiona la Energía del Grupo: usa “Daño” por errores o falta de atención y “Heal” para recuperarla.',
       'Toca las Insignias para desbloquear logros de la clase.',
       'Cambia entre modo Médico y Genérico según tu materia.',
-      'Usa “Exportar JSON” para guardar el progreso y “Reset Total” para empezar de cero.',
+      'Usa “Exportar respaldo” para guardar el progreso y “Reset Total” para empezar de cero.',
     ],
-    tip: 'Exporta el JSON antes de cambiar de grupo para no perder el avance.',
+    tip: 'Exporta un respaldo antes de cambiar de grupo para no perder el avance.',
   },
   {
     id: 'control',
@@ -181,7 +181,7 @@ const EXTRAS = [
   {
     icon: '💾',
     title: 'Tus datos se guardan solos',
-    body: 'Toda la información se guarda localmente en este navegador. Usa “Exportar JSON” en Progreso RPG para respaldarla o llevarla a otro equipo.',
+    body: 'Toda la información se guarda localmente en este navegador. Usa “Exportar respaldo” en Progreso RPG para respaldarla o llevarla a otro equipo.',
   },
 ];
 

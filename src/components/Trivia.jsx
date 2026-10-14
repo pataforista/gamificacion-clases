@@ -26,7 +26,7 @@ const parseQA = (text) => cleanLines(text)
   })
   .filter(Boolean);
 
-const Trivia = ({ pickerItems = [] }) => {
+const Trivia = ({ pickerItems = [], isActive = true }) => {
   const { alert, notify } = useNotifications();
   const audio = useAudio();
   const { state, updateState } = usePersistence();
@@ -73,6 +73,21 @@ const Trivia = ({ pickerItems = [] }) => {
   }, [timeLeft, stopTimer, audio]);
 
   useEffect(() => () => stopTimer(), [stopTimer]);
+
+  // El módulo sigue montado al cambiar de pestaña: el reloj se pausa mientras
+  // no se ve (para que no suene el zumbido en otra pantalla) y sigue al volver.
+  const pausedRef = useRef(false);
+  useEffect(() => {
+    if (!isActive && timerRef.current) {
+      stopTimer();
+      pausedRef.current = true;
+    } else if (isActive && pausedRef.current) {
+      pausedRef.current = false;
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => Math.max(0, prev - 1));
+      }, 1000);
+    }
+  }, [isActive, stopTimer]);
 
   const pickQuestion = async () => {
     if (questions.length === 0) {

@@ -126,7 +126,7 @@ const FlowControl = ({ pickerItems = [] }) => {
                     />
                 </div>
                 <div className="row">
-                    <button className="btn warn" onClick={startTimer} disabled={state.isRedCodeActive}>⚡ INICIAR</button>
+                    <button className="btn warn" onClick={startTimer} disabled={state.isRedCodeActive}>⚡ Iniciar</button>
                     <button className="btn" onClick={stopTimer} disabled={!state.isRedCodeActive}>Detener</button>
                 </div>
             </div>

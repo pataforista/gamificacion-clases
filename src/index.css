@@ -1798,3 +1798,122 @@ label { color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; }
 /* Las opciones del examen se desactivan al resolverse, pero deben seguir
    leyéndose a pleno color (la correcta en verde, las erróneas en rojo). */
 .btn.exam-option:disabled { opacity: 1; cursor: default; }
+
+/* Módulos que siguen montados al cambiar de pestaña (ver App.jsx). */
+.module-pane[hidden] { display: none !important; }
+.module-pane:not([hidden]) { animation: pane-in 0.18s ease-out; }
+@keyframes pane-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .module-pane:not([hidden]) { animation: none; }
+}
+
+/* ==========================================================================
+   Guía de ayuda en clave fanzine (reemplaza los degradados del estilo previo)
+   ========================================================================== */
+.help-index-chip {
+  border: 2px solid var(--line);
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+.help-index-chip:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--line);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink-shadow);
+}
+.help-item {
+  border: var(--border-ink) solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+.help-item::before { display: none; }
+.help-item:hover { transform: none; box-shadow: var(--shadow-md); }
+.help-item-icon,
+.help-extra-icon {
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+.help-item-head h3 { font-weight: 400; }
+.help-item-tag {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+  color: #1E1E1E;
+  background: var(--warn);
+  border: 1.5px solid var(--line);
+}
+.help-steps li::before {
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 1.5px solid var(--line);
+  font-weight: 400;
+}
+.help-tip {
+  border: 2px dashed var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   Avisos flotantes y cuadros de diálogo
+   ========================================================================== */
+.notification {
+  background: var(--bg-secondary);
+  border: 2px solid var(--line);
+  border-left: 8px solid var(--secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.notification.xp { border-left-color: var(--good); }
+.notification.achievement { border-left-color: var(--warn); background: var(--bg-secondary); }
+.notification-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: none;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.dialog-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: var(--border-ink) solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  text-align: center;
+}
+.dialog-panel h2 { font-size: 1.7rem; margin-bottom: 0.6rem; }
+.dialog-panel p {
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 1.5rem;
+  font-size: 0.97rem;
+}
+.dialog-icon { font-size: 2.2rem; margin-bottom: 0.6rem; }
+.dialog-actions { display: flex; gap: 0.75rem; justify-content: center; }
+.dialog-actions .btn { flex: 1; }
+.dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 24, 20, 0.55);
+  pointer-events: auto;
+}
+
+/* Insignias como botones (activables con teclado). */
+button.badge { font: inherit; color: inherit; }
+button.badge:focus-visible { outline: 3px dashed var(--primary); outline-offset: 3px; }

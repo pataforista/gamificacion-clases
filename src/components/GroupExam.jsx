@@ -53,12 +53,17 @@ const readImageAsDataURL = (file, maxDim = 1200, quality = 0.85) =>
         reader.readAsDataURL(file);
     });
 
-const GroupExam = ({ pickerItems = [] }) => {
+const GroupExam = ({ pickerItems = [], isActive = true }) => {
     const { alert, confirm, notify } = useNotifications();
     const audio = useAudio();
 
     // Nombres de equipo únicos para este módulo (ver dedupeTeamNames arriba).
-    const teams = useMemo(() => dedupeTeamNames(pickerItems), [pickerItems]);
+    const liveTeams = useMemo(() => dedupeTeamNames(pickerItems), [pickerItems]);
+    // El módulo sigue montado al cambiar de pestaña: si durante una partida se
+    // edita la lista del Sorteo, los equipos en juego no deben cambiar (el
+    // marcador, los avatares y el tablero van por nombre). Se fijan al pasar
+    // a elegir avatares y se liberan al volver a la pantalla inicial.
+    const [lockedTeams, setLockedTeams] = useState(null);
 
     // Biblioteca local de exámenes (IndexedDB)
     const [savedExams, setSavedExams] = useState([]);
@@ -113,6 +118,13 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     const [teamAvatars, setTeamAvatars] = useState({});
     const [setupPhase, setSetupPhase] = useState('upload'); // upload, edit, avatar, game
+    const inMatch = setupPhase === 'avatar' || setupPhase === 'game';
+    const teams = inMatch && lockedTeams ? lockedTeams : liveTeams;
+    useEffect(() => {
+        setLockedTeams(inMatch ? liveTeams : null);
+        // Sólo al entrar o salir de la partida, no con cada cambio de la lista.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [inMatch]);
     const [projectorMode, setProjectorMode] = useState(false); // big question/options for projection
 
     // Audio volume control
@@ -195,17 +207,31 @@ const GroupExam = ({ pickerItems = [] }) => {
     // Al salir de la pestaña con un examen a medias, apaga la música de espera.
     useEffect(() => () => audioRef.current.stop(), []);
 
+    // Al ir a otra pestaña a mitad de una pregunta: la música se apaga y el
+    // reloj se pausa (abajo); al volver, ambos continúan donde estaban.
+    const wasActiveRef = useRef(isActive);
+    useEffect(() => {
+        if (wasActiveRef.current === isActive) return;
+        wasActiveRef.current = isActive;
+        if (!isActive) {
+            audioRef.current.stop();
+        } else if (setupPhase === 'game' && exam && (activeTeam || roboTeam) && !feedback) {
+            audioRef.current.play(selectedTrack);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isActive]);
+
     // Timer countdown. El intervalo solo resta; los efectos secundarios (tick,
     // zumbido, rebote) viven en el efecto de abajo para no ejecutarse dentro de
     // un updater de estado (React puede invocarlos dos veces en StrictMode).
     useEffect(() => {
-        if (isTimerActive) {
+        if (isTimerActive && isActive) {
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => Math.max(0, prev - 1));
             }, 1000);
         }
         return () => clearInterval(timerRef.current);
-    }, [isTimerActive, currentQuestion, activeTeam, roboTeam]);
+    }, [isTimerActive, isActive, currentQuestion, activeTeam, roboTeam]);
 
     useEffect(() => {
         if (!isTimerActive) return;
@@ -222,7 +248,8 @@ const GroupExam = ({ pickerItems = [] }) => {
 
     // Keyboard shortcuts for projector/classroom use: 1-9 answer, Enter advances feedback.
     useEffect(() => {
-        if (setupPhase !== 'game' || !exam) return;
+        // Oculto en otra pestaña, las teclas 1-9 no deben responder el examen.
+        if (!isActive || setupPhase !== 'game' || !exam) return;
         const handler = (e) => {
             if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
 
@@ -246,7 +273,7 @@ const GroupExam = ({ pickerItems = [] }) => {
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [setupPhase, exam, feedback, isRevealing, activeTeam, roboTeam, hiddenOptions, wrongOptions, wagerConfirmed, currentQuestion]);
+    }, [isActive, setupPhase, exam, feedback, isRevealing, activeTeam, roboTeam, hiddenOptions, wrongOptions, wagerConfirmed, currentQuestion]);
 
     // Celebrate the podium when the game ends
     useEffect(() => {
@@ -1205,7 +1232,7 @@ const GroupExam = ({ pickerItems = [] }) => {
                                 <div className="card" style={{ textAlign: 'center', padding: 'clamp(0.6rem, 1.2vh, 1.5rem)', marginBottom: 0, background: 'var(--bg-secondary)', border: '4px dashed var(--primary)', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
                                     <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text)', fontSize: 'clamp(0.85rem, 1.4vw, 1rem)' }}>Siguiente Participante</h3>
                                     <button className="btn primary" style={{ width: '100%', fontSize: 'clamp(1rem, 1.7vw, 1.2rem)', padding: 'clamp(0.5rem, 1vh, 1rem)' }} onClick={() => nextTurn()}>
-                                        🎲 ASIGNAR TURNO
+                                        🎲 Asignar turno
                                     </button>
                                 </div>
                             )}
