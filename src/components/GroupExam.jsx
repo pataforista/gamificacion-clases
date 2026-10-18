@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from './NotificationContext';
 import { useAudio, WAITING_TRACKS } from './AudioContext';
 import { RNG } from '../utils/rng';
+import { barajarOpciones } from '../utils/examShuffle';
 import confetti from 'canvas-confetti';
 import BoardGame from './BoardGame';
 import AvatarSelector from './AvatarSelector';
@@ -90,7 +91,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         duration: 25,
         quickMode: false,
         shuffleQuestions: false,
-        shuffleOptions: false,
+        shuffleOptions: true,
     });
 
     const [timeLeft, setTimeLeft] = useState(0);
@@ -162,14 +163,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
     const buildExam = (questions) => {
         let qs = questions.map(q => ({ ...q, options: [...q.options] }));
         if (settings.shuffleOptions) {
-            qs = qs.map(q => {
-                const order = RNG.shuffle(q.options.map((_, i) => i));
-                return {
-                    ...q,
-                    options: order.map(i => q.options[i]),
-                    correctIndex: order.indexOf(q.correctIndex),
-                };
-            });
+            qs = qs.map(barajarOpciones);
         }
         if (settings.shuffleQuestions) {
             qs = RNG.shuffle(qs);
@@ -1004,17 +998,23 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                             </label>
                             <label className="row" style={{ cursor: 'pointer' }}>
                                 <input type="checkbox" checked={settings.shuffleOptions} onChange={e => setSettings({ ...settings, shuffleOptions: e.target.checked })} />
-                                Barajar Opciones
+                                <span>
+                                    Barajar Respuestas
+                                    <span className="setting-hint">Cambia el orden de A, B, C, D en cada pregunta</span>
+                                </span>
                             </label>
+                            {settings.timer && (
+                                <div className="exam-duration">
+                                    <input
+                                        type="range" min="5" max="120" step="5"
+                                        aria-label="Duración por pregunta"
+                                        value={settings.duration}
+                                        onChange={e => setSettings({ ...settings, duration: parseInt(e.target.value) })}
+                                    />
+                                    <span>{settings.duration} s</span>
+                                </div>
+                            )}
                         </div>
-                        {settings.timer && (
-                            <input
-                                type="range" min="5" max="120" step="5"
-                                value={settings.duration}
-                                onChange={e => setSettings({ ...settings, duration: parseInt(e.target.value) })}
-                                style={{ width: '100%', marginTop: '10px' }}
-                            />
-                        )}
                     </div>
                 )}
 

@@ -137,12 +137,11 @@ const Mecanicas = ({ pickerItems = [] }) => {
           Herramienta privada: no se proyecta nada. Sortea, lee la consigna en voz alta y da el tiempo.
         </p>
 
-        <div className="row" style={{ marginBottom: '0.75rem' }}>
+        <div className="seg" role="group" aria-label="Nivel" style={{ marginBottom: '0.75rem' }}>
           {Object.entries(NIVELES).map(([id, label]) => (
             <button
               key={id}
               type="button"
-              className={`btn ${cfg.nivel === id ? 'primary' : ''}`}
               aria-pressed={cfg.nivel === id}
               onClick={() => setCfg({ nivel: id })}
             >
@@ -159,18 +158,16 @@ const Mecanicas = ({ pickerItems = [] }) => {
           {aviso && <p className="smallout" role="status">{aviso}</p>}
 
           {mecanica && v && (
-            <div className="smallout" style={{ marginTop: '1rem' }} data-testid="resultado">
-              <div className="muted" style={{ fontSize: '0.8rem' }}>
+            <div className={`mec-card ${mecanica.categoria}`} data-testid="resultado">
+              <div className="mec-meta">
                 {CATEGORIAS[mecanica.categoria]} · {MODALIDADES[v.modalidad]} · {fmt(v.tiempoSeg)}
                 {v.pensarSeg ? ` + ${v.pensarSeg} s para pensar` : ''}
               </div>
-              <h3 style={{ margin: '0.25rem 0 0.5rem' }}>{v.nombre}</h3>
-              <p style={{ fontSize: '1.05rem', lineHeight: 1.5, margin: '0 0 0.5rem' }}>{v.consigna}</p>
-              {v.arranque && <p className="muted" style={{ margin: '0 0 0.5rem' }}>Frase de arranque: “{v.arranque}”</p>}
-              {v.requiereSiguiente && (
-                <p className="muted" style={{ margin: '0 0 0.5rem' }}>Avanza a la lámina siguiente antes de empezar.</p>
-              )}
-              {actual.alumno && <p style={{ fontWeight: 700, margin: '0 0 0.5rem' }}>Participa: {actual.alumno}</p>}
+              <h3>{v.nombre}</h3>
+              <p className="mec-consigna">{v.consigna}</p>
+              {v.arranque && <p className="mec-arranque">Frase de arranque: “{v.arranque}”</p>}
+              {v.requiereSiguiente && <p className="mec-nota">Avanza a la lámina siguiente antes de empezar.</p>}
+              {actual.alumno && <p className="mec-alumno">Participa: {actual.alumno}</p>}
             </div>
           )}
         </div>
@@ -178,26 +175,20 @@ const Mecanicas = ({ pickerItems = [] }) => {
         {mecanica && (
           <>
             {timer && (
-              <div
-                className="smallout"
-                style={{ marginTop: '0.75rem', textAlign: 'center', fontWeight: 700,
-                  borderColor: fase === 'fin' ? 'var(--error)' : undefined }}
-                role="timer"
-                data-testid="cronometro"
-              >
-                <div style={{ fontSize: '0.85rem' }}>{rotuloFase[fase]}</div>
-                <div style={{ fontSize: '2rem' }}>{fase === 'fin' ? '0:00' : fmt(restante)}</div>
+              <div className={`mec-timer ${fase}`} role="timer" data-testid="cronometro">
+                <div className="mec-fase">{rotuloFase[fase]}</div>
+                <div className="mec-tiempo">{fase === 'fin' ? '0:00' : fmt(restante)}</div>
               </div>
             )}
 
-            <div className="row" style={{ marginTop: '0.75rem' }}>
-              <button type="button" className="btn" onClick={sortearAlumno}>¿Quién?</button>
+            <div className="mec-acciones">
               {timer
                 ? <button type="button" className="btn" onClick={detener}>Detener tiempo</button>
-                : <button type="button" className="btn" onClick={iniciar}>Iniciar tiempo</button>}
+                : <button type="button" className="btn primary" onClick={iniciar}>Iniciar tiempo</button>}
+              <button type="button" className="btn" onClick={sortearAlumno}>¿Quién?</button>
               <button type="button" className="btn" onClick={siguienteLamina}>Siguiente lámina</button>
             </div>
-            <div className="row" style={{ marginTop: '0.5rem' }}>
+            <div className="mec-acciones">
               <button type="button" className="btn good" onClick={() => cerrar('hecho')}>Hecho</button>
               <button type="button" className="btn" onClick={() => cerrar('pasó')}>Pasó</button>
             </div>
@@ -208,8 +199,8 @@ const Mecanicas = ({ pickerItems = [] }) => {
       <div className="card">
         <details>
           <summary><strong>Configuración</strong></summary>
-          <div style={{ marginTop: '0.75rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+          <div className="mec-config" style={{ marginTop: '0.75rem' }}>
+            <label>
               <input
                 type="checkbox"
                 checked={cfg.pensarAntes}
@@ -217,16 +208,16 @@ const Mecanicas = ({ pickerItems = [] }) => {
               />{' '}
               Pensar en dupla antes de hablar (pregrado)
             </label>
-            <div className="muted" style={{ marginBottom: '0.25rem' }}>Categorías</div>
+            <div className="mec-grupo">Categorías</div>
             {CATEGORIA_IDS.map(id => (
-              <label key={id} style={{ display: 'block' }}>
+              <label key={id}>
                 <input type="checkbox" checked={cfg.categorias.includes(id)} onChange={() => alternar('categorias', id)} />{' '}
                 {CATEGORIAS[id]}
               </label>
             ))}
-            <div className="muted" style={{ margin: '0.75rem 0 0.25rem' }}>Casillas extra</div>
+            <div className="mec-grupo">Casillas extra</div>
             {MECANICAS.filter(m => m.extra).map(m => (
-              <label key={m.id} style={{ display: 'block' }}>
+              <label key={m.id}>
                 <input type="checkbox" checked={cfg.extras.includes(m.id)} onChange={() => alternar('extras', m.id)} />{' '}
                 {m[cfg.nivel].nombre}
               </label>
