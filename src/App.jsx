@@ -5,7 +5,7 @@ import { AudioProvider } from './components/AudioContext';
 import LiveClass from './components/LiveClass';
 import {
   Activity, Trophy, Timer, Shuffle, Users, Dices, ClipboardCheck,
-  Disc3, Grid3x3, Zap, Hand, CircleHelp,
+  Disc3, Grid3x3, Zap, Hand, CircleHelp, Lightbulb,
 } from 'lucide-react';
 
 // Only the landing tab (LiveClass) is eagerly imported. Every other tab is
@@ -19,6 +19,7 @@ const Teams = lazy(() => import('./components/Teams'));
 const TouchOrder = lazy(() => import('./components/TouchOrder'));
 const GroupExam = lazy(() => import('./components/GroupExam'));
 const Ruleta = lazy(() => import('./components/Ruleta'));
+const Mecanicas = lazy(() => import('./components/Mecanicas'));
 const Bingo = lazy(() => import('./components/Bingo'));
 const Trivia = lazy(() => import('./components/Trivia'));
 const Help = lazy(() => import('./components/Help'));
@@ -44,6 +45,7 @@ const NAV_GROUPS = [
       { id: 'control', label: 'Control de flujo', Icon: Timer },
       { id: 'picker', label: 'Sorteo', Icon: Shuffle },
       { id: 'teams', label: 'Equipos', Icon: Users },
+      { id: 'mecanicas', label: 'Mecánicas', Icon: Lightbulb },
       { id: 'progreso', label: 'Progreso RPG', Icon: Trophy },
     ],
   },
@@ -155,6 +157,7 @@ const App = () => {
       case 'teams': return <Teams pickerItems={pickerItems} />;
       case 'exam': return <GroupExam pickerItems={pickerItems} isActive={isActive} />;
       case 'ruleta': return <Ruleta items={pickerItems} />;
+      case 'mecanicas': return <Mecanicas pickerItems={pickerItems} />;
       case 'bingo': return <Bingo />;
       case 'trivia': return <Trivia pickerItems={pickerItems} isActive={isActive} />;
       case 'help': return <Help />;

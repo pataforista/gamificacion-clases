@@ -1,6 +1,6 @@
 import { test, expect, openTab, pane, audioLog, clearAudio } from './fixtures';
 
-const TABS = ['Clase en vivo', 'Control de flujo', 'Sorteo', 'Equipos', 'Progreso RPG',
+const TABS = ['Clase en vivo', 'Control de flujo', 'Sorteo', 'Equipos', 'Mecánicas', 'Progreso RPG',
   'Examen grupal', 'Trivia', 'Ruleta', 'Bingo', 'Dado', 'Orden por toque', 'Ayuda'];
 
 test('todas las pestañas cargan sin errores', async ({ page }) => {

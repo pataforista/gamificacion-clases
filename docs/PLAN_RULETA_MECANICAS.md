@@ -16,6 +16,11 @@
 
 ---
 
+> **Estado:** Fases 1 a 4 implementadas (pestaña **Mecánicas**: `src/components/Mecanicas.jsx`,
+> catálogo en `src/data/mecanicas.js`, pruebas en `tests/e2e/mecanicas.spec.js`).
+> Pendiente: Fase 5 (piloto en clase). Diferencias con el diseño: el componente se llama
+> `Mecanicas.jsx` y el registro de sesión vive solo en memoria (se exporta a CSV, no se guarda).
+
 ## 1. Punto de partida: lo que ya existe
 
 `src/components/Ruleta.jsx` es una ruleta visual pensada para proyectar (lienzo
