@@ -116,7 +116,7 @@ const HERRAMIENTAS = [
       'Ajusta el Game Show: temporizador, comodines (50/50, escudo, congelar), rebote y suspenso.',
       'Deja activado “Barajar Respuestas” para que la correcta cambie de lugar en cada pregunta.',
       'Asigna turnos a los equipos que creaste previamente.',
-      'Pulsa “Modo Proyector” para ocupar toda la pantalla: pregunta grande, tablero y clasificación. Cuando un equipo avanza, el tablero se acerca para que todos vean el movimiento (toca o pulsa Enter para saltarlo).',
+      'Pulsa “Modo Proyector” para ocupar toda la pantalla, sin hacer scroll: reloj grande, pregunta y respuestas (la letra se ajusta sola al largo del texto), tablero y clasificación. Cuando un equipo avanza, el tablero se acerca para que todos vean el movimiento (toca o pulsa Enter para saltarlo).',
       'Sorpresas: algunas preguntas son doradas (XP x2), tres aciertos seguidos dan racha 🔥 y el tablero esconde casillas ❓ con cohetes, regalos, torbellinos y cáscaras de plátano.',
     ],
     tip: 'Usa “Copiar Plantilla” para ver el formato exacto del JSON de preguntas. Esc sale del modo proyector.',

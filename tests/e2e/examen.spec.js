@@ -130,6 +130,57 @@ test.describe('Modo proyector (escenario)', () => {
     await expect(zoom).toHaveCount(0);
   });
 
+  test('reloj, pregunta, respuestas y tablero caben sin scroll aunque los textos sean largos', async ({ page }) => {
+    const largo = 'Un paciente de 58 años con antecedente de hipertensión arterial sistémica y diabetes mellitus tipo 2 de diez años de evolución acude a urgencias por dolor torácico opresivo de 40 minutos de duración irradiado a mandíbula, con diaforesis y náusea; el electrocardiograma muestra elevación del segmento ST en derivaciones inferiores. ¿Cuál es la conducta inicial más adecuada y por qué?';
+    const opcion = (n) => `Opción ${n}: administrar ácido acetilsalicílico, iniciar anticoagulación y activar de inmediato el protocolo de reperfusión con intervención coronaria percutánea primaria si está disponible en menos de 120 minutos`;
+    const examen = { questions: [0, 1].map(() => ({
+      text: largo,
+      options: [1, 2, 3, 4].map(opcion),
+      correctIndex: 0,
+      explanation: 'La elevación del ST en derivaciones inferiores con hipotensión sugiere infarto de pared inferior; se prioriza la reperfusión inmediata. '.repeat(3),
+    })) };
+
+    await openTab(page, 'Examen grupal');
+    await pane(page).locator('#json-upload-input').setInputFiles({
+      name: 'largo.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(examen)),
+    });
+    await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();
+    for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
+    await pane(page).getByText('¡Comenzar Examen!').click();
+    await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
+    await pane(page).getByRole('button', { name: /Modo Proyector/ }).click();
+    await expect(pane(page).locator('.exam-stage')).toBeVisible();
+
+    const revisar = async (vp) => {
+      await page.setViewportSize(vp);
+      await page.waitForTimeout(600); // deja que el ajuste de letra termine
+      const r = await page.evaluate(() => {
+        const dentro = (sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return { sel, falta: true };
+          const b = el.getBoundingClientRect();
+          return { sel, ok: b.top >= -1 && b.left >= -1 && b.bottom <= window.innerHeight + 1 && b.right <= window.innerWidth + 1 };
+        };
+        const sinDesborde = (el) => el.scrollHeight <= el.clientHeight + 1;
+        const stage = document.querySelector('.exam-stage');
+        const opciones = document.querySelector('.exam-options').parentElement;
+        return {
+          sinScroll: sinDesborde(stage),
+          preguntaCabe: sinDesborde(document.querySelector('.exam-question')),
+          opcionesCaben: sinDesborde(opciones),
+          lugares: ['.exam-clock', '.exam-question', '.exam-options', '.board-frame', '.exam-rank'].map(dentro),
+        };
+      });
+      expect(r.sinScroll, `escenario con scroll a ${vp.width}x${vp.height}`).toBe(true);
+      expect(r.preguntaCabe, `pregunta desbordada a ${vp.width}x${vp.height}`).toBe(true);
+      expect(r.opcionesCaben, `respuestas desbordadas a ${vp.width}x${vp.height}`).toBe(true);
+      for (const l of r.lugares) expect(l.ok, `${l.sel} fuera de pantalla a ${vp.width}x${vp.height}`).toBe(true);
+    };
+    await revisar({ width: 1920, height: 1080 });
+    await revisar({ width: 1366, height: 768 });
+    await revisar({ width: 1280, height: 720 });
+  });
+
   test('sin escenario no hay zoom', async ({ page }) => {
     await startExam(page, { extraQuestion: true });
     await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();

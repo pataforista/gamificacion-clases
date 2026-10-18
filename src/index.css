@@ -2036,12 +2036,77 @@ details > summary { cursor: pointer; padding: 0.3rem 0; }
   padding: 0.15em 0.6em;
   border-radius: var(--radius-sm);
 }
-.exam-stage .game-dashboard { min-height: calc(100vh - 6rem); }
+/* Una sola pantalla: encabezado fijo arriba y el resto repartido entre
+   pregunta, reloj, tablero y clasificación, sin hacer scroll. */
+.exam-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+.exam-stage > .row { flex: none; margin-bottom: 0.4rem !important; }
+.exam-stage .game-dashboard { flex: 1 1 auto; min-height: 0; }
+
+.exam-main > .card, .exam-main > .smallout { flex-shrink: 0; }
+
+.board-slot {
+  flex: 1 1 auto;
+  min-height: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-frame {
+  flex: none;
+  width: min(100cqw, 100cqh);
+  background: var(--bg-secondary);
+  padding: 5px;
+  border-radius: 18px;
+  border: 4px solid var(--line);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Reloj grande, siempre a la vista. */
+.exam-clock {
+  padding: 0.35rem 0.8rem 0.5rem;
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 4px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 5px 5px 0 var(--ink-shadow);
+}
+.exam-clock-row { display: flex; align-items: center; gap: 0.8rem; }
+.exam-clock-label { font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; font-size: clamp(0.8rem, 1.2vw, 1.3rem); }
+.exam-clock-digits {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 8.5vh, 6.5rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.exam-clock-plus { padding: 4px 12px; font-size: 0.9rem; font-weight: 900; color: var(--primary); border-color: var(--primary); }
+.exam-clock-bar { height: clamp(10px, 1.6vh, 16px); background: rgba(0, 0, 0, 0.12); border: 2px solid var(--line); border-radius: 8px; overflow: hidden; }
+.exam-clock.urgent { background: var(--error); color: #fff; animation: clock-pulse 0.8s ease-in-out infinite; }
+.exam-clock.urgent .exam-clock-plus { background: var(--bg-secondary); }
+@keyframes clock-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+@media (prefers-reduced-motion: reduce) { .exam-clock.urgent { animation: none; } }
+
+/* Pantallas angostas: se apila y vuelve a permitirse el desplazamiento. */
 @media (max-width: 900px) {
+  .exam-stage { display: block; height: auto; min-height: 100dvh; overflow-y: auto; }
   .exam-stage .game-dashboard {
     grid-template-columns: 1fr !important;
-    grid-template-areas: "board" "main" "rank" !important;
+    grid-template-rows: auto !important;
+    grid-template-areas: "clock" "main" "board" "rank" !important;
   }
+  .board-slot { container-type: normal; flex: none; }
+  .board-frame { width: min(100%, 70vh); }
+  .exam-stage .exam-question, .exam-stage .exam-options { flex: none !important; }
 }
 
 /* Zoom al tablero cuando un equipo se mueve. */
