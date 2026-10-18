@@ -1,9 +1,14 @@
-# Plan de implementación: Ruleta de mecánicas didácticas (pregrado y posgrado)
+# Plan de implementación: Sorteo de mecánicas didácticas, uso privado del docente (pregrado y posgrado)
 
-> Objetivo: convertir la pestaña **Ruleta** de "Herramientas didácticas" en un módulo
-> *zero-prep* que, sobre cualquier diapositiva ya proyectada, asigne al azar una
-> mecánica de procesamiento activo con instrucción, tiempo y reglas de seguridad,
-> en dos versiones calibradas: **pregrado** y **posgrado**.
+> Objetivo: agregar a "Herramientas didácticas" un módulo *zero-prep* **de uso
+> exclusivo del docente** que, sobre cualquier diapositiva ya proyectada, sortee
+> una mecánica de procesamiento activo y le muestre **solo al docente** la
+> instrucción, el tiempo y las reglas, en dos versiones: **pregrado** y **posgrado**.
+>
+> **Restricción de diseño:** no se proyecta nada, no hay tablero, ruleta
+> animada, confeti ni sonidos. El grupo nunca ve la herramienta; solo escucha
+> la consigna que el docente lee en voz alta. La pantalla del salón sigue
+> mostrando la presentación.
 >
 > Audiencia de este documento: el docente que usará la herramienta y quien
 > programe el cambio. Alcance: diseño pedagógico, especificación técnica,
@@ -13,23 +18,21 @@
 
 ## 1. Punto de partida: lo que ya existe
 
-`src/components/Ruleta.jsx` (305 líneas) ya resuelve la parte mecánica:
+`src/components/Ruleta.jsx` es una ruleta visual pensada para proyectar (lienzo
+animado, confeti, sonido, modo proyector). **No se modifica**: queda como está
+para quien la quiera usar así. El módulo nuevo es otra cosa: un **sorteador
+discreto** que el docente consulta en su laptop, tableta o celular.
 
-| Ya funciona | Falta para este módulo |
+| Se reutiliza del repo | Se construye nuevo |
 |---|---|
-| Ruleta en `<canvas>` con colores del tema activo | Catálogo de mecánicas con instrucción, tiempo y modalidad |
-| Giro con desaceleración, sonido por gajo, confeti | Tarjeta de instrucción legible en proyector tras el giro |
-| Modo proyector (pantalla completa) | Temporizador visible que arranca solo |
-| Opciones libres (una por línea) e historial de 8 | Selector **Pregrado / Posgrado** y filtro por categoría |
-| Azar con `crypto` (`RNG`) | Comodines: *Re-giro*, *Siguiente lámina*, *Pasar* |
-| | Evitar repeticiones (bolsa balanceada, ya existe en `RNG.pickBalancedIndex`) |
-| | Segundo giro opcional para elegir alumno (`pickerItems`) |
-| | Guardar configuración en `usePersistence` |
+| Azar con `crypto` y bolsa sin repeticiones (`RNG.pickBalancedIndex`) | Catálogo de mecánicas con instrucción, tiempo y modalidad |
+| Lista de clase (`pickerItems`) para elegir alumno | Pestaña **Sorteo de mecánicas** con interfaz de texto, sin animaciones |
+| Persistencia en `usePersistence` | Selector **Pregrado / Posgrado** y filtro por categoría |
+| Temas de color (para que se lea bien en el dispositivo del docente) | Cronómetro silencioso (aviso por vibración en celular) |
+| App PWA, funciona sin internet | Botones *Otra*, *Misma en la siguiente lámina*, *Pasó* |
 
-La app ya es PWA y funciona sin internet, así que la pregunta de "¿HTML suelto o
-herramienta existente?" se responde sola: **conviene integrarlo aquí**. Un HTML
-autocontenido duplicaría lo que el repo ya hace mejor (temas, proyector,
-listas de clase, sonido).
+La app ya funciona sin internet, así que no hace falta un HTML aparte: basta
+abrir la pestaña en el celular mientras la computadora proyecta las diapositivas.
 
 ---
 
@@ -68,7 +71,7 @@ o con 30 s extra para pensar).
 
 | # | Posgrado (original) | Pregrado (adaptación) | Andamiaje pregrado | ICAP |
 |---|---|---|---|---|
-| 1 | **Abogado del Diablo** · sesgo, límite o supuesto no declarado (2 min) | **¿Y si no fuera cierto?** · "Esto solo funciona si…" (2 min) | Frase de arranque en pantalla; dupla 30 s antes | C |
+| 1 | **Abogado del Diablo** · sesgo, límite o supuesto no declarado (2 min) | **¿Y si no fuera cierto?** · "Esto solo funciona si…" (2 min) | El docente dice la frase de arranque; dupla 30 s antes | C |
 | 2 | **Lo Omitido** · variable, contexto o factor ético ausente (2 min) | **¿Qué le falta?** · elige 1 de: edad, contexto, costo, riesgo (2 min) | Lista corta de opciones visible | C |
 | 3 | **Teoría vs. Trinchera** · dónde choca con la práctica y cómo se resuelve (2 min) | **Ejemplo real** · un caso de la vida cotidiana o de prácticas donde aparezca esto (2 min) | Se vale ejemplo personal o visto en video | C |
 
@@ -92,7 +95,7 @@ o con 30 s extra para pensar).
 
 | # | Posgrado | Pregrado | Andamiaje pregrado | ICAP |
 |---|---|---|---|---|
-| 10 | **Diseña el Reactivo** · pregunta que mida razonamiento (3 min) | **Pregunta de repaso** · opción múltiple de 3 opciones, una distractora creíble (2 min) | Plantilla "¿Cuál de estas…?" en pantalla | C/I |
+| 10 | **Diseña el Reactivo** · pregunta que mida razonamiento (3 min) | **Pregunta de repaso** · opción múltiple de 3 opciones, una distractora creíble (2 min) | El docente da la plantilla "¿Cuál de estas…?" | C/I |
 | 11 | **Dilema Ético** · conflicto ético, económico o práctico (2 min) | **¿Es justo?** · ¿a quién beneficia y a quién deja fuera? (2 min) | Dos preguntas guía fijas | C |
 | 12 | **Pre-Mortem** · 3 causas probables de fracaso (2 min) | **Errores comunes** · 2 errores que cometería un estudiante al aplicar esto (2 min) | Se vale en dupla | C |
 
@@ -108,25 +111,28 @@ ampliar sin perder el formato *zero-prep*:
 
 ---
 
-## 4. Flujo en clase (cómo se ve al usarlo)
+## 4. Flujo en clase (solo lo ve el docente)
 
-1. El docente avanza normalmente; cada 3 o 4 láminas densas, abre la Ruleta (o la tiene en otra pestaña/pantalla).
-2. Elige **nivel** (se recuerda entre sesiones) y gira.
-3. Aparece la **tarjeta de instrucción** a pantalla grande: nombre, instrucción de una línea, modalidad (individual/dupla/grupo), frase de arranque si es pregrado.
-4. Arranca el **temporizador** (pregrado: 30 s de "piensa con tu dupla" antes del tiempo principal).
-5. Opcional: **segundo giro** para elegir alumno o equipo desde la lista de clase.
-6. Al terminar: botón **Hecho** / **Pasó** / **Re-giro**. Queda en el historial de la sesión.
+1. El docente proyecta su presentación como siempre y tiene la app abierta en su celular o en una ventana que **no** se proyecta.
+2. Cada 3 o 4 láminas densas toca **Sortear**. El nivel elegido se recuerda entre sesiones.
+3. En su dispositivo aparece, en texto sobrio: nombre de la mecánica, consigna de una línea lista para leer en voz alta, modalidad y frase de arranque si es pregrado.
+4. El docente **lee la consigna**. Para el grupo no hay ruleta ni pantalla; solo una pregunta del profesor.
+5. Opcional: **¿Quién?** sortea alumno o equipo de la lista de clase; el docente dice el nombre.
+6. Toca **Iniciar tiempo**. El cronómetro es silencioso; en celular vibra al terminar.
+7. Cierra con **Hecho**, **Pasó** u **Otra**. Queda en un registro privado de la sesión.
 
 ---
 
 ## 5. Reglas de seguridad psicológica (no negociables)
 
 La evidencia sobre llamado al azar es mixta; lo que inclina la balanza es la
-implementación (Cooper et al., 2018; Dallimore et al., 2013). Reglas
-incorporadas en la interfaz, no solo verbales:
+implementación (Cooper et al., 2018; Dallimore et al., 2013). Como el grupo no
+ve la herramienta, las reglas se anuncian de palabra al inicio del curso y la
+app solo le recuerda al docente cuál aplicar:
 
-- **Re-giro libre** si la mecánica no encaja con la lámina (bibliografía, imagen sin texto).
+- **Otra** (sorteo nuevo, en silencio) si la mecánica no encaja con la lámina (bibliografía, imagen sin texto). El grupo ni se entera.
 - **"Siguiente lámina"**: aplica la misma mecánica a la próxima diapositiva.
+- Ventaja de no mostrar nada: el docente puede descartar una mecánica o un nombre sin exponer a nadie, lo que reduce la sensación de "me tocó en público".
 - **Pasar con red**: el alumno puede pasar la palabra a un compañero o a su dupla, sin penalización.
 - **Pensar antes de hablar**: en pregrado, toda mecánica individual inicia con 30 s en dupla (*think-pair-share*). En posgrado, configurable.
 - **Llamado justo**: al elegir alumno, la bolsa balanceada impide repetir a alguien antes de que pasen todos.
@@ -139,7 +145,7 @@ incorporadas en la interfaz, no solo verbales:
 ### 6.1 Datos: `src/data/ruletaMecanicas.js` (nuevo)
 
 ```js
-// Una entrada por mecánica y nivel. `corto` cabe en el gajo (≤ 18 caracteres).
+// Una entrada por mecánica y nivel. `corto` es el nombre breve que ve el docente.
 export const MECANICAS = [
   {
     id: 'abogado-diablo',
@@ -166,23 +172,26 @@ export const CATEGORIAS = { critica: 'Análisis crítico', sintesis: 'Traducció
   simulacion: 'Simulación y roles', debate: 'Interrogación y debate' };
 ```
 
-### 6.2 Componente `Ruleta.jsx`
+### 6.2 Componente nuevo `SorteoMecanicas.jsx` (pestaña propia)
 
-- **Selector de modo**: `Libre` (comportamiento actual intacto) | `Mecánicas`.
-- En modo Mecánicas: segmentado **Pregrado / Posgrado**, casillas por categoría y por extras. Las opciones del lienzo se derivan del catálogo; el `textarea` se oculta.
-- **Elegir primero, animar después**: hoy el ganador sale de la física del giro. Para poder usar la bolsa balanceada (sin repeticiones), conviene invertir el orden: `idx = RNG.pickBalancedIndex(n, clave)` → calcular la rotación final que deja `idx` bajo el puntero → animar con *easing* hacia ese ángulo. Mismo efecto visual, azar auditable y comprobable en pruebas.
-- **Tarjeta de instrucción** (reutiliza el modal `motion` actual): nombre, instrucción, modalidad, frase de arranque, temporizador grande y botones `Hecho`, `Pasó`, `Re-giro`, `Siguiente lámina`.
-- **Temporizador**: fase "piensa" opcional + fase principal; `playSFX` al terminar. Puede reutilizar lógica de `FlowControl.jsx`.
-- **Segundo giro (alumno)**: botón "¿Quién?" que usa `pickerItems` y `RNG.pick(items, 'ruleta-alumno')`.
-- **Accesibilidad**: `aria-live="polite"` para anunciar el resultado; barra espaciadora para girar; el texto, no el color, identifica cada gajo.
+`Ruleta.jsx` no se toca. El componente nuevo es deliberadamente austero:
+
+- **Sin** lienzo, animación de giro, confeti, `playSFX` ni botón de proyector.
+- **Configuración** (plegable, arriba): **Pregrado / Posgrado**, casillas por categoría y por extras, interruptor "pensar en dupla antes".
+- **Sortear**: `idx = RNG.pickBalancedIndex(n, 'mecanicas-' + nivel)`. Sin animación, el resultado aparece de inmediato; la bolsa evita repeticiones hasta agotar el catálogo.
+- **Resultado en texto**: nombre, consigna para leer en voz alta, modalidad, tiempo y frase de arranque. Tipografía normal, pensada para leerse en un celular, no a distancia.
+- **¿Quién?**: `RNG.pick(pickerItems, 'mecanicas-alumno')`, muestra el nombre en texto.
+- **Cronómetro discreto**: cuenta regresiva pequeña; al terminar, `navigator.vibrate` si existe y un cambio de color. Sin sonido por defecto.
+- **Botones**: `Hecho`, `Pasó`, `Otra`, `Siguiente lámina`.
+- **Accesibilidad**: botones grandes para tocar con el pulgar; `aria-live="polite"` para lectores de pantalla.
+- **Navegación**: nueva entrada en el menú lateral de `App.jsx`, carga diferida con `lazy()` como las demás pestañas.
 
 ### 6.3 Persistencia (`usePersistence.jsx`)
 
 Agregar a `DEFAULT_STATE` y a `sanitize`:
 
 ```js
-ruleta: {
-  modo: 'libre',              // 'libre' | 'mecanicas'
+mecanicas: {
   nivel: 'posgrado',          // 'pregrado' | 'posgrado'
   categorias: ['critica', 'sintesis', 'simulacion', 'debate'],
   extras: [],                 // ids de casillas opcionales activas
@@ -196,16 +205,17 @@ respaldo viejo no rompa la app.
 
 ### 6.4 Historial de sesión
 
-Ampliar el historial actual a objetos `{ mecanica, nivel, alumno?, resultado, hora }`
-y permitir exportarlo a CSV. Sirve para la evaluación del piloto (sección 8).
+Registro privado como lista de texto `{ mecanica, nivel, alumno?, resultado, hora }`,
+plegado por defecto, con exportación a CSV. Sirve para la evaluación del piloto
+(sección 8).
 
 ### 6.5 Pruebas (`tests/e2e`, Playwright)
 
-- Cambiar a modo Mecánicas muestra 12 gajos; cambiar nivel cambia las etiquetas.
-- Desactivar una categoría reduce los gajos a 9.
-- Un giro muestra la tarjeta y el temporizador; `Re-giro` vuelve a girar.
-- Con la bolsa balanceada, 12 giros seguidos producen 12 mecánicas distintas.
-- Un estado guardado con `ruleta` malformado se corrige al cargar.
+- Cambiar de nivel cambia las consignas mostradas.
+- Desactivar una categoría excluye sus 3 mecánicas de los sorteos.
+- **Sortear** muestra el resultado en texto sin `<canvas>` ni confeti en la página.
+- 12 sorteos seguidos producen 12 mecánicas distintas.
+- Un estado guardado con `mecanicas` malformado se corrige al cargar.
 
 ---
 
@@ -213,9 +223,9 @@ y permitir exportarlo a CSV. Sirve para la evaluación del piloto (sección 8).
 
 | Fase | Contenido | Resultado usable |
 |---|---|---|
-| 1 · MVP | Catálogo de datos, modo Mecánicas, selector de nivel, tarjeta de instrucción | Ya se puede usar en clase |
-| 2 · Ritmo | Temporizador con fase "piensa", comodines (Re-giro / Siguiente / Pasó) | Clase fluida sin reloj aparte |
-| 3 · Justicia | "Elegir primero, animar después" + bolsa balanceada + segundo giro de alumno | Sin repeticiones ni alumnos olvidados |
+| 1 · MVP | Catálogo, pestaña de sorteo en texto, selector de nivel, bolsa sin repeticiones | Ya se puede usar en clase |
+| 2 · Ritmo | Cronómetro silencioso con fase "piensa", botones Otra / Siguiente / Pasó | Clase fluida sin reloj aparte |
+| 3 · Justicia | Sorteo de alumno con bolsa balanceada | Nadie se repite ni queda olvidado |
 | 4 · Memoria | Persistencia, filtro por categoría, extras, historial exportable | Configuración por curso |
 | 5 · Evaluación | Piloto de 4–6 sesiones (sección 8) | Datos para ajustar |
 
@@ -228,7 +238,7 @@ Sin pretensión de ensayo controlado; un registro honesto basta para decidir.
 - **Participación**: número de alumnos distintos que hablan por sesión y número de intervenciones voluntarias (indicador usado por Dallimore et al., 2013).
 - **Ansiedad percibida**: una pregunta Likert de 5 puntos al final de la 1.ª y de la 5.ª sesión ("Me sentí cómodo/a cuando la ruleta me eligió").
 - **Retención**: 3 preguntas de recuerdo sobre láminas trabajadas con ruleta frente a 3 sobre láminas solo expuestas, aplicadas una semana después.
-- **Uso de comodines**: si `Re-giro` supera ~30 % de los giros en un tipo de diapositiva, esa mecánica no encaja con ese tipo de contenido.
+- **Uso de comodines**: si `Otra` supera ~30 % de los sorteos en un tipo de diapositiva, esa mecánica no encaja con ese tipo de contenido.
 
 Con grupos de 20–40 alumnos, cualquier diferencia será orientativa: suficiente
 para ajustar la herramienta, insuficiente para publicar sin un diseño más
@@ -244,7 +254,7 @@ riguroso.
 | Nivel ICAP dominante | Constructivo, con andamiaje | Constructivo e interactivo |
 | Tiempo por mecánica | 1–2 min + 30 s de "piensa en dupla" | 1–3 min, sin fase previa obligatoria |
 | Modalidad por defecto | Dupla o grupo | Individual o dupla |
-| Andamiaje en pantalla | Frase de arranque y opciones acotadas | Solo la instrucción |
+| Andamiaje que lee el docente | Consigna + frase de arranque y opciones acotadas | Solo la consigna |
 | Mecánica más arriesgada | "Toma la Cátedra" (por eso pasa a lámina actual) | "Escenario Extremo" mal acotado (se dispersa) |
 | Riesgo principal | Ansiedad por exposición | Respuestas genéricas o de lucimiento |
 | Regla de seguridad clave | Pensar en dupla antes de hablar | Exigir anclaje a un dato de la lámina |
