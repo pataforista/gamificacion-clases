@@ -37,7 +37,11 @@ test('partida completa: avatares, apuesta final y respuesta con teclado', async 
   await expect(pane(page).getByText('LA GRAN FINAL')).toBeVisible();
   await pane(page).getByText('Confirmar Apuesta y Ver Pregunta').click();
   await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
-  await page.keyboard.press('3');
+  // Las opciones vienen barajadas: la tecla depende de dónde cayó "La piel".
+  const textos = await pane(page).locator('.exam-options button').allTextContents();
+  const lugar = textos.findIndex(t => t.includes('La piel'));
+  expect(lugar).toBeGreaterThanOrEqual(0);
+  await page.keyboard.press(String(lugar + 1));
   await expect(pane(page).getByText('Respuesta correcta: La piel')).toBeVisible({ timeout: 8000 });
 });
 
@@ -63,4 +67,163 @@ test('tiempo agotado pasa al rebote con un solo zumbido', async ({ page }) => {
   await expect(pane(page).getByText('Respuesta correcta')).toBeVisible({ timeout: 15_000 });
   expect((await audioLog(page)).filter(x => x === 'play:sfx-buzzer.mp3').length).toBe(1);
   await expect(pane(page).getByText('+15s')).toHaveCount(0);
+});
+
+test.describe('Barajado de respuestas', () => {
+  test('viene activado por defecto', async ({ page }) => {
+    await openTab(page, 'Examen grupal');
+    await expect(pane(page).getByLabel(/Barajar Respuestas/)).toBeChecked();
+  });
+
+  test('reparte la respuesta correcta de forma pareja y no la pierde', async ({ page }) => {
+    await openTab(page, 'Examen grupal');
+    const r = await page.evaluate(async () => {
+      const { barajarOpciones } = await import('/src/utils/examShuffle.js');
+      const N = 2000;
+      const posiciones = [0, 0, 0, 0];
+      let perdidas = 0;
+      for (let i = 0; i < N; i++) {
+        const q = barajarOpciones({ options: ['A', 'B', 'C', 'D'], correctIndex: 0 });
+        posiciones[q.correctIndex]++;
+        if (q.options[q.correctIndex] !== 'A') perdidas++;
+      }
+      const anclada = barajarOpciones({ options: ['x', 'y', 'z', 'Todas las anteriores'], correctIndex: 3 });
+      const porLetra = barajarOpciones({ options: ['x', 'A y B', 'z', 'w'], correctIndex: 1 });
+      return { N, posiciones, perdidas, anclada, porLetra };
+    });
+    expect(r.perdidas).toBe(0);
+    // Con 2000 intentos, cada lugar debería rondar el 25 % (margen amplio contra falsos fallos).
+    for (const n of r.posiciones) {
+      expect(n / r.N).toBeGreaterThan(0.2);
+      expect(n / r.N).toBeLessThan(0.3);
+    }
+    expect(r.anclada.options[3]).toBe('Todas las anteriores');
+    expect(r.anclada.correctIndex).toBe(3);
+    expect(r.porLetra.options).toEqual(['x', 'A y B', 'z', 'w']);
+  });
+});
+
+test.describe('Modo proyector (escenario)', () => {
+  test('cubre toda la ventana y hace zoom al tablero cuando alguien acierta', async ({ page }) => {
+    await startExam(page, { extraQuestion: true });
+    await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();
+    for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
+    await pane(page).getByText('¡Comenzar Examen!').click();
+    await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
+
+    await pane(page).getByRole('button', { name: /Modo Proyector/ }).click();
+    const escenario = pane(page).locator('.exam-stage');
+    await expect(escenario).toBeVisible();
+    const box = await escenario.boundingBox();
+    const vp = page.viewportSize();
+    expect(box.width).toBeGreaterThanOrEqual(vp.width - 2);
+    expect(box.height).toBeGreaterThanOrEqual(vp.height - 2);
+
+    // Las opciones vienen barajadas: la tecla depende de dónde cayó "La piel".
+    const textos = await pane(page).locator('.exam-options button').allTextContents();
+    await page.keyboard.press(String(textos.findIndex(t => t.includes('La piel')) + 1));
+
+    const zoom = page.locator('.board-zoom');
+    await expect(zoom).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('.board-zoom-caption')).toContainText(/Acertó|avanza/);
+    await page.keyboard.press('Enter');
+    await expect(zoom).toHaveCount(0);
+  });
+
+  test('reloj, pregunta, respuestas y tablero caben sin scroll aunque los textos sean largos', async ({ page }) => {
+    const largo = 'Un paciente de 58 años con antecedente de hipertensión arterial sistémica y diabetes mellitus tipo 2 de diez años de evolución acude a urgencias por dolor torácico opresivo de 40 minutos de duración irradiado a mandíbula, con diaforesis y náusea; el electrocardiograma muestra elevación del segmento ST en derivaciones inferiores. ¿Cuál es la conducta inicial más adecuada y por qué?';
+    const opcion = (n) => `Opción ${n}: administrar ácido acetilsalicílico, iniciar anticoagulación y activar de inmediato el protocolo de reperfusión con intervención coronaria percutánea primaria si está disponible en menos de 120 minutos`;
+    const examen = { questions: [0, 1].map(() => ({
+      text: largo,
+      options: [1, 2, 3, 4].map(opcion),
+      correctIndex: 0,
+      explanation: 'La elevación del ST en derivaciones inferiores con hipotensión sugiere infarto de pared inferior; se prioriza la reperfusión inmediata. '.repeat(3),
+    })) };
+
+    await openTab(page, 'Examen grupal');
+    await pane(page).locator('#json-upload-input').setInputFiles({
+      name: 'largo.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(examen)),
+    });
+    await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();
+    for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
+    await pane(page).getByText('¡Comenzar Examen!').click();
+    await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
+    await pane(page).getByRole('button', { name: /Modo Proyector/ }).click();
+    await expect(pane(page).locator('.exam-stage')).toBeVisible();
+
+    const revisar = async (vp) => {
+      await page.setViewportSize(vp);
+      await page.waitForTimeout(600); // deja que el ajuste de letra termine
+      const r = await page.evaluate(() => {
+        const dentro = (sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return { sel, falta: true };
+          const b = el.getBoundingClientRect();
+          return { sel, ok: b.top >= -1 && b.left >= -1 && b.bottom <= window.innerHeight + 1 && b.right <= window.innerWidth + 1 };
+        };
+        const sinDesborde = (el) => el.scrollHeight <= el.clientHeight + 1;
+        const stage = document.querySelector('.exam-stage');
+        const opciones = document.querySelector('.exam-options').parentElement;
+        return {
+          sinScroll: sinDesborde(stage),
+          preguntaCabe: sinDesborde(document.querySelector('.exam-question')),
+          opcionesCaben: sinDesborde(opciones),
+          lugares: ['.exam-clock', '.exam-question', '.exam-options', '.board-frame', '.exam-rank'].map(dentro),
+        };
+      });
+      expect(r.sinScroll, `escenario con scroll a ${vp.width}x${vp.height}`).toBe(true);
+      expect(r.preguntaCabe, `pregunta desbordada a ${vp.width}x${vp.height}`).toBe(true);
+      expect(r.opcionesCaben, `respuestas desbordadas a ${vp.width}x${vp.height}`).toBe(true);
+      for (const l of r.lugares) expect(l.ok, `${l.sel} fuera de pantalla a ${vp.width}x${vp.height}`).toBe(true);
+    };
+    await revisar({ width: 1920, height: 1080 });
+    await revisar({ width: 1366, height: 768 });
+    await revisar({ width: 1280, height: 720 });
+  });
+
+  test('sin escenario no hay zoom', async ({ page }) => {
+    await startExam(page, { extraQuestion: true });
+    await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();
+    for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
+    await pane(page).getByText('¡Comenzar Examen!').click();
+    const textos = await pane(page).locator('.exam-options button').allTextContents();
+    await page.keyboard.press(String(textos.findIndex(t => t.includes('La piel')) + 1));
+    await expect(pane(page).getByText(/Respuesta correcta: La piel/)).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('.board-zoom')).toHaveCount(0);
+    await expect(pane(page).locator('.exam-stage')).toHaveCount(0);
+  });
+
+  test('las sorpresas del tablero y las preguntas doradas se reparten bien', async ({ page }) => {
+    await openTab(page, 'Examen grupal');
+    const r = await page.evaluate(async () => {
+      const m = await import('/src/utils/examSurprises.js');
+      const tableros = Array.from({ length: 300 }, () => m.makeSurprises());
+      const doradas = Array.from({ length: 300 }, () => m.chooseGolden(10));
+      const conteo = {};
+      for (let i = 0; i < 4000; i++) {
+        const s = m.pickSorpresa();
+        conteo[s.id] = (conteo[s.id] || 0) + 1;
+      }
+      const solo = new Set(Array.from({ length: 300 }, () => m.pickSorpresa(true).id));
+      return { tableros, doradas, conteo, solo: [...solo], pocas: m.chooseGolden(2) };
+    });
+    for (const t of r.tableros) {
+      expect(t).toHaveLength(6);
+      expect(new Set(t).size).toBe(6);
+      expect([...t].sort((a, b) => a - b)).toEqual(t);
+      for (const c of t) {
+        expect(c).toBeGreaterThanOrEqual(6);
+        expect(c).toBeLessThanOrEqual(94);
+        expect(c % 10).not.toBe(9);
+      }
+    }
+    for (const d of r.doradas) {
+      expect(d).toHaveLength(2);
+      expect(d).not.toContain(9); // nunca la última (Gran Final)
+    }
+    expect(r.pocas).toEqual([]);
+    expect(Object.keys(r.conteo).sort()).toEqual(['cascara', 'cohete', 'regalo', 'torbellino']);
+    expect(r.conteo.cohete).toBeGreaterThan(r.conteo.cascara); // 30 % vs 20 %
+    expect(r.solo).not.toContain('torbellino');
+  });
 });

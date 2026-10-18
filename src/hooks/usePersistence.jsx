@@ -1,5 +1,7 @@
 import { useState, useEffect, useContext, createContext, useCallback } from 'react';
 
+import { DEFAULT_MECANICAS, CATEGORIA_IDS, EXTRA_IDS, NIVELES } from '../data/mecanicas';
+
 const STORAGE_KEY = "quickrand_state";
 
 const DEFAULT_STATE = {
@@ -15,6 +17,7 @@ const DEFAULT_STATE = {
     customTitle: "",
     customSubtitle: "",
     rpgMode: "medical",
+    mecanicas: DEFAULT_MECANICAS, // configuración del Sorteo de mecánicas
     lastReset: null,
 };
 
@@ -37,6 +40,14 @@ const sanitize = (raw) => {
         : [];
     if (!['green', 'yellow', 'red'].includes(s.traffic)) s.traffic = 'green';
     if (!['medical', 'general'].includes(s.rpgMode)) s.rpgMode = 'medical';
+    const mec = s.mecanicas && typeof s.mecanicas === 'object' ? s.mecanicas : {};
+    const sub = (v, validos, d) => (Array.isArray(v) ? v.filter(x => validos.includes(x)) : d);
+    s.mecanicas = {
+        nivel: Object.keys(NIVELES).includes(mec.nivel) ? mec.nivel : DEFAULT_MECANICAS.nivel,
+        categorias: sub(mec.categorias, CATEGORIA_IDS, DEFAULT_MECANICAS.categorias),
+        extras: sub(mec.extras, EXTRA_IDS, DEFAULT_MECANICAS.extras),
+        pensarAntes: typeof mec.pensarAntes === 'boolean' ? mec.pensarAntes : DEFAULT_MECANICAS.pensarAntes,
+    };
     s.customTitle = typeof s.customTitle === 'string' ? s.customTitle : '';
     s.customSubtitle = typeof s.customSubtitle === 'string' ? s.customSubtitle : '';
     if (s.triviaQA !== undefined && typeof s.triviaQA !== 'string') delete s.triviaQA;
@@ -95,6 +106,7 @@ export const PersistenceProvider = ({ children }) => {
             customTitle: preserveRoster ? prev.customTitle : "",
             customSubtitle: preserveRoster ? prev.customSubtitle : "",
             rpgMode: prev.rpgMode,
+            mecanicas: prev.mecanicas,
             lastReset: new Date().toISOString(),
         }));
     }, []);

@@ -1917,3 +1917,282 @@ label { color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; }
 /* Insignias como botones (activables con teclado). */
 button.badge { font: inherit; color: inherit; }
 button.badge:focus-visible { outline: 3px dashed var(--primary); outline-offset: 3px; }
+
+
+/* ==========================================================================
+   Mecánicas (uso privado del docente) y ajustes del examen
+   ========================================================================== */
+
+/* Control segmentado: una sola pieza de dos opciones. La opción activa va en
+   tinta oscura para no confundirse con el botón de acción (rojo). */
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-secondary);
+}
+.seg button {
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  min-height: 42px;
+  padding: 0.5rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.seg button + button { border-left: 2px solid var(--line); }
+.seg button:hover, .seg button:active { transform: none; box-shadow: none; }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg-secondary); }
+.seg button:focus-visible { outline: 3px solid var(--secondary); outline-offset: -3px; }
+
+.mec-card {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem 0.5rem;
+  border: 2px solid var(--line);
+  border-left-width: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tint);
+}
+.mec-card.critica { border-left-color: var(--primary); }
+.mec-card.sintesis { border-left-color: var(--secondary); }
+.mec-card.simulacion { border-left-color: var(--good); }
+.mec-card.debate { border-left-color: var(--warn); }
+.mec-meta { font-size: 0.8rem; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; text-transform: uppercase; }
+.mec-card h3 { margin: 0.2rem 0 0.5rem; font-size: 1.5rem; }
+.mec-consigna { font-size: 1.1rem; line-height: 1.5; margin: 0 0 0.6rem; }
+.mec-arranque { color: var(--text-secondary); font-style: italic; margin: 0 0 0.6rem; }
+.mec-nota { color: var(--muted); font-size: 0.9rem; margin: 0 0 0.6rem; }
+.mec-alumno { font-weight: 800; font-size: 1.15rem; margin: 0 0 0.6rem; }
+
+.mec-timer {
+  margin-top: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  text-align: center;
+}
+.mec-timer .mec-fase { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+.mec-timer .mec-tiempo { font-family: var(--font-display); font-size: 2.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.mec-timer.piensa { border-color: var(--secondary); }
+.mec-timer.piensa .mec-tiempo { color: var(--secondary); }
+.mec-timer.fin { border-color: var(--error); background: var(--error); }
+.mec-timer.fin .mec-fase, .mec-timer.fin .mec-tiempo { color: #fff; }
+
+.mec-acciones { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.75rem; }
+.mec-acciones .btn { flex: 1 1 7.5rem; }
+
+.mec-config label { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; cursor: pointer; }
+.mec-config input[type="checkbox"] { width: 1.1rem; height: 1.1rem; flex: none; }
+.mec-config .mec-grupo { margin: 0.9rem 0 0.2rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+details > summary { cursor: pointer; padding: 0.3rem 0; }
+
+/* Ajustes del examen: el control de duración ocupa todo el ancho, con rótulo. */
+.exam-duration { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.75rem; }
+.exam-duration input[type="range"] { flex: 1; margin: 0; }
+.exam-duration span { min-width: 3.2rem; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.setting-hint { display: block; font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+
+@media (max-width: 480px) {
+  .title { font-size: 2rem; }
+  .subtitle { font-size: 0.82rem; }
+  .mec-card h3 { font-size: 1.3rem; }
+}
+
+/* ==========================================================================
+   Examen grupal · modo proyector ("escenario")
+   ========================================================================== */
+
+/* El escenario cubre toda la ventana: sin barra lateral ni título de la app. */
+.exam-stage {
+  position: fixed !important;
+  inset: 0;
+  z-index: 800;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow-y: auto;
+  padding: clamp(0.6rem, 1.4vw, 1.6rem) !important;
+  background-color: var(--bg) !important;
+  background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px) !important;
+  background-size: 16px 16px !important;
+}
+.exam-stage > .row h2 {
+  font-size: clamp(1.4rem, 2.4vw, 2.6rem);
+  background: var(--text);
+  color: var(--bg-secondary);
+  padding: 0.15em 0.6em;
+  border-radius: var(--radius-sm);
+}
+/* Una sola pantalla: encabezado fijo arriba y el resto repartido entre
+   pregunta, reloj, tablero y clasificación, sin hacer scroll. */
+.exam-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+.exam-stage > .row { flex: none; margin-bottom: 0.4rem !important; }
+.exam-stage .game-dashboard { flex: 1 1 auto; min-height: 0; }
+
+.exam-main > .card, .exam-main > .smallout { flex-shrink: 0; }
+
+.board-slot {
+  flex: 1 1 auto;
+  min-height: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-frame {
+  flex: none;
+  width: min(100cqw, 100cqh);
+  background: var(--bg-secondary);
+  padding: 5px;
+  border-radius: 18px;
+  border: 4px solid var(--line);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Reloj grande, siempre a la vista. */
+.exam-clock {
+  padding: 0.35rem 0.8rem 0.5rem;
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 4px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 5px 5px 0 var(--ink-shadow);
+}
+.exam-clock-row { display: flex; align-items: center; gap: 0.8rem; }
+.exam-clock-label { font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; font-size: clamp(0.8rem, 1.2vw, 1.3rem); }
+.exam-clock-digits {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 8.5vh, 6.5rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.exam-clock-plus { padding: 4px 12px; font-size: 0.9rem; font-weight: 900; color: var(--primary); border-color: var(--primary); }
+.exam-clock-bar { height: clamp(10px, 1.6vh, 16px); background: rgba(0, 0, 0, 0.12); border: 2px solid var(--line); border-radius: 8px; overflow: hidden; }
+.exam-clock.urgent { background: var(--error); color: #fff; animation: clock-pulse 0.8s ease-in-out infinite; }
+.exam-clock.urgent .exam-clock-plus { background: var(--bg-secondary); }
+@keyframes clock-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+@media (prefers-reduced-motion: reduce) { .exam-clock.urgent { animation: none; } }
+
+/* Pantallas angostas: se apila y vuelve a permitirse el desplazamiento. */
+@media (max-width: 900px) {
+  .exam-stage { display: block; height: auto; min-height: 100dvh; overflow-y: auto; }
+  .exam-stage .game-dashboard {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+    grid-template-areas: "clock" "main" "board" "rank" !important;
+  }
+  .board-slot { container-type: normal; flex: none; }
+  .board-frame { width: min(100%, 70vh); }
+  .exam-stage .exam-question, .exam-stage .exam-options { flex: none !important; }
+}
+
+/* Zoom al tablero cuando un equipo se mueve. */
+.board-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.6rem, 2vh, 1.6rem);
+  padding: 1rem;
+  background: rgba(15, 28, 21, 0.82);
+  cursor: pointer;
+}
+.board-zoom-caption {
+  max-width: min(94vw, 1100px);
+  padding: 0.35em 0.9em;
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--ink-shadow);
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 3.4rem);
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+}
+.board-zoom-board {
+  position: relative;
+  width: min(74vh, 90vw);
+  border: 5px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 10px 10px 0 var(--ink-shadow);
+  background: var(--bg-secondary);
+}
+.board-zoom-event {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  padding: 0.5em 1.1em;
+  background: var(--warn);
+  color: #1E1E1E;
+  border: 4px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 8px 8px 0 var(--ink-shadow);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 4rem);
+  text-align: center;
+  white-space: nowrap;
+}
+.board-zoom-event small { font-family: var(--font-body); font-weight: 800; font-size: 0.38em; white-space: normal; max-width: 18em; }
+.board-zoom-event-emoji { font-size: 1.6em; line-height: 1; }
+.board-zoom-hint { color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; font-weight: 600; }
+
+/* Pregunta dorada y casillas sorpresa. */
+.golden-ribbon {
+  margin-bottom: 0.5rem;
+  padding: 0.35em 0.8em;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.2vw, 2.2rem);
+  letter-spacing: 0.04em;
+  color: #3A2A00;
+  border: 3px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(100deg, #FFD84A 0%, #FFF3A8 45%, #FFD84A 55%, #F4B400 100%);
+  background-size: 220% 100%;
+  box-shadow: 5px 5px 0 var(--ink-shadow);
+  animation: golden-shimmer 2.4s linear infinite;
+}
+@keyframes golden-shimmer {
+  from { background-position: 120% 0; }
+  to   { background-position: -100% 0; }
+}
+.surprise-tile { animation: surprise-bob 1.8s ease-in-out infinite; }
+@keyframes surprise-bob {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .golden-ribbon, .surprise-tile { animation: none; }
+}

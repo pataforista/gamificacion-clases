@@ -74,6 +74,20 @@ const GESTION = [
     ],
     tip: 'Los equipos creados aquí se pueden usar como participantes del Examen Grupal.',
   },
+  {
+    id: 'mecanicas',
+    icon: '🎯',
+    title: 'Mecánicas',
+    tag: 'Privado',
+    what: 'Sortea, solo para ti, una dinámica que el grupo aplica a la diapositiva que ya está proyectada. No muestra nada al grupo: tú lees la consigna en voz alta.',
+    steps: [
+      'Elige el nivel (Pregrado o Posgrado) y pulsa “Sortear mecánica”.',
+      'Lee la consigna en voz alta. En pregrado, añade la frase de arranque.',
+      'Opcional: “¿Quién?” elige a un alumno de tu lista; “Iniciar tiempo” da una cuenta regresiva silenciosa (vibra en celular).',
+      '“Otra mecánica” si no encaja con la lámina; “Siguiente lámina” repite la mecánica en la que sigue; “Hecho” o “Pasó” la registran.',
+    ],
+    tip: 'Ábrela en tu celular o en una ventana que no proyectes. No se repiten mecánicas hasta agotar todas.',
+  },
 ];
 
 const HERRAMIENTAS = [
@@ -100,10 +114,12 @@ const HERRAMIENTAS = [
     steps: [
       'Sube un archivo JSON con las preguntas o créalas con el editor visual (“Diseñar Examen”).',
       'Ajusta el Game Show: temporizador, comodines (50/50, escudo, congelar), rebote y suspenso.',
+      'Deja activado “Barajar Respuestas” para que la correcta cambie de lugar en cada pregunta.',
       'Asigna turnos a los equipos que creaste previamente.',
-      'Juega y sigue el marcador y el tablero de avance en vivo.',
+      'Pulsa “Modo Proyector” para ocupar toda la pantalla, sin hacer scroll: reloj grande, pregunta y respuestas (la letra se ajusta sola al largo del texto), tablero y clasificación. Cuando un equipo avanza, el tablero se acerca para que todos vean el movimiento (toca o pulsa Enter para saltarlo).',
+      'Sorpresas: algunas preguntas son doradas (XP x2), tres aciertos seguidos dan racha 🔥 y el tablero esconde casillas ❓ con cohetes, regalos, torbellinos y cáscaras de plátano.',
     ],
-    tip: 'Usa “Copiar Plantilla” para ver el formato exacto del JSON de preguntas.',
+    tip: 'Usa “Copiar Plantilla” para ver el formato exacto del JSON de preguntas. Esc sale del modo proyector.',
   },
   {
     id: 'ruleta',

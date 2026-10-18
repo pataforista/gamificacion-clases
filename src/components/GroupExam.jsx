@@ -3,8 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from './NotificationContext';
 import { useAudio, WAITING_TRACKS } from './AudioContext';
 import { RNG } from '../utils/rng';
+import { barajarOpciones } from '../utils/examShuffle';
+import {
+    makeSurprises, chooseGolden, pickSorpresa, COHETE_PASOS, CASCARA_PASOS, REGALO_XP,
+} from '../utils/examSurprises';
 import confetti from 'canvas-confetti';
 import BoardGame from './BoardGame';
+import { MaybeFit } from './AutoFit';
 import AvatarSelector from './AvatarSelector';
 import { listExams, getExam, saveExam, deleteExam } from '../utils/examStore';
 
@@ -90,7 +95,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         duration: 25,
         quickMode: false,
         shuffleQuestions: false,
-        shuffleOptions: false,
+        shuffleOptions: true,
     });
 
     const [timeLeft, setTimeLeft] = useState(0);
@@ -125,7 +130,12 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         // Sólo al entrar o salir de la partida, no con cada cambio de la lista.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [inMatch]);
-    const [projectorMode, setProjectorMode] = useState(false); // big question/options for projection
+    const [projectorMode, setProjectorMode] = useState(false); // escenario a pantalla completa para proyectar
+    const [openedSurprises, setOpenedSurprises] = useState({}); // { casilla: emoji } de las ya descubiertas
+    const [streaks, setStreaks] = useState({}); // aciertos seguidos por equipo
+    const [zoom, setZoom] = useState(null); // momento de zoom al tablero: { team, scores, caption, event, pendingTile }
+    const zoomTimers = useRef([]);
+    const projFsRef = useRef(false); // true si el escenario pidió pantalla completa
 
     // Audio volume control
     const [isMuted, setIsMuted] = useState(false);
@@ -162,19 +172,35 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
     const buildExam = (questions) => {
         let qs = questions.map(q => ({ ...q, options: [...q.options] }));
         if (settings.shuffleOptions) {
-            qs = qs.map(q => {
-                const order = RNG.shuffle(q.options.map((_, i) => i));
-                return {
-                    ...q,
-                    options: order.map(i => q.options[i]),
-                    correctIndex: order.indexOf(q.correctIndex),
-                };
-            });
+            qs = qs.map(barajarOpciones);
         }
         if (settings.shuffleQuestions) {
             qs = RNG.shuffle(qs);
         }
-        return { questions: qs };
+        return { questions: qs, golden: chooseGolden(qs.length), surprises: makeSurprises() };
+    };
+
+    const clearZoom = () => {
+        zoomTimers.current.forEach(clearTimeout);
+        zoomTimers.current = [];
+        setZoom(null);
+    };
+
+    // Reproduce una secuencia de cuadros en el zoom del tablero. Cada cuadro
+    // fusiona su `state` con el anterior y se queda `hold` milisegundos.
+    const playMoment = (frames) => {
+        zoomTimers.current.forEach(clearTimeout);
+        zoomTimers.current = [];
+        let t = 0;
+        frames.forEach((f) => {
+            zoomTimers.current.push(setTimeout(() => {
+                setZoom(prev => ({ ...(prev || {}), ...f.state }));
+                if (f.sfx) audioRef.current.playSFX(f.sfx);
+                if (f.confetti) confetti({ particleCount: 140, spread: 110, origin: { y: 0.5 }, zIndex: 2000 });
+            }, t));
+            t += f.hold;
+        });
+        zoomTimers.current.push(setTimeout(() => setZoom(null), t));
     };
 
     const resetScoreboards = () => {
@@ -189,6 +215,9 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         setScores(initialScores);
         setVisualScores(initialVisual);
         setUsedJokers(initialJokers);
+        setOpenedSurprises({});
+        setStreaks({});
+        clearZoom();
     };
 
     // Stop audio/timer when the exam closes or component unmounts
@@ -206,6 +235,19 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
 
     // Al salir de la pestaña con un examen a medias, apaga la música de espera.
     useEffect(() => () => audioRef.current.stop(), []);
+    useEffect(() => () => zoomTimers.current.forEach(clearTimeout), []);
+
+    // Si el navegador sale de pantalla completa (Esc), el escenario se cierra con él.
+    useEffect(() => {
+        const onChange = () => {
+            if (!document.fullscreenElement && projFsRef.current) {
+                projFsRef.current = false;
+                setProjectorMode(false);
+            }
+        };
+        document.addEventListener('fullscreenchange', onChange);
+        return () => document.removeEventListener('fullscreenchange', onChange);
+    }, []);
 
     // Al ir a otra pestaña a mitad de una pregunta: la música se apaga y el
     // reloj se pausa (abajo); al volver, ambos continúan donde estaban.
@@ -245,6 +287,17 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
 
     const question = exam?.questions?.[currentQuestion];
     const isLastQuestion = !!exam && currentQuestion === exam.questions.length - 1;
+    // El escenario solo existe durante la partida; fuera de ella el modo queda en pausa.
+    const isStage = projectorMode && setupPhase === 'game' && !!exam;
+    const isGolden = !!exam?.golden?.includes(currentQuestion) && !isLastQuestion;
+
+    // Al terminar o cerrar la partida, suelta la pantalla completa.
+    useEffect(() => {
+        if (!isStage && projFsRef.current && document.fullscreenElement) {
+            projFsRef.current = false;
+            document.exitFullscreen().catch(() => {});
+        }
+    }, [isStage]);
 
     // Keyboard shortcuts for projector/classroom use: 1-9 answer, Enter advances feedback.
     useEffect(() => {
@@ -252,6 +305,21 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         if (!isActive || setupPhase !== 'game' || !exam) return;
         const handler = (e) => {
             if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+
+            // Con el zoom del tablero abierto, Enter / espacio / Esc lo cierran.
+            if (zoom) {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+                    e.preventDefault();
+                    clearZoom();
+                }
+                return;
+            }
+
+            // Esc cierra el escenario (en pantalla completa lo hace el navegador).
+            if (e.key === 'Escape' && isStage && !document.querySelector('[role="alertdialog"], [role="dialog"]')) {
+                setProjectorMode(false);
+                return;
+            }
 
             if (feedback && feedback.type !== 'incorrect_temporary' && (e.key === 'Enter' || e.key === ' ')) {
                 e.preventDefault();
@@ -273,7 +341,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isActive, setupPhase, exam, feedback, isRevealing, activeTeam, roboTeam, hiddenOptions, wrongOptions, wagerConfirmed, currentQuestion]);
+    }, [isActive, setupPhase, exam, feedback, isRevealing, activeTeam, roboTeam, hiddenOptions, wrongOptions, wagerConfirmed, currentQuestion, zoom, isStage, isGolden, visualScores, streaks, openedSurprises, scores, wager, settings]);
 
     // Celebrate the podium when the game ends
     useEffect(() => {
@@ -703,7 +771,18 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                 speedBonusMsg = "";
             }
 
-            setScores(prev => ({ ...prev, [team]: (prev[team] || 0) + xp }));
+            // Pregunta dorada: el premio se duplica.
+            let goldenMsg = "";
+            if (isGolden) {
+                xp *= 2;
+                goldenMsg = " ⭐ ¡PREGUNTA DORADA x2!";
+            }
+
+            // Racha: cada tres aciertos seguidos del equipo, impulso extra en el tablero.
+            const streak = (streaks[team] || 0) + 1;
+            const streakBonus = streak % 3 === 0 ? 4 : 0;
+            setStreaks(prev => ({ ...prev, [team]: streak }));
+            const streakMsg = streakBonus ? ` 🔥 ¡RACHA x${streak}!` : "";
 
             // El tablero tiene 100 casillas y cada pregunta la responde UN solo
             // equipo: el avance se escala a los turnos que le tocan a cada equipo
@@ -712,8 +791,52 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
             const totalQuestions = exam?.questions.length || 10;
             const turnsPerTeam = Math.max(1, Math.floor(totalQuestions / Math.max(1, teams.length)));
             const baseVisual = 100 / turnsPerTeam;
-            const visualMove = baseVisual + RNG.int(0, 4);
-            setVisualScores(prev => ({ ...prev, [team]: (prev[team] || 0) + visualMove }));
+            const visualMove = baseVisual + RNG.int(0, 4) + (isGolden ? 3 : 0) + streakBonus;
+            const fromRaw = visualScores[team] || 0;
+            const toRaw = fromRaw + visualMove;
+            const changes = { [team]: toRaw };
+
+            // Casilla sorpresa: se activa la primera aún cerrada que el equipo
+            // cruce o pise en este avance.
+            const fromTile = Math.floor(fromRaw);
+            const toTile = Math.min(99, Math.floor(toRaw));
+            const hit = (exam?.surprises || []).find(pos => !openedSurprises[pos] && pos > fromTile && pos <= toTile);
+            let sorpresa = null;
+            let sorpresaMsg = "";
+            if (hit !== undefined) {
+                const others = teams.filter(t => t !== team);
+                sorpresa = pickSorpresa(others.length === 0);
+                if (sorpresa.id === 'cohete') changes[team] = toRaw + COHETE_PASOS;
+                if (sorpresa.id === 'cascara') changes[team] = Math.max(0, toRaw - CASCARA_PASOS);
+                if (sorpresa.id === 'regalo') xp += REGALO_XP;
+                if (sorpresa.id === 'torbellino') {
+                    const other = RNG.pick(others, 'torbellino');
+                    changes[team] = visualScores[other] || 0;
+                    changes[other] = toRaw;
+                }
+                setOpenedSurprises(prev => ({ ...prev, [hit]: sorpresa.emoji }));
+                sorpresaMsg = ` ${sorpresa.emoji} ¡Casilla sorpresa: ${sorpresa.label.replace(/[¡!]/g, '')}! ${sorpresa.detail}.`;
+            }
+
+            setScores(prev => ({ ...prev, [team]: (prev[team] || 0) + xp }));
+            setVisualScores(prev => ({ ...prev, ...changes }));
+
+            if (isStage) {
+                const antes = { ...visualScores };
+                const pasos = Math.round(visualMove);
+                const extras = [isGolden ? '⭐ dorada' : '', streakBonus ? `🔥 racha x${streak}` : ''].filter(Boolean).join(' · ');
+                const frames = [
+                    { state: { team, scores: antes, caption: `🎯 ¡Acertó ${team}!`, event: null, pendingTile: hit }, hold: 800 },
+                    { state: { scores: { ...antes, [team]: toRaw }, caption: `${team} avanza ${pasos} casilla${pasos === 1 ? '' : 's'}${extras ? ` · ${extras}` : ''}` }, hold: sorpresa ? 2100 : 2600, sfx: 'boing' },
+                ];
+                if (sorpresa) {
+                    frames.push({
+                        state: { scores: { ...antes, ...changes }, caption: `${sorpresa.emoji} ${sorpresa.label} ${sorpresa.detail}`, event: sorpresa, pendingTile: undefined },
+                        hold: 2800, sfx: 'correct_alt', confetti: true,
+                    });
+                }
+                playMoment(frames);
+            }
 
             if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -727,7 +850,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
 
             setFeedback({
                 type: 'correct',
-                msg: RNG.getFlavor('correct') + ` +${xp} XP.${speedBonusMsg}`,
+                msg: RNG.getFlavor('correct') + ` +${xp} XP.${speedBonusMsg}${goldenMsg}${streakMsg}${sorpresaMsg}`,
                 explanation: question.explanation || ""
             });
             setRoboTeam(null);
@@ -743,9 +866,19 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                 setScores(prev => ({ ...prev, [team]: Math.max(0, (prev[team] || 0) - xpLoss) }));
             }
 
+            setStreaks(prev => ({ ...prev, [team]: 0 }));
+
             if (!shieldProtected) {
                 const setback = (isLastQuestion && !isRobo && wagerConfirmed) ? Math.round(wager / 2) : RNG.int(1, 3);
+                const antes = { ...visualScores };
+                const despues = Math.max(0, (visualScores[team] || 0) - setback);
                 setVisualScores(prev => ({ ...prev, [team]: Math.max(0, (prev[team] || 0) - setback) }));
+                if (isStage && setback > 0 && (visualScores[team] || 0) > 0) {
+                    playMoment([
+                        { state: { team, scores: antes, caption: `😬 Falló ${team}`, event: null, pendingTile: undefined }, hold: 700 },
+                        { state: { scores: { ...antes, [team]: despues }, caption: `${team} retrocede ${setback} casilla${setback === 1 ? '' : 's'}` }, hold: 1700, sfx: 'boing' },
+                    ]);
+                }
             }
 
             const shieldMsg = shieldProtected ? " 🛡️ ¡El Escudo evitó penalizaciones!" : "";
@@ -805,18 +938,40 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         return <span style={{ fontSize: `${size * 0.8}px`, lineHeight: 1 }}>{av || '👤'}</span>;
     };
 
+    const fmtClock = (secs) => {
+        const t = Math.max(0, Math.ceil(secs));
+        return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+    };
+
+    const toggleProjector = async () => {
+        audio.playSFX('click');
+        const next = !projectorMode;
+        setProjectorMode(next);
+        try {
+            if (next && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+                projFsRef.current = true;
+            } else if (!next && document.fullscreenElement && projFsRef.current) {
+                projFsRef.current = false;
+                await document.exitFullscreen();
+            }
+        } catch {
+            // Sin pantalla completa el escenario igual cubre toda la ventana.
+        }
+    };
+
     const showQuestionBlock = question && (activeTeam || roboTeam) && (!isLastQuestion || wagerConfirmed || roboTeam);
 
     // Projector mode: question + options take a wide main column with bigger
     // text; ranking and board collapse into a narrow side column.
-    const dashStyle = projectorMode
+    const dashStyle = isStage
         ? {
             display: 'grid',
-            gridTemplateColumns: 'minmax(140px, 0.8fr) 3fr',
-            gridTemplateRows: 'auto auto',
-            gridTemplateAreas: '"rank main" "board main"',
-            gap: 'clamp(0.5rem, 1.2vw, 1.5rem)',
-            alignItems: 'start'
+            gridTemplateColumns: 'minmax(0, 1.55fr) minmax(0, 1fr)',
+            gridTemplateRows: 'auto minmax(0, 1fr) auto',
+            gridTemplateAreas: '"main clock" "main board" "main rank"',
+            gap: 'clamp(0.5rem, 1.2vw, 1.4rem)',
+            alignItems: 'stretch'
         }
         : {
             display: 'grid',
@@ -824,14 +979,14 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
             gap: 'clamp(0.5rem, 1.2vw, 1.5rem)',
             alignItems: 'start'
         };
-    const questionFont = projectorMode ? 'clamp(1.4rem, 2.8vw, 3rem)' : 'clamp(1.05rem, 2.1vw, 2rem)';
-    const optionFont = projectorMode ? 'clamp(1.15rem, 2vw, 2rem)' : 'clamp(0.95rem, 1.5vw, 1.45rem)';
+    const questionFont = isStage ? 'clamp(1.5rem, 3vw, 3.4rem)' : 'clamp(1.05rem, 2.1vw, 2rem)';
+    const optionFont = isStage ? 'clamp(1.15rem, 2.1vw, 2.4rem)' : 'clamp(0.95rem, 1.5vw, 1.45rem)';
 
     return (
         <div className="grid">
-            <div className="card full-width" style={{ gridColumn: 'span 2' }}>
+            <div className={`card full-width${isStage ? ' exam-stage' : ''}`} style={{ gridColumn: 'span 2' }}>
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <h2>Examen Grupal</h2>
+                    <h2>{isStage && currentQuestion >= 0 ? `Pregunta ${currentQuestion + 1} / ${exam.questions.length}` : 'Examen Grupal'}</h2>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <div style={{ position: 'relative' }}>
                             <button
@@ -894,7 +1049,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                             <button
                                 className="btn"
                                 style={projectorMode ? { background: 'var(--primary)', color: 'white', fontWeight: 900 } : { fontWeight: 900 }}
-                                onClick={() => { audio.playSFX('click'); setProjectorMode(p => !p); }}
+                                onClick={toggleProjector}
                             >
                                 {projectorMode ? '🔳 Salir de Proyector' : '📺 Modo Proyector'}
                             </button>
@@ -1004,17 +1159,23 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                             </label>
                             <label className="row" style={{ cursor: 'pointer' }}>
                                 <input type="checkbox" checked={settings.shuffleOptions} onChange={e => setSettings({ ...settings, shuffleOptions: e.target.checked })} />
-                                Barajar Opciones
+                                <span>
+                                    Barajar Respuestas
+                                    <span className="setting-hint">Cambia el orden de A, B, C, D en cada pregunta</span>
+                                </span>
                             </label>
+                            {settings.timer && (
+                                <div className="exam-duration">
+                                    <input
+                                        type="range" min="5" max="120" step="5"
+                                        aria-label="Duración por pregunta"
+                                        value={settings.duration}
+                                        onChange={e => setSettings({ ...settings, duration: parseInt(e.target.value) })}
+                                    />
+                                    <span>{settings.duration} s</span>
+                                </div>
+                            )}
                         </div>
-                        {settings.timer && (
-                            <input
-                                type="range" min="5" max="120" step="5"
-                                value={settings.duration}
-                                onChange={e => setSettings({ ...settings, duration: parseInt(e.target.value) })}
-                                style={{ width: '100%', marginTop: '10px' }}
-                            />
-                        )}
                     </div>
                 )}
 
@@ -1143,36 +1304,47 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                 {/* ===================== GAME PHASE ===================== */}
                 {setupPhase === 'game' && exam && currentQuestion >= 0 && (
                     <div className="game-dashboard" style={dashStyle}>
-                        {/* LEFT: RANKING */}
-                        <div className="card" style={{ gridArea: projectorMode ? 'rank' : undefined, padding: 'clamp(0.4rem, 1vw, 1rem)', marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '3px solid var(--line)' }}>
-                            <h4 style={{ margin: '0 0 0.2rem 0', textTransform: 'uppercase', fontSize: '0.65rem', opacity: 0.7 }}>🏆 Clasificación</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(4px, 0.5vh, 8px)' }}>
+                        {/* RANKING */}
+                        <div className="card exam-rank" style={{ gridArea: isStage ? 'rank' : undefined, ...(isStage ? { maxHeight: '30vh', overflowY: 'auto' } : {}), padding: 'clamp(0.4rem, 1vw, 1rem)', marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '3px solid var(--line)' }}>
+                            <h4 style={{ margin: '0 0 0.2rem 0', textTransform: 'uppercase', fontSize: isStage ? 'clamp(0.8rem, 1.1vw, 1.2rem)' : '0.65rem', opacity: 0.7 }}>🏆 Clasificación</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: isStage && teams.length > 4 ? '1fr 1fr' : '1fr', gap: 'clamp(4px, 0.5vh, 8px)' }}>
                                 <AnimatePresence>
                                     {Object.entries(scores)
                                         .sort((a, b) => b[1] - a[1])
                                         .map(([team], idx) => {
                                             const val = scores[team] || 0;
                                             const isActive = (roboTeam || activeTeam) === team;
+                                            const racha = streaks[team] || 0;
                                             return (
                                                 <motion.div key={team} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{
-                                                    padding: 'clamp(3px, 0.6vh, 6px) 6px',
+                                                    padding: isStage ? 'clamp(2px, 0.4vh, 6px) 10px' : 'clamp(3px, 0.6vh, 6px) 6px',
                                                     background: isActive ? 'var(--primary)' : 'var(--bg-secondary)',
                                                     color: isActive ? 'white' : 'var(--text)',
                                                     border: isActive ? '2px solid var(--text)' : '2px solid var(--line)',
                                                     borderRadius: '10px',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    gap: '5px',
-                                                    fontSize: 'clamp(0.6rem, 1.1vw, 0.75rem)',
+                                                    gap: isStage ? '10px' : '5px',
+                                                    fontSize: isStage ? 'clamp(0.8rem, 2.1vh, 1.5rem)' : 'clamp(0.6rem, 1.1vw, 0.75rem)',
                                                     boxShadow: isActive ? '0 8px 12px rgba(0,0,0,0.2)' : 'none',
                                                     transition: 'background 0.3s ease, box-shadow 0.3s ease',
-                                                    position: 'relative'
+                                                    position: 'relative',
+                                                    minWidth: 0
                                                 }}>
-                                                    <span style={{ display: 'flex', alignItems: 'center' }}>{renderAvatar(team, 24)}</span>
-                                                    <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                        <div style={{ fontSize: '0.55rem', opacity: 0.7, fontWeight: 900 }}>RANK {idx + 1}</div>
-                                                        <div style={{ fontWeight: 900 }}>{val} XP</div>
-                                                    </div>
+                                                    <span style={{ display: 'flex', alignItems: 'center' }}>{renderAvatar(team, isStage ? 30 : 24)}</span>
+                                                    {isStage ? (
+                                                        <>
+                                                            <div style={{ flex: 1, minWidth: 0, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                {idx + 1}. {team}{racha >= 2 ? ` 🔥${racha}` : ''}
+                                                            </div>
+                                                            <div style={{ fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>{val} XP</div>
+                                                        </>
+                                                    ) : (
+                                                        <div style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            <div style={{ fontSize: '0.55rem', opacity: 0.7, fontWeight: 900 }}>RANK {idx + 1}</div>
+                                                            <div style={{ fontWeight: 900 }}>{val} XP{racha >= 2 ? ` 🔥${racha}` : ''}</div>
+                                                        </div>
+                                                    )}
                                                     {isActive && <div className="pulse" style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }}></div>}
                                                 </motion.div>
                                             );
@@ -1181,26 +1353,56 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                             </div>
                         </div>
 
-                        {/* CENTER: BOARD */}
-                        <div style={{ gridArea: projectorMode ? 'board' : undefined, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <div style={{ background: 'var(--bg-secondary)', padding: '5px', borderRadius: '18px', border: '4px solid var(--line)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', width: '100%' }}>
+                        {/* RELOJ (solo en el escenario): siempre a la vista junto al tablero */}
+                        {isStage && settings.timer && !settings.quickMode && (
+                            <div className={`exam-clock${isTimerActive && timeLeft <= 5 ? ' urgent' : ''}`} style={{ gridArea: 'clock' }}>
+                                <div className="exam-clock-row">
+                                    <span className="exam-clock-label">⏱️ Tiempo</span>
+                                    <span className="exam-clock-digits" aria-live="off">{fmtClock(isTimerActive || timeLeft > 0 ? timeLeft : settings.duration)}</span>
+                                    {isTimerActive && (
+                                        <button className="btn exam-clock-plus" onClick={() => {
+                                            audio.playSFX('click');
+                                            setTimeLeft(prev => prev + 15);
+                                        }}>
+                                            +15s
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="exam-clock-bar">
+                                    <div style={{
+                                        width: isTimerActive ? `${Math.min(100, (timeLeft / settings.duration) * 100)}%` : '0%',
+                                        height: '100%',
+                                        background: timeLeft <= 5 ? 'var(--error)' : 'var(--good)',
+                                        transition: 'width 1s linear'
+                                    }} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TABLERO */}
+                        <div style={{ gridArea: isStage ? 'board' : undefined, display: 'flex', flexDirection: 'column', gap: '0.4rem', minHeight: 0 }}>
+                            <div className={isStage ? 'board-slot' : undefined}>
+                            <div className={isStage ? 'board-frame' : undefined} style={isStage ? undefined : { background: 'var(--bg-secondary)', padding: '5px', borderRadius: '18px', border: '4px solid var(--line)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', width: '100%' }}>
                                 <BoardGame
                                     teams={teams}
                                     totalSteps={100}
                                     scores={visualScores}
                                     avatars={teamAvatars}
                                     activeTeam={roboTeam || activeTeam}
+                                    surprises={exam.surprises}
+                                    opened={openedSurprises}
                                 />
                             </div>
-                            <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text)', fontWeight: 'bold', fontSize: 'clamp(0.8rem, 1.3vw, 1.15rem)', padding: '0 0.2rem' }}>
+                            </div>
+                            {!isStage && <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text)', fontWeight: 'bold', fontSize: 'clamp(0.8rem, 1.3vw, 1.15rem)', padding: '0 0.2rem' }}>
                                 <span>📺 Pregunta {currentQuestion + 1} / {exam.questions.length}</span>
                                 <span style={{ color: 'var(--primary)' }}>{Math.round(((currentQuestion + 1) / exam.questions.length) * 100)}% Completado</span>
-                            </div>
+                            </div>}
                         </div>
 
                         {/* RIGHT: QUESTIONS & CONTROLS */}
-                        <div style={{ gridArea: projectorMode ? 'main' : undefined, display: 'flex', flexDirection: 'column', gap: 'clamp(0.35rem, 0.7vh, 1rem)' }}>
-                            {settings.timer && (
+                        <div className={isStage ? 'exam-main' : undefined} style={{ gridArea: isStage ? 'main' : undefined, display: 'flex', flexDirection: 'column', gap: 'clamp(0.35rem, 0.7vh, 1rem)', ...(isStage ? { minHeight: 0, overflow: 'hidden' } : {}) }}>
+                            {settings.timer && !isStage && (
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     <div className="timer-bar-container" style={{ flex: 1, height: 'clamp(10px, 1.5vh, 14px)', background: 'rgba(0,0,0,0.1)', border: '2px solid var(--line)', borderRadius: '8px', overflow: 'hidden' }}>
                                         <div className="timer-bar" style={{
@@ -1269,21 +1471,23 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
 
                             {/* Active team header + jokers */}
                             {!roboTeam && activeTeam && !feedback && (!isLastQuestion || wagerConfirmed) && (
-                                <div className="card" style={{ background: 'var(--primary)', color: '#fff', border: '4px solid var(--line)', textAlign: 'center', padding: 'clamp(0.4rem, 0.8vh, 1rem)', marginBottom: 0, boxShadow: '0 15px 30px rgba(0,0,0,0.3)' }}>
+                                <div className="card" style={{ background: 'var(--primary)', color: '#fff', border: '4px solid var(--line)', textAlign: isStage ? 'left' : 'center', padding: 'clamp(0.4rem, 0.8vh, 1rem)', marginBottom: 0, boxShadow: '0 15px 30px rgba(0,0,0,0.3)', ...(isStage ? { display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem 1.2rem' } : {}) }}>
+                                    <div>
                                     <h3 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '2px', fontSize: 'clamp(0.7rem, 1.1vw, 0.95rem)' }}>🎙️ PREGUNTA AL AIRE</h3>
-                                    <div style={{ fontSize: 'clamp(1.3rem, 2vw, 2rem)', fontWeight: 900 }}>{activeTeam}</div>
+                                    <div style={{ fontSize: isStage ? 'clamp(1.3rem, 4.2vh, 3rem)' : 'clamp(1.3rem, 2vw, 2rem)', fontWeight: 900, lineHeight: 1.1 }}>{activeTeam}</div>
                                     {wagerConfirmed && (
                                         <div style={{ fontSize: '0.9rem', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '8px', marginTop: '5px', fontWeight: 'bold' }}>Apuesta: {wager} XP</div>
                                     )}
+                                    </div>
                                     {settings.jokers && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '10px' }}>
+                                        <div style={{ display: 'flex', flexDirection: isStage ? 'row' : 'column', flexWrap: 'wrap', gap: '5px', marginTop: isStage ? 0 : '10px' }}>
                                             {!usedJokers[activeTeam]?.fifty && (
-                                                <button className="btn" style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', background: 'var(--bg-secondary)', color: 'var(--text)', borderColor: 'var(--line)', boxShadow: 'none' }} onClick={useFiftyFifty}>
+                                                <button className="btn" style={{ width: isStage ? 'auto' : '100%', padding: isStage ? '8px 14px' : '6px 12px', fontSize: isStage ? 'clamp(0.75rem, 1.05vw, 1.05rem)' : '0.8rem', background: 'var(--bg-secondary)', color: 'var(--text)', borderColor: 'var(--line)', boxShadow: 'none' }} onClick={useFiftyFifty}>
                                                     🌓 Comodín 50/50
                                                 </button>
                                             )}
                                             {!usedJokers[activeTeam]?.shield && !activeJoker && (
-                                                <button className="btn" style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', background: 'var(--bg-secondary)', color: 'var(--text)', borderColor: 'var(--line)', boxShadow: 'none' }} onClick={useShield}>
+                                                <button className="btn" style={{ width: isStage ? 'auto' : '100%', padding: isStage ? '8px 14px' : '6px 12px', fontSize: isStage ? 'clamp(0.75rem, 1.05vw, 1.05rem)' : '0.8rem', background: 'var(--bg-secondary)', color: 'var(--text)', borderColor: 'var(--line)', boxShadow: 'none' }} onClick={useShield}>
                                                     🛡️ Comodín Escudo (No retrocede)
                                                 </button>
                                             )}
@@ -1291,7 +1495,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                                 <div style={{ fontSize: '0.8rem', color: '#ffeb3b', fontWeight: 'bold', marginTop: '5px' }}>🛡️ Escudo Activo para este turno</div>
                                             )}
                                             {!usedJokers[activeTeam]?.freeze && settings.timer && isTimerActive && (
-                                                <button className="btn" style={{ width: '100%', padding: '6px 12px', fontSize: '0.8rem', background: 'var(--bg-secondary)', color: 'var(--text)', borderColor: 'var(--line)', boxShadow: 'none' }} onClick={useFreeze}>
+                                                <button className="btn" style={{ width: isStage ? 'auto' : '100%', padding: isStage ? '8px 14px' : '6px 12px', fontSize: isStage ? 'clamp(0.75rem, 1.05vw, 1.05rem)' : '0.8rem', background: 'var(--bg-secondary)', color: 'var(--text)', borderColor: 'var(--line)', boxShadow: 'none' }} onClick={useFreeze}>
                                                     ⏱️ Congelar Tiempo
                                                 </button>
                                             )}
@@ -1305,10 +1509,25 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
 
                             {/* Question + options */}
                             {showQuestionBlock && (
-                                <div className="exam-content" style={{ marginTop: 0 }}>
-                                    <div className="exam-question" style={{ background: 'var(--bg-secondary)', fontSize: questionFont, lineHeight: 1.3, color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.7rem, 1.3vw, 1.4rem)' }}>
+                                <div className="exam-content" style={isStage ? { marginTop: 0, flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 'clamp(0.3rem, 0.8vh, 0.7rem)' } : { marginTop: 0 }}>
+                                    {isGolden && (
+                                        <motion.div
+                                            className="golden-ribbon"
+                                            initial={{ scale: 0.6, opacity: 0, rotate: -3 }}
+                                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                            transition={{ type: 'spring', stiffness: 260, damping: 14 }}
+                                        >
+                                            ⭐ PREGUNTA DORADA · ¡XP x2! ⭐
+                                        </motion.div>
+                                    )}
+                                    <MaybeFit
+                                        enabled={isStage}
+                                        maxVw={0.04}
+                                        className="exam-question"
+                                        style={{ background: 'var(--bg-secondary)', lineHeight: 1.25, color: 'var(--text)', border: '3px solid var(--line)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', padding: 'clamp(0.7rem, 1.3vw, 1.4rem)', ...(isStage ? { flex: `${question.text.length + 60} 1 0`, minHeight: 0, marginBottom: 0 } : { fontSize: questionFont }) }}
+                                    >
                                         {question.text}
-                                    </div>
+                                    </MaybeFit>
                                     {question.image && (
                                         <img
                                             src={question.image}
@@ -1317,14 +1536,16 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                                 display: 'block',
                                                 margin: 'clamp(0.4rem, 0.7vh, 0.8rem) auto 0',
                                                 maxWidth: '100%',
-                                                maxHeight: projectorMode ? '42vh' : '30vh',
+                                                maxHeight: isStage ? '22vh' : '30vh',
+                                                flex: isStage ? '0 0 auto' : undefined,
                                                 borderRadius: '12px',
                                                 border: '3px solid var(--line)',
                                                 objectFit: 'contain',
                                             }}
                                         />
                                     )}
-                                    <div className="exam-options" style={{ gap: 'clamp(5px, 0.7vh, 10px)', marginTop: 'clamp(0.4rem, 0.7vh, 1rem)' }}>
+                                    <MaybeFit enabled={isStage} maxVw={0.032} style={isStage ? { flex: `${question.options.reduce((n, o) => n + String(o).length, 0) + 80} 1 0`, minHeight: 0 } : undefined}>
+                                    <div className="exam-options" style={{ gap: 'clamp(5px, 0.7vh, 10px)', marginTop: isStage ? 0 : 'clamp(0.4rem, 0.7vh, 1rem)' }}>
                                         {question.options.map((opt, i) => {
                                             const isResolved = feedback && feedback.type !== 'incorrect_temporary';
                                             let bg = 'var(--bg)';
@@ -1352,33 +1573,36 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                                         border,
                                                         background: bg,
                                                         color: fg,
-                                                        padding: 'clamp(9px, 1.3vh, 18px)',
-                                                        fontSize: optionFont,
+                                                        padding: isStage ? '0.45em 0.7em' : 'clamp(9px, 1.3vh, 18px)',
+                                                        fontSize: isStage ? '1em' : optionFont,
                                                         fontWeight: '700',
                                                         cursor: 'pointer',
                                                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                                                        transition: 'all 0.2s ease',
+                                                        transition: isStage ? 'background 0.2s ease, border-color 0.2s ease' : 'all 0.2s ease',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '10px'
+                                                        gap: isStage ? '0.5em' : '10px'
                                                     }}
                                                     onClick={() => answer(i, !!roboTeam)}
                                                 >
-                                                    <span style={{ opacity: 0.55, fontWeight: 900, fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>{i + 1}.</span>
+                                                    <span style={{ opacity: 0.55, fontWeight: 900, fontSize: isStage ? '0.55em' : 'clamp(0.7rem, 1vw, 1rem)' }}>{i + 1}.</span>
                                                     <span style={{ flex: 1, textAlign: 'left' }}>{opt}</span>
                                                     {isResolved && i === question.correctIndex && <span style={{ fontWeight: 900 }}>✓</span>}
                                                 </button>
                                             );
                                         })}
                                     </div>
+                                    </MaybeFit>
                                     {!feedback && !isRevealing && (
-                                        <button className="btn" style={{ width: '100%', marginTop: '8px', fontSize: '0.8rem', background: 'var(--bg-secondary)', color: 'var(--muted)', border: '2px dashed var(--line)' }} onClick={revealAnswer}>
+                                        <button className="btn" style={{ width: '100%', marginTop: isStage ? 0 : '8px', minHeight: isStage ? '34px' : undefined, padding: isStage ? '4px' : undefined, flex: isStage ? '0 0 auto' : undefined, fontSize: '0.8rem', background: 'var(--bg-secondary)', color: 'var(--muted)', border: '2px dashed var(--line)' }} onClick={revealAnswer}>
                                             👁️ Revelar respuesta (sin puntos)
                                         </button>
                                     )}
-                                    <div style={{ marginTop: '6px', fontSize: '0.65rem', textAlign: 'center', color: 'var(--muted)' }}>
-                                        Atajos: teclas 1-{question.options.length} para responder · Enter para continuar
-                                    </div>
+                                    {!isStage && (
+                                        <div style={{ marginTop: '6px', fontSize: '0.65rem', textAlign: 'center', color: 'var(--muted)' }}>
+                                            Atajos: teclas 1-{question.options.length} para responder · Enter para continuar
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -1390,21 +1614,24 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                     border: '4px solid var(--line)',
                                     boxShadow: '0 15px 40px rgba(0,0,0,0.3)',
                                     padding: 'clamp(0.6rem, 1.2vh, 1.5rem)',
-                                    textAlign: 'center'
+                                    textAlign: 'center',
+                                    ...(isStage ? { display: 'flex', flexDirection: 'column', flex: feedback.explanation ? '0 0 40%' : '0 0 auto', minHeight: 0, overflow: 'hidden' } : {})
                                 }}>
-                                    <div style={{ fontSize: 'clamp(1.1rem, 2vw, 1.8rem)', fontWeight: 900, marginBottom: '0.5rem' }}>{feedback.msg}</div>
+                                    <MaybeFit enabled={isStage} maxVw={0.024} style={isStage ? { flex: '1 1 auto', minHeight: 0 } : undefined}>
+                                    <div style={{ fontSize: isStage ? '1.2em' : 'clamp(1.1rem, 2vw, 1.8rem)', fontWeight: 900, marginBottom: '0.5rem' }}>{feedback.msg}</div>
 
                                     {question && (
-                                        <div style={{ fontSize: 'clamp(1rem, 1.7vw, 1.5rem)', fontWeight: 800, background: 'rgba(0,0,0,0.22)', padding: 'clamp(8px, 1vw, 14px)', borderRadius: '10px', margin: '10px 0' }}>
+                                        <div style={{ fontSize: isStage ? '1em' : 'clamp(1rem, 1.7vw, 1.5rem)', fontWeight: 800, background: 'rgba(0,0,0,0.22)', padding: 'clamp(8px, 1vw, 14px)', borderRadius: '10px', margin: '10px 0' }}>
                                             ✅ Respuesta correcta: {question.options[question.correctIndex]}
                                         </div>
                                     )}
 
                                     {feedback.explanation && (
-                                        <div style={{ fontSize: 'clamp(0.95rem, 1.4vw, 1.3rem)', lineHeight: 1.35, background: 'rgba(0,0,0,0.2)', padding: 'clamp(10px, 1.1vw, 16px)', borderRadius: '8px', margin: '10px 0', textAlign: 'left', borderLeft: '4px solid white' }}>
+                                        <div style={{ fontSize: isStage ? '0.85em' : 'clamp(0.95rem, 1.4vw, 1.3rem)', lineHeight: 1.35, background: 'rgba(0,0,0,0.2)', padding: 'clamp(10px, 1.1vw, 16px)', borderRadius: '8px', margin: '10px 0', textAlign: 'left', borderLeft: '4px solid white' }}>
                                             <strong>💡 Explicación:</strong> {feedback.explanation}
                                         </div>
                                     )}
+                                    </MaybeFit>
 
                                     <button className="btn primary" style={{ background: 'var(--bg)', color: 'var(--text)', border: '2px solid var(--line)', width: '100%', fontSize: 'clamp(1rem, 1.5vw, 1.3rem)', padding: 'clamp(0.5rem, 1vh, 0.9rem)' }} onClick={advanceAfterFeedback}>
                                         {isLastQuestion ? '🏆 ¡Ver Gran Final!' : 'Siguiente Pregunta ➡'}
@@ -1421,6 +1648,65 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                         </div>
                     </div>
                 )}
+
+                {/* Zoom al tablero: aparece solo en el escenario cuando un equipo avanza o retrocede. */}
+                <AnimatePresence>
+                    {isStage && zoom && (
+                        <motion.div
+                            key="board-zoom"
+                            className="board-zoom"
+                            role="status"
+                            aria-live="polite"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={clearZoom}
+                        >
+                            <motion.div
+                                className="board-zoom-caption"
+                                key={zoom.caption}
+                                initial={{ scale: 0.8, opacity: 0, y: -10 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                            >
+                                {zoom.caption}
+                            </motion.div>
+                            <motion.div
+                                className="board-zoom-board"
+                                initial={{ scale: 0.5, y: 60 }}
+                                animate={{ scale: 1, y: 0 }}
+                                transition={{ type: 'spring', stiffness: 220, damping: 20 }}
+                            >
+                                <BoardGame
+                                    teams={teams}
+                                    totalSteps={100}
+                                    scores={zoom.scores || visualScores}
+                                    avatars={teamAvatars}
+                                    activeTeam={zoom.team}
+                                    surprises={exam.surprises}
+                                    opened={Object.fromEntries(Object.entries(openedSurprises).filter(([pos]) => Number(pos) !== zoom.pendingTile))}
+                                />
+                                <AnimatePresence>
+                                    {zoom.event && (
+                                        <motion.div
+                                            key={zoom.event.id}
+                                            className="board-zoom-event"
+                                            initial={{ scale: 0, rotate: -25, opacity: 0 }}
+                                            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                            exit={{ scale: 0.6, opacity: 0 }}
+                                            transition={{ type: 'spring', stiffness: 240, damping: 11 }}
+                                        >
+                                            <span className="board-zoom-event-emoji">{zoom.event.emoji}</span>
+                                            <span>{zoom.event.label}</span>
+                                            <small>{zoom.event.detail}</small>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                            <div className="board-zoom-hint">Toca o pulsa Enter para continuar</div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* ===================== RESULTS PHASE ===================== */}
                 {exam && currentQuestion === -1 && (
