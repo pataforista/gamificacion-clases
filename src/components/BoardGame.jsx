@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 // Soft kawaii pastels cycled along the winding trail.
 const PASTELS = [
@@ -21,8 +21,22 @@ const STICKERS = [
   { e: '🍬', top: '92%', left: '80%', size: '1.5rem', rot: 8 },
 ];
 
-const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, activeTeam = null }) => {
+// `surprises`: casillas (índice 0-99) con premio escondido; `opened`: { casilla: emoji }
+// de las que ya se descubrieron. El tablero se escala solo según su ancho real,
+// para que se lea igual en la tarjeta chica que ampliado en el proyector.
+const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, activeTeam = null, surprises = [], opened = {} }) => {
   const gridSize = 10;
+  const wrapRef = useRef(null);
+  const [k, setK] = useState(1);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([entry]) => {
+      setK(Math.max(0.8, Math.min(3.2, entry.contentRect.width / 260)));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const tiles = Array.from({ length: totalSteps }, (_, i) => i);
 
   // Snake pattern calculation (Boustrophedon)
@@ -50,6 +64,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
 
   return (
     <div
+      ref={wrapRef}
       style={{
         width: '100%',
         maxWidth: '100%',
@@ -76,7 +91,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
             position: 'absolute',
             top: s.top,
             left: s.left,
-            fontSize: s.size,
+            fontSize: `${parseFloat(s.size) * k}rem`,
             transform: `rotate(${s.rot}deg)`,
             opacity: 0.55,
             pointerEvents: 'none',
@@ -124,6 +139,8 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
           const isStart = t === 0;
           const isFinish = t === totalSteps - 1;
           const isMilestone = (t + 1) % 10 === 0 && !isFinish;
+          const isSurprise = !isStart && !isFinish && surprises.includes(t);
+          const surpriseOpen = isSurprise && opened[t];
 
           let tileBg = PASTELS[Math.floor(t / 5) % PASTELS.length];
           let ring = 'rgba(255,255,255,0.85)';
@@ -137,6 +154,12 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
             tileBg = 'linear-gradient(135deg, var(--kawaii-lemon), var(--warn))';
             ring = 'rgba(255,255,255,0.95)';
             extra = '🏆';
+          } else if (isSurprise) {
+            ring = 'var(--warn)';
+            extra = surpriseOpen || '❓';
+            tileBg = surpriseOpen
+              ? 'linear-gradient(135deg, var(--bg-tint), var(--bg-secondary))'
+              : 'linear-gradient(135deg, var(--kawaii-lavender), var(--secondary))';
           } else if (isMilestone) {
             ring = 'var(--warn)';
             extra = '⭐';
@@ -167,7 +190,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.58rem',
+                  fontSize: `${0.58 * k}rem`,
                   fontWeight: 800,
                   fontFamily: 'var(--font-display)',
                   color: 'rgba(74,59,68,0.85)',
@@ -178,14 +201,15 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                   position: 'relative',
                   transform: (isStart || isFinish) ? 'scale(1.04)' : 'none',
                 }}
+                className={isSurprise && !surpriseOpen ? 'surprise-tile' : undefined}
               >
                 {extra ? (
-                  <span style={{ fontSize: (isStart || isFinish) ? '0.95rem' : '0.75rem', lineHeight: 1 }}>{extra}</span>
+                  <span style={{ fontSize: `${((isStart || isFinish) ? 0.95 : 0.75) * k}rem`, lineHeight: 1 }}>{extra}</span>
                 ) : (
                   label
                 )}
                 {isMilestone && (
-                  <span style={{ fontSize: '0.42rem', fontWeight: 800, opacity: 0.85 }}>{label}</span>
+                  <span style={{ fontSize: `${0.42 * k}rem`, fontWeight: 800, opacity: 0.85 }}>{label}</span>
                 )}
               </div>
             </div>
@@ -226,12 +250,12 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                   <div
                     style={{
                       position: 'absolute',
-                      top: '-16px',
+                      top: `${-16 * k}px`,
                       background: 'var(--primary)',
                       color: 'white',
-                      padding: '2px 7px',
+                      padding: `${2 * k}px ${7 * k}px`,
                       borderRadius: '8px',
-                      fontSize: '0.5rem',
+                      fontSize: `${0.5 * k}rem`,
                       fontWeight: 800,
                       fontFamily: 'var(--font-display)',
                       letterSpacing: '0.04em',
@@ -245,8 +269,8 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                 )}
                 <div
                   style={{
-                    width: '26px',
-                    height: '26px',
+                    width: `${26 * k}px`,
+                    height: `${26 * k}px`,
                     background: isActive
                       ? 'var(--primary)'
                       : 'var(--bg-secondary)',
@@ -258,7 +282,7 @@ const BoardGame = ({ teams = [], totalSteps = 100, scores = {}, avatars = {}, ac
                     boxShadow: isActive
                       ? '0 0 0 3px var(--accent-glow), 0 6px 14px rgba(150,100,120,0.35)'
                       : '0 4px 10px rgba(150,100,120,0.28)',
-                    fontSize: '0.85rem',
+                    fontSize: `${0.85 * k}rem`,
                     overflow: 'hidden',
                   }}
                 >

@@ -114,10 +114,12 @@ const HERRAMIENTAS = [
     steps: [
       'Sube un archivo JSON con las preguntas o créalas con el editor visual (“Diseñar Examen”).',
       'Ajusta el Game Show: temporizador, comodines (50/50, escudo, congelar), rebote y suspenso.',
+      'Deja activado “Barajar Respuestas” para que la correcta cambie de lugar en cada pregunta.',
       'Asigna turnos a los equipos que creaste previamente.',
-      'Juega y sigue el marcador y el tablero de avance en vivo.',
+      'Pulsa “Modo Proyector” para ocupar toda la pantalla: pregunta grande, tablero y clasificación. Cuando un equipo avanza, el tablero se acerca para que todos vean el movimiento (toca o pulsa Enter para saltarlo).',
+      'Sorpresas: algunas preguntas son doradas (XP x2), tres aciertos seguidos dan racha 🔥 y el tablero esconde casillas ❓ con cohetes, regalos, torbellinos y cáscaras de plátano.',
     ],
-    tip: 'Usa “Copiar Plantilla” para ver el formato exacto del JSON de preguntas.',
+    tip: 'Usa “Copiar Plantilla” para ver el formato exacto del JSON de preguntas. Esc sale del modo proyector.',
   },
   {
     id: 'ruleta',

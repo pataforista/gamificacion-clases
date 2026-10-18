@@ -2007,3 +2007,127 @@ details > summary { cursor: pointer; padding: 0.3rem 0; }
   .subtitle { font-size: 0.82rem; }
   .mec-card h3 { font-size: 1.3rem; }
 }
+
+/* ==========================================================================
+   Examen grupal · modo proyector ("escenario")
+   ========================================================================== */
+
+/* El escenario cubre toda la ventana: sin barra lateral ni título de la app. */
+.exam-stage {
+  position: fixed !important;
+  inset: 0;
+  z-index: 800;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow-y: auto;
+  padding: clamp(0.6rem, 1.4vw, 1.6rem) !important;
+  background-color: var(--bg) !important;
+  background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px) !important;
+  background-size: 16px 16px !important;
+}
+.exam-stage > .row h2 {
+  font-size: clamp(1.4rem, 2.4vw, 2.6rem);
+  background: var(--text);
+  color: var(--bg-secondary);
+  padding: 0.15em 0.6em;
+  border-radius: var(--radius-sm);
+}
+.exam-stage .game-dashboard { min-height: calc(100vh - 6rem); }
+@media (max-width: 900px) {
+  .exam-stage .game-dashboard {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "board" "main" "rank" !important;
+  }
+}
+
+/* Zoom al tablero cuando un equipo se mueve. */
+.board-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.6rem, 2vh, 1.6rem);
+  padding: 1rem;
+  background: rgba(15, 28, 21, 0.82);
+  cursor: pointer;
+}
+.board-zoom-caption {
+  max-width: min(94vw, 1100px);
+  padding: 0.35em 0.9em;
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--ink-shadow);
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 3.4rem);
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+}
+.board-zoom-board {
+  position: relative;
+  width: min(74vh, 90vw);
+  border: 5px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 10px 10px 0 var(--ink-shadow);
+  background: var(--bg-secondary);
+}
+.board-zoom-event {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  padding: 0.5em 1.1em;
+  background: var(--warn);
+  color: #1E1E1E;
+  border: 4px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 8px 8px 0 var(--ink-shadow);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 4rem);
+  text-align: center;
+  white-space: nowrap;
+}
+.board-zoom-event small { font-family: var(--font-body); font-weight: 800; font-size: 0.38em; white-space: normal; max-width: 18em; }
+.board-zoom-event-emoji { font-size: 1.6em; line-height: 1; }
+.board-zoom-hint { color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; font-weight: 600; }
+
+/* Pregunta dorada y casillas sorpresa. */
+.golden-ribbon {
+  margin-bottom: 0.5rem;
+  padding: 0.35em 0.8em;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.2vw, 2.2rem);
+  letter-spacing: 0.04em;
+  color: #3A2A00;
+  border: 3px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(100deg, #FFD84A 0%, #FFF3A8 45%, #FFD84A 55%, #F4B400 100%);
+  background-size: 220% 100%;
+  box-shadow: 5px 5px 0 var(--ink-shadow);
+  animation: golden-shimmer 2.4s linear infinite;
+}
+@keyframes golden-shimmer {
+  from { background-position: 120% 0; }
+  to   { background-position: -100% 0; }
+}
+.surprise-tile { animation: surprise-bob 1.8s ease-in-out infinite; }
+@keyframes surprise-bob {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .golden-ribbon, .surprise-tile { animation: none; }
+}

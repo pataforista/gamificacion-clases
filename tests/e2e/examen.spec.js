@@ -102,3 +102,77 @@ test.describe('Barajado de respuestas', () => {
     expect(r.porLetra.options).toEqual(['x', 'A y B', 'z', 'w']);
   });
 });
+
+test.describe('Modo proyector (escenario)', () => {
+  test('cubre toda la ventana y hace zoom al tablero cuando alguien acierta', async ({ page }) => {
+    await startExam(page, { extraQuestion: true });
+    await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();
+    for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
+    await pane(page).getByText('¡Comenzar Examen!').click();
+    await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
+
+    await pane(page).getByRole('button', { name: /Modo Proyector/ }).click();
+    const escenario = pane(page).locator('.exam-stage');
+    await expect(escenario).toBeVisible();
+    const box = await escenario.boundingBox();
+    const vp = page.viewportSize();
+    expect(box.width).toBeGreaterThanOrEqual(vp.width - 2);
+    expect(box.height).toBeGreaterThanOrEqual(vp.height - 2);
+
+    // Las opciones vienen barajadas: la tecla depende de dónde cayó "La piel".
+    const textos = await pane(page).locator('.exam-options button').allTextContents();
+    await page.keyboard.press(String(textos.findIndex(t => t.includes('La piel')) + 1));
+
+    const zoom = page.locator('.board-zoom');
+    await expect(zoom).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('.board-zoom-caption')).toContainText(/Acertó|avanza/);
+    await page.keyboard.press('Enter');
+    await expect(zoom).toHaveCount(0);
+  });
+
+  test('sin escenario no hay zoom', async ({ page }) => {
+    await startExam(page, { extraQuestion: true });
+    await pane(page).getByRole('button', { name: /^Mazmorra/ }).click();
+    for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
+    await pane(page).getByText('¡Comenzar Examen!').click();
+    const textos = await pane(page).locator('.exam-options button').allTextContents();
+    await page.keyboard.press(String(textos.findIndex(t => t.includes('La piel')) + 1));
+    await expect(pane(page).getByText(/Respuesta correcta: La piel/)).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('.board-zoom')).toHaveCount(0);
+    await expect(pane(page).locator('.exam-stage')).toHaveCount(0);
+  });
+
+  test('las sorpresas del tablero y las preguntas doradas se reparten bien', async ({ page }) => {
+    await openTab(page, 'Examen grupal');
+    const r = await page.evaluate(async () => {
+      const m = await import('/src/utils/examSurprises.js');
+      const tableros = Array.from({ length: 300 }, () => m.makeSurprises());
+      const doradas = Array.from({ length: 300 }, () => m.chooseGolden(10));
+      const conteo = {};
+      for (let i = 0; i < 4000; i++) {
+        const s = m.pickSorpresa();
+        conteo[s.id] = (conteo[s.id] || 0) + 1;
+      }
+      const solo = new Set(Array.from({ length: 300 }, () => m.pickSorpresa(true).id));
+      return { tableros, doradas, conteo, solo: [...solo], pocas: m.chooseGolden(2) };
+    });
+    for (const t of r.tableros) {
+      expect(t).toHaveLength(6);
+      expect(new Set(t).size).toBe(6);
+      expect([...t].sort((a, b) => a - b)).toEqual(t);
+      for (const c of t) {
+        expect(c).toBeGreaterThanOrEqual(6);
+        expect(c).toBeLessThanOrEqual(94);
+        expect(c % 10).not.toBe(9);
+      }
+    }
+    for (const d of r.doradas) {
+      expect(d).toHaveLength(2);
+      expect(d).not.toContain(9); // nunca la última (Gran Final)
+    }
+    expect(r.pocas).toEqual([]);
+    expect(Object.keys(r.conteo).sort()).toEqual(['cascara', 'cohete', 'regalo', 'torbellino']);
+    expect(r.conteo.cohete).toBeGreaterThan(r.conteo.cascara); // 30 % vs 20 %
+    expect(r.solo).not.toContain('torbellino');
+  });
+});
