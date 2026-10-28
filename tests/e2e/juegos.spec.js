@@ -37,7 +37,7 @@ test.describe('Trivia', () => {
     await page.reload();
     await openTab(page, 'Trivia');
     await expect(pane(page).locator('textarea')).toHaveValue(/París/);
-    await pane(page).getByRole('button', { name: '⚡ Nueva pregunta' }).click();
+    await pane(page).getByRole('button', { name: 'Nueva pregunta' }).click();
     await pane(page).getByRole('button', { name: '✓ Correcto' }).click();
     await expect(pane(page).getByText('✓ 1')).toBeVisible();
   });

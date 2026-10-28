@@ -25,7 +25,7 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
 
   return (
     <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h2 style={{ textAlign: 'center', color: 'var(--primary)' }}>🎭 ¡Elige tu personaje!</h2>
+      <h2 style={{ textAlign: 'center', color: 'var(--primary)' }}>¡Elige tu personaje!</h2>
       <div className="divider"></div>
       
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
@@ -102,7 +102,7 @@ const AvatarSelector = ({ teams = [], onComplete }) => {
             disabled={Object.keys(selections).length < teams.length}
             onClick={() => onComplete(selections)}
         >
-          ¡Comenzar Examen! 🚀
+          ¡Comenzar Examen!
         </button>
       </div>
 

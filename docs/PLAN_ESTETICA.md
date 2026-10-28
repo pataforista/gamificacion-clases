@@ -102,3 +102,24 @@ Cada fase es un commit independiente y revisable; la Fase 1 sola ya elimina los 
 Capas revisadas: contexto ✔ (objetivo final pendiente) · flujo ✔ · composición ✔ ·
 accesibilidad ✔ (contraste medido; lector de pantalla no revisado) · pase visual ✔ ·
 huellas de IA ✔ · validación con usuarios ✘ (Fase 5).
+
+## 6. Estado (opción A aplicada, octubre 2026)
+
+| Hallazgo | Estado | Qué se hizo |
+|---|---|---|
+| 1. Título repetido | Hecho | La cabecera muestra el módulo abierto; la materia queda como rótulo editable encima |
+| 2. Título rojo sobre menta | Hecho | Título en tinta con sombra de color corrida |
+| 3. Semáforo ilegible | Hecho | Componente único `TrafficLight`: franja de color, icono y texto en cada luz; la activa se rellena con tinta oscura fija (≥ 4,5:1) |
+| 4. Contraste de botones y texto | Hecho | Colores de acción, éxito, error y texto atenuado ajustados en los 6 temas; 0 fallos en los pares revisados |
+| 5. Todas las tarjetas iguales | Hecho | `card-main` (sombra grande), `card` (chica), `card-quiet` (sin sombra) |
+| 6. Huecos vacíos | Parcial | Clase en vivo con semáforo dominante y columna lateral; el resto conserva su rejilla |
+| 7. Color sin significado | Hecho | Una acción principal por pantalla; `.danger` para borrar/reiniciar; amarillo solo para "activo" |
+| 8. Emojis como iconos | Hecho en botones | Lucide en botones de control; los mensajes del juego, avatares y Ayuda conservan sus emojis |
+| 9. Escala tipográfica y radios | Hecho | 6 tamaños (`--fs-*`) y 3 radios (`--radius`, `--radius-sm`, `--radius-pill`) en el CSS global |
+| 9b. `!important` | Pendiente | 37 siguen: casi todos compiten con estilos escritos dentro de los componentes (sobre todo el examen) |
+| 10. Copy mezclado | Hecho | Sin "Heal", "Game Show" ni "Reset"; tipo oración en títulos y botones tocados |
+| 11. Navegación en móvil | Hecho | Barra inferior al alcance del pulgar, icono sobre texto |
+| 12. Tema Noche | Revisado | El logo sí se dibuja (la captura anterior se tomó antes de que terminara su animación); contraste corregido |
+| 13. Estados vacíos | Hecho | "Nadie todavía", "Elige un dado", "Sin asignar" |
+
+Pendiente: Fase 5 (prueba en aula real) y migrar los estilos en línea de `GroupExam.jsx` para poder retirar los `!important`.

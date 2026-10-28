@@ -24,7 +24,7 @@
 .item {
   background: var(--bg);
   border: 2px solid var(--memphis-magenta);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 15px;
   transition: all 0.3s ease;
 }

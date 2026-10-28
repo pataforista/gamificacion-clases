@@ -165,8 +165,8 @@ const Trivia = ({ pickerItems = [], isActive = true }) => {
   return (
     <div className="grid">
       {/* Left: active question */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h2>Trivia Relámpago ⚡</h2>
+      <div className="card card-main" style={{ display: 'flex', flexDirection: 'column' }}>
+        <h2>Trivia relámpago</h2>
         <p className="muted" style={{ marginBottom: '1rem' }}>Desafío de preguntas rápidas con temporizador para dinamizar la participación individual.</p>
 
         {/* Score bar */}
@@ -246,7 +246,7 @@ const Trivia = ({ pickerItems = [], isActive = true }) => {
                   <button className="btn good" onClick={handleCorrect} style={{ flex: 1, padding: '0.8rem' }}>
                     ✓ Correcto
                   </button>
-                  <button className="btn warn" onClick={handleWrong} style={{ flex: 1, padding: '0.8rem' }}>
+                  <button className="btn danger" onClick={handleWrong} style={{ flex: 1, padding: '0.8rem' }}>
                     ✗ Incorrecto
                   </button>
                   <button className="btn" onClick={() => { setShowAnswer(true); stopTimer(); setActive(false); }}>
@@ -258,7 +258,7 @@ const Trivia = ({ pickerItems = [], isActive = true }) => {
                   <button className="btn good" onClick={handleCorrect} style={{ flex: 1 }}>
                     ✓ Correcto
                   </button>
-                  <button className="btn warn" onClick={handleWrong} style={{ flex: 1 }}>
+                  <button className="btn danger" onClick={handleWrong} style={{ flex: 1 }}>
                     ✗ Incorrecto
                   </button>
                 </div>
@@ -280,9 +280,9 @@ const Trivia = ({ pickerItems = [], isActive = true }) => {
           <button
             className="btn primary"
             onClick={pickQuestion}
-            style={{ flex: 1, padding: '0.8rem', fontSize: '1rem' }}
+            style={{ flex: 1, padding: '0.8rem' }}
           >
-            ⚡ Nueva pregunta
+            Nueva pregunta
           </button>
           <button className="btn" onClick={resetAll}>Reiniciar</button>
         </div>
@@ -304,7 +304,7 @@ const Trivia = ({ pickerItems = [], isActive = true }) => {
       </div>
 
       {/* Right: question bank editor */}
-      <div className="card">
+      <div className="card card-quiet">
         <h2>Banco de preguntas ({questions.length})</h2>
         <p className="muted" style={{ marginBottom: '1rem' }}>Gestiona el contenido del juego editando la lista de preguntas y respuestas.</p>
         <div className="smallout" style={{ marginBottom: '0.75rem' }}>

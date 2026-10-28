@@ -19,7 +19,7 @@ test('el selector de tema cambia la clase del documento', async ({ page }) => {
 
 test('Esc cierra un cuadro de diálogo', async ({ page }) => {
   await openTab(page, 'Sorteo');
-  await pane(page).getByRole('button', { name: '🗑️ Limpiar Todo' }).click();
+  await pane(page).getByRole('button', { name: 'Limpiar todo' }).click();
   await expect(page.getByRole('alertdialog')).toBeVisible();
   // En una confirmación el foco inicial está en "Cancelar".
   await expect(page.getByRole('button', { name: 'Cancelar' })).toBeFocused();
@@ -47,7 +47,7 @@ test('cambiar de pestaña no borra el progreso de Bingo ni de Equipos', async ({
 test('el examen conserva la partida, pausa el reloj y no responde con teclas desde otra pestaña', async ({ page }) => {
   await openTab(page, 'Examen grupal');
   await pane(page).locator('input[type=range]').fill('5'); // reloj de 5 s
-  await pane(page).getByText('Diseñar Examen (Editor)').click();
+  await pane(page).getByText('Diseñar examen').click();
   await pane(page).getByText('Añadir Pregunta').click();
   await pane(page).locator('input[placeholder="Escribe la pregunta aquí..."]').nth(1).fill('Segunda');
   await pane(page).getByText('Guardar y Jugar').click();

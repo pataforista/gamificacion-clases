@@ -4,10 +4,8 @@ import { useNotifications } from './NotificationContext';
 import { useAudio } from './AudioContext';
 import { RNG } from '../utils/rng';
 import { motion, AnimatePresence } from 'motion/react';
-
-// Etiquetas del semáforo en español (antes se mostraba el valor interno
-// "GREEN/YELLOW/RED" tal cual en la insignia de estado).
-const TRAFFIC_LABELS = { green: 'LIBRE', yellow: 'DUDAS', red: 'SILENCIO' };
+import { Timer, Shuffle } from 'lucide-react';
+import TrafficLight from './TrafficLight';
 
 // Lightweight "NdM" dice roller for the quick dice in this view. Avoids pulling
 // the heavy rpg-dice-roller (and mathjs) into the initial bundle — the full
@@ -117,66 +115,36 @@ const LiveClass = ({ pickerItems = [] }) => {
     };
 
     return (
-        <div className="grid">
-            {/* SEMAFORO Y CONTROL PRINCIPAL */}
-            <div className="card full-width" style={{ gridColumn: 'span 2' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2>Gestión de Clase en Vivo</h2>
-                    <div className={`pill active-${state.traffic || 'green'}`} style={{ background: `var(--traffic-${state.traffic || 'green'})`, color: 'black' }}>
-                        {TRAFFIC_LABELS[state.traffic] || TRAFFIC_LABELS.green}
-                    </div>
-                </div>
-
-                <div className="traffic-row" style={{ marginTop: '20px', height: '120px' }}>
-                    <button 
-                        className={`traffic-btn ${(state.traffic || 'green') === 'green' ? 'active' : ''}`}
-                        style={{ background: 'var(--traffic-green)', color: '#000', fontSize: '1rem' }}
-                        onClick={() => setTraffic('green')}
-                    >
-                        LIBRE
-                    </button>
-                    <button 
-                        className={`traffic-btn ${(state.traffic || 'green') === 'yellow' ? 'active' : ''}`}
-                        style={{ background: 'var(--traffic-yellow)', color: '#000', fontSize: '1rem' }}
-                        onClick={() => setTraffic('yellow')}
-                    >
-                        DUDAS
-                    </button>
-                    <button 
-                        className={`traffic-btn ${(state.traffic || 'green') === 'red' ? 'active' : ''}`}
-                        style={{ background: 'var(--traffic-red)', color: '#000', fontSize: '1rem' }}
-                        onClick={() => setTraffic('red')}
-                    >
-                        SILENCIO
-                    </button>
-                </div>
+        <div className="grid live-grid">
+            {/* SEMÁFORO Y CONTROL PRINCIPAL */}
+            <div className="card card-main live-main">
+                <h2>Semáforo y tiempo</h2>
+                <TrafficLight value={state.traffic || 'green'} onChange={setTraffic} />
 
                 <div className="divider"></div>
 
-                <div className="row" style={{ justifyContent: 'center', gap: '20px' }}>
-                    {!state.isRedCodeActive ? (
-                        <div style={{ textAlign: 'center' }}>
-                            <div className="muted" style={{ marginBottom: '10px' }}>Temporizador Rápido</div>
-                            <div className="row">
-                                <button className="btn warn" onClick={() => startRedCode(15)}>15s</button>
-                                <button className="btn warn" onClick={() => startRedCode(30)}>30s</button>
-                                <button className="btn warn" onClick={() => startRedCode(60)}>60s</button>
-                                <button className="btn warn" onClick={() => startRedCode(120)}>2m</button>
-                            </div>
+                {!state.isRedCodeActive ? (
+                    <div className="quick-timer">
+                        <span className="quick-timer-label"><Timer size={18} aria-hidden /> Código rojo</span>
+                        <div className="quick-timer-options">
+                            <button className="btn" onClick={() => startRedCode(15)}>15 s</button>
+                            <button className="btn" onClick={() => startRedCode(30)}>30 s</button>
+                            <button className="btn" onClick={() => startRedCode(60)}>1 min</button>
+                            <button className="btn" onClick={() => startRedCode(120)}>2 min</button>
                         </div>
-                    ) : (
-                        <div style={{ textAlign: 'center' }}>
-                            <div className="out" style={{ color: 'var(--traffic-red)', fontSize: '5rem' }}>{localTimer}s</div>
-                            <button className="btn primary error" onClick={stopRedCode}>Detener código rojo</button>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center' }}>
+                        <div className="out" style={{ color: 'var(--error)' }}>{localTimer}s</div>
+                        <button className="btn danger" onClick={stopRedCode}>Detener código rojo</button>
+                    </div>
+                )}
             </div>
 
             {/* SORTEO RÁPIDO */}
             <div className="card">
-                <h2>Siguiente Turno</h2>
-                <div className="out" style={{ fontSize: '2.5rem', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <h2>Siguiente turno</h2>
+                <div className="out" style={{ fontSize: 'var(--fs-xl)', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={lastWinner}
@@ -184,25 +152,25 @@ const LiveClass = ({ pickerItems = [] }) => {
                             animate={{ scale: 1, opacity: 1 }}
                             className={lastWinner && lastWinner !== "..." ? "win-text" : ""}
                         >
-                            {lastWinner || "—"}
+                            {lastWinner || <span className="empty-hint">Nadie todavía</span>}
                         </motion.div>
                     </AnimatePresence>
                 </div>
-                <button className="btn primary good" style={{ width: '100%', padding: '1.2rem' }} onClick={quickPick}>
-                    🎲 Sortear ahora
+                <button className="btn primary" style={{ width: '100%', padding: '1rem' }} onClick={quickPick}>
+                    <Shuffle size={18} aria-hidden /> Sortear ahora
                 </button>
             </div>
 
             {/* DADOS RÁPIDOS */}
             <div className="card">
-                <h2>Dados Rápidos</h2>
-                <div className="out" style={{ fontSize: '3rem', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+                <h2>Dados rápidos</h2>
+                <div className="out" style={{ fontSize: 'var(--fs-xl)', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
                     {quickResult ? (
                         <>
-                            <div style={{ fontSize: '1rem', color: 'var(--muted)' }}>{quickResult.formula}</div>
-                            <div style={{ color: 'var(--primary)' }}>{quickResult.total}</div>
+                            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>{quickResult.formula}</div>
+                            <div>{quickResult.total}</div>
                         </>
-                    ) : "—"}
+                    ) : <span className="empty-hint">Elige un dado</span>}
                 </div>
                 <div className="quick-dice-grid">
                     <button className="btn-quick-dice btn" onClick={() => quickRoll('1d20')}>d20</button>

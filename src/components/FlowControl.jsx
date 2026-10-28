@@ -4,7 +4,8 @@ import { useNotifications } from './NotificationContext';
 import { useAudio } from './AudioContext';
 import { RNG } from '../utils/rng';
 import { useFullscreen } from '../hooks/useFullscreen';
-import Cubes from './Cubes';
+import { Maximize2, Minimize2, Play, Music, Crown } from 'lucide-react';
+import TrafficLight from './TrafficLight';
 
 const FlowControl = ({ pickerItems = [] }) => {
     const { state, updateState } = usePersistence();
@@ -102,11 +103,11 @@ const FlowControl = ({ pickerItems = [] }) => {
 
     return (
         <div className="grid">
-            <div ref={fsRef} className={`card fs-card ${state.traffic === 'red' && state.isRedCodeActive ? 'code-red' : ''}`}>
+            <div ref={fsRef} className={`card card-main fs-card ${state.traffic === 'red' && state.isRedCodeActive ? 'code-red' : ''}`}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0 }}>Temporizador de "Código Rojo"</h2>
-                    <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={toggleFullscreen}>
-                        {isFullscreen ? '🔳 Salir' : '📺 Proyector'}
+                    <h2 style={{ margin: 0 }}>Código rojo</h2>
+                    <button className="btn btn-sm" onClick={toggleFullscreen}>
+                        {isFullscreen ? <><Minimize2 size={16} aria-hidden /> Salir</> : <><Maximize2 size={16} aria-hidden /> Proyector</>}
                     </button>
                 </div>
                 <div className="out">{remaining}s</div>
@@ -126,68 +127,38 @@ const FlowControl = ({ pickerItems = [] }) => {
                     />
                 </div>
                 <div className="row">
-                    <button className="btn warn" onClick={startTimer} disabled={state.isRedCodeActive}>⚡ Iniciar</button>
+                    <button className="btn primary" onClick={startTimer} disabled={state.isRedCodeActive}><Play size={16} aria-hidden /> Iniciar</button>
                     <button className="btn" onClick={stopTimer} disabled={!state.isRedCodeActive}>Detener</button>
                 </div>
             </div>
 
-            <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, opacity: 0.15, pointerEvents: 'none' }}>
-                    <Cubes gridSize={8} faceColor="var(--secondary)" borderStyle="1px solid rgba(127,127,127,0.15)" />
-                </div>
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    <h2>Semáforo de Atención</h2>
-                    <div className="smallout">Controla el ruido y la fase de la clase.</div>
-                    <div className="traffic-row" style={{ marginTop: '20px', gap: '0.5rem' }}>
-                        <button
-                            className={`traffic-btn ${state.traffic === 'green' ? 'active' : ''}`}
-                            data-state="green"
-                            onClick={() => setTraffic('green')}
-                        >
-                            LIBRE
-                        </button>
-                        <button
-                            className={`traffic-btn ${state.traffic === 'yellow' ? 'active' : ''}`}
-                            data-state="yellow"
-                            onClick={() => setTraffic('yellow')}
-                        >
-                            DUDAS
-                        </button>
-                        <button
-                            className={`traffic-btn ${state.traffic === 'red' ? 'active' : ''}`}
-                            data-state="red"
-                            onClick={() => setTraffic('red')}
-                        >
-                            SILENCIO
-                        </button>
-                    </div>
-                    <div className="divider"></div>
-                    <div style={{ textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', color: `var(--traffic-${state.traffic})` }}>
-                        {trafficLabels[state.traffic] || "Libre"}
-                    </div>
+            <div className="card">
+                <div>
+                    <h2>Semáforo de atención</h2>
+                    <p className="muted">Controla el ruido y la fase de la clase.</p>
+                    <TrafficLight value={state.traffic || 'green'} onChange={setTraffic} compact />
+                    <p className="traffic-caption">{trafficLabels[state.traffic] || trafficLabels.green}</p>
                     <div className="divider"></div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>🎵 Música en Código Rojo</span>
+                        <span style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Music size={18} aria-hidden /> Música en código rojo</span>
                         <button
-                            className={`btn ${enableAudio ? 'primary' : ''}`}
+                            className={`btn btn-sm ${enableAudio ? 'selected' : ''}`}
+                            aria-pressed={enableAudio}
                             onClick={() => setEnableAudio(!enableAudio)}
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
                         >
-                            {enableAudio ? 'ON' : 'OFF'}
+                            {enableAudio ? 'Activada' : 'Apagada'}
                         </button>
                     </div>
                 </div>
             </div>
 
             <div className="card">
-                <h2>Gestión de Aula</h2>
-                <p className="muted" style={{ marginBottom: '1rem' }}>Controla el ruido y las transiciones mediante el semáforo y la señal de silencio.</p>
-                <div className="smallout">Selecciona al responsable del grupo hoy.</div>
-                <div className="divider"></div>
+                <h2>Líder del día</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>Sortea quién coordina al grupo hoy.</p>
                 <div className="row">
-                    <button className="btn primary good" onClick={pickLeader}>Asignar Líder</button>
+                    <button className="btn" onClick={pickLeader}><Crown size={16} aria-hidden /> Asignar Líder</button>
                 </div>
-                <div className="out" style={{ fontSize: '24px' }}>{leader}</div>
+                <div className="out" style={{ fontSize: 'var(--fs-lg)' }}>{leader !== '—' ? leader : <span className="empty-hint">Sin asignar</span>}</div>
             </div>
         </div>
     );

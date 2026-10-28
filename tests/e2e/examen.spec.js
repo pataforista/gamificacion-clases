@@ -3,7 +3,7 @@ import { test, expect, openTab, pane, audioLog, clearAudio } from './fixtures';
 const startExam = async (page, { extraQuestion = false, duration } = {}) => {
   await openTab(page, 'Examen grupal');
   if (duration) await pane(page).locator('input[type=range]').fill(String(duration));
-  await pane(page).getByText('Diseñar Examen (Editor)').click();
+  await pane(page).getByText('Diseñar examen').click();
   if (extraQuestion) {
     await pane(page).getByText('Añadir Pregunta').click();
     await pane(page).locator('input[placeholder="Escribe la pregunta aquí..."]').nth(1).fill('Segunda pregunta');
@@ -111,7 +111,7 @@ test.describe('Modo proyector (escenario)', () => {
     await pane(page).getByText('¡Comenzar Examen!').click();
     await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
 
-    await pane(page).getByRole('button', { name: /Modo Proyector/ }).click();
+    await pane(page).getByRole('button', { name: /Modo proyector/i }).click();
     const escenario = pane(page).locator('.exam-stage');
     await expect(escenario).toBeVisible();
     const box = await escenario.boundingBox();
@@ -148,7 +148,7 @@ test.describe('Modo proyector (escenario)', () => {
     for (let i = 0; i < 4; i++) await pane(page).locator('button[aria-pressed]').nth(i).click();
     await pane(page).getByText('¡Comenzar Examen!').click();
     await expect(pane(page).getByText('PREGUNTA AL AIRE')).toBeVisible();
-    await pane(page).getByRole('button', { name: /Modo Proyector/ }).click();
+    await pane(page).getByRole('button', { name: /Modo proyector/i }).click();
     await expect(pane(page).locator('.exam-stage')).toBeVisible();
 
     const revisar = async (vp) => {

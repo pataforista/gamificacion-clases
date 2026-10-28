@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Trash2, Shuffle as ShuffleIcon, Save } from 'lucide-react';
 import { RNG, cleanLines } from '../utils/rng';
 import { useNotifications } from './NotificationContext';
 import { usePersistence } from '../hooks/usePersistence';
@@ -83,8 +84,8 @@ const Picker = ({ onItemsChange, items = [] }) => {
 
     return (
         <div className="grid">
-            <div className="card">
-                <h2>Sorteo de Participación</h2>
+            <div className="card card-main">
+                <h2>Sorteo de participación</h2>
                 <p className="muted" style={{ marginBottom: '1rem' }}>Ingresa los nombres de los alumnos o equipos para rifar turnos de forma justa.</p>
                 
                 <div className="row" style={{ marginBottom: '1rem' }}>
@@ -94,9 +95,9 @@ const Picker = ({ onItemsChange, items = [] }) => {
                         lastSyncRef.current = demoNames.join('\n');
                         if (onItemsChange) onItemsChange(demoNames);
                     }}>
-                        ✨ Cargar Demo
+                        <Sparkles size={16} aria-hidden /> Cargar ejemplo
                     </button>
-                    <button className="btn" onClick={async () => {
+                    <button className="btn danger" onClick={async () => {
                         const ok = await confirm("Limpiar lista", "¿Borrar todos los nombres? Esta acción no se puede deshacer.");
                         if (!ok) return;
                         setInputText('');
@@ -104,7 +105,7 @@ const Picker = ({ onItemsChange, items = [] }) => {
                         if (onItemsChange) onItemsChange([]);
                         setResult(null);
                     }}>
-                        🗑️ Limpiar Todo
+                        <Trash2 size={16} aria-hidden /> Limpiar todo
                     </button>
                 </div>
 
@@ -119,8 +120,8 @@ const Picker = ({ onItemsChange, items = [] }) => {
                 <div className="divider"></div>
 
                 <div className="row">
-                    <button className="btn primary good" onClick={pickOne}>🎲 Elegir alumno</button>
-                    <button className="btn" onClick={() => setHistory([])} disabled={history.length === 0}>Limpiar Historial</button>
+                    <button className="btn primary" onClick={pickOne}><ShuffleIcon size={16} aria-hidden /> Elegir alumno</button>
+                    <button className="btn" onClick={() => setHistory([])} disabled={history.length === 0}>Limpiar historial</button>
                 </div>
 
                 <div className="out" style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -137,7 +138,7 @@ const Picker = ({ onItemsChange, items = [] }) => {
                 </div>
             </div>
 
-            <div className="card">
+            <div className="card card-quiet">
                 <h2>Mis listas de clase</h2>
                 <p className="muted" style={{ marginBottom: '1rem' }}>Guarda varias listas (grupos) y cámbialas con un clic. Se guardan en este dispositivo.</p>
                 <div className="row" style={{ gap: '8px' }}>
@@ -148,7 +149,7 @@ const Picker = ({ onItemsChange, items = [] }) => {
                         placeholder="Nombre de la lista (ej. 2° A)"
                         style={{ flex: 1 }}
                     />
-                    <button className="btn primary" onClick={saveRoster}>💾 Guardar actual</button>
+                    <button className="btn" onClick={saveRoster}><Save size={16} aria-hidden /> Guardar actual</button>
                 </div>
                 <div className="divider"></div>
                 {savedRosters.length === 0 ? (
@@ -161,8 +162,8 @@ const Picker = ({ onItemsChange, items = [] }) => {
                                     <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
                                     <div className="muted" style={{ fontSize: '0.75rem' }}>{r.items.length} alumno(s)</div>
                                 </div>
-                                <button className="btn good" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={() => loadRoster(r)}>Cargar</button>
-                                <button className="btn" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => deleteRoster(r)} title="Borrar lista">🗑️</button>
+                                <button className="btn btn-sm good" onClick={() => loadRoster(r)}>Cargar</button>
+                                <button className="btn btn-sm danger" onClick={() => deleteRoster(r)} title="Borrar lista" aria-label={`Borrar ${r.name}`}><Trash2 size={16} aria-hidden /></button>
                             </div>
                         ))}
                     </div>
@@ -170,7 +171,7 @@ const Picker = ({ onItemsChange, items = [] }) => {
             </div>
 
             <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '400px' }}>
-                <h2>Historial Reciente</h2>
+                <h2>Historial reciente</h2>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                     {history.length > 0 ? (
                         <AnimatedList

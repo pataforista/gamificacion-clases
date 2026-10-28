@@ -28,7 +28,7 @@ const GESTION = [
       'Gestiona la Energía del Grupo: usa “Daño” por errores o falta de atención y “Heal” para recuperarla.',
       'Toca las Insignias para desbloquear logros de la clase.',
       'Cambia entre modo Médico y Genérico según tu materia.',
-      'Usa “Exportar respaldo” para guardar el progreso y “Reset Total” para empezar de cero.',
+      'Usa “Exportar respaldo” para guardar el progreso y “Reiniciar progreso” para empezar de cero.',
     ],
     tip: 'Exporta un respaldo antes de cambiar de grupo para no perder el avance.',
   },
@@ -113,7 +113,7 @@ const HERRAMIENTAS = [
     what: 'Un “game show” por equipos con marcador en tiempo real, música, comodines y un tablero de avance con avatares.',
     steps: [
       'Sube un archivo JSON con las preguntas o créalas con el editor visual (“Diseñar Examen”).',
-      'Ajusta el Game Show: temporizador, comodines (50/50, escudo, congelar), rebote y suspenso.',
+      'Ajusta el juego: temporizador, comodines (50/50, escudo, congelar), rebote y suspenso.',
       'Deja activado “Barajar Respuestas” para que la correcta cambie de lugar en cada pregunta.',
       'Asigna turnos a los equipos que creaste previamente.',
       'Pulsa “Modo Proyector” para ocupar toda la pantalla, sin hacer scroll: reloj grande, pregunta y respuestas (la letra se ajusta sola al largo del texto), tablero y clasificación. Cuando un equipo avanza, el tablero se acerca para que todos vean el movimiento (toca o pulsa Enter para saltarlo).',

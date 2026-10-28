@@ -211,7 +211,7 @@ const Dice = () => {
     return (
         <div className="grid">
             <div className={`card theme-${theme}`}>
-                <h2>Mesa de Dados</h2>
+                <h2>Mesa de dados</h2>
                 <p className="muted" style={{ marginBottom: '1rem' }}>Lanza dados virtuales con física divertida para decidir puntos o eventos.</p>
                 <div className="dice-tray-container">
                     <div className="dice-tray" style={{
@@ -332,7 +332,7 @@ const Dice = () => {
             </div>
 
             <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-                <h2>Récords y Log</h2>
+                <h2>Récords y registro</h2>
                 <p className="muted" style={{ marginBottom: '1rem' }}>Sigue el historial de tus lanzamientos y fórmulas recientes.</p>
                 <motion.div 
                     key={result}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Music, Volume2, VolumeX, Square, X, Maximize2, Minimize2, Upload, PencilRuler, Copy, Play, Pencil, Trash2, Plus, Save, Download, ArrowLeft, ImagePlus, RotateCcw } from 'lucide-react';
 import { useNotifications } from './NotificationContext';
 import { useAudio, WAITING_TRACKS } from './AudioContext';
 import { RNG } from '../utils/rng';
@@ -986,19 +987,19 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
         <div className="grid">
             <div className={`card full-width${isStage ? ' exam-stage' : ''}`} style={{ gridColumn: 'span 2' }}>
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <h2>{isStage && currentQuestion >= 0 ? `Pregunta ${currentQuestion + 1} / ${exam.questions.length}` : 'Examen Grupal'}</h2>
+                    <h2>{isStage && currentQuestion >= 0 ? `Pregunta ${currentQuestion + 1} / ${exam.questions.length}` : setupPhase === 'upload' ? 'Preparar examen' : 'Examen grupal'}</h2>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <div style={{ position: 'relative' }}>
                             <button
                                 className="btn"
-                                style={{ background: 'var(--bg-secondary)', border: '2px solid var(--primary)', color: 'var(--primary)', fontWeight: 900 }}
+                                aria-expanded={showMusicMenu}
                                 onClick={() => {
                                     audio.unlock();
                                     audio.playSFX('click');
                                     setShowMusicMenu(!showMusicMenu);
                                 }}
                             >
-                                📻 Configurar Audio
+                                <Music size={16} aria-hidden /> Música
                             </button>
                             <AnimatePresence>
                                 {showMusicMenu && (
@@ -1016,8 +1017,8 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                         ))}
                                         <div className="divider" style={{ margin: '6px 0' }}></div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <button className="btn" style={{ padding: '4px 10px' }} onClick={toggleMute}>
-                                                {isMuted ? '🔇' : '🔊'}
+                                            <button className="btn btn-sm" onClick={toggleMute} aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}>
+                                                {isMuted ? <VolumeX size={16} aria-hidden /> : <Volume2 size={16} aria-hidden />}
                                             </button>
                                             <input
                                                 type="range" min="0" max="1" step="0.05"
@@ -1031,27 +1032,27 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                             />
                                         </div>
                                         <button className="btn" style={{ padding: '6px', marginTop: '4px' }} onClick={() => { audio.stop(); }}>
-                                            ⏹️ Detener Música
+                                            <Square size={14} aria-hidden /> Detener música
                                         </button>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
                         {setupPhase === 'game' && (
-                            <button className="btn" onClick={async () => {
+                            <button className="btn danger" onClick={async () => {
                                 if (await confirm('¿Cerrar Examen?', '¿Seguro que quieres cerrar el examen? Se perderá el progreso.')) {
                                     setExam(null);
                                     setSetupPhase('upload');
                                 }
-                            }}>🛑 Cerrar Examen</button>
+                            }}><X size={16} aria-hidden /> Cerrar examen</button>
                         )}
                         {setupPhase === 'game' && (
                             <button
-                                className="btn"
-                                style={projectorMode ? { background: 'var(--primary)', color: 'white', fontWeight: 900 } : { fontWeight: 900 }}
+                                className={`btn${projectorMode ? ' selected' : ''}`}
+                                aria-pressed={projectorMode}
                                 onClick={toggleProjector}
                             >
-                                {projectorMode ? '🔳 Salir de Proyector' : '📺 Modo Proyector'}
+                                {projectorMode ? <><Minimize2 size={16} aria-hidden /> Salir de proyector</> : <><Maximize2 size={16} aria-hidden /> Modo proyector</>}
                             </button>
                         )}
                     </div>
@@ -1064,14 +1065,14 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                         <p>Importa el JSON del examen o utiliza el editor visual para crearlo.</p>
                         <div className="row" style={{ margin: '15px 0', flexWrap: 'wrap', gap: '10px' }}>
                             <input type="file" accept=".json" onChange={handleFileUpload} style={{ display: 'none' }} id="json-upload-input" />
-                            <label htmlFor="json-upload-input" className="btn" style={{ cursor: 'pointer', display: 'inline-block', border: '2px solid var(--line)', background: 'var(--bg)' }}>
-                                📁 Subir Archivo JSON
+                            <label htmlFor="json-upload-input" className="btn" style={{ cursor: 'pointer' }}>
+                                <Upload size={16} aria-hidden /> Subir archivo JSON
                             </label>
                             <button className="btn primary" onClick={startEditing}>
-                                ✏️ Diseñar Examen (Editor)
+                                <PencilRuler size={16} aria-hidden /> Diseñar examen
                             </button>
                             <button className="btn" onClick={() => setShowGuide(!showGuide)}>
-                                {showGuide ? 'Ocultar Guía' : 'Ver Estructura JSON'}
+                                {showGuide ? 'Ocultar guía' : 'Ver estructura JSON'}
                             </button>
                             <button className="btn" onClick={async () => {
                                 const template = {
@@ -1083,16 +1084,16 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                     await navigator.clipboard.writeText(JSON.stringify(template, null, 2));
                                     alert("Copiado al portapapeles", "Pega el código en un archivo .json");
                                 } catch {
-                                    alert("No se pudo copiar", "Tu navegador bloqueó el portapapeles. Usa «Ver Estructura JSON» y copia el ejemplo a mano.");
+                                    alert("No se pudo copiar", "Tu navegador bloqueó el portapapeles. Usa «Ver estructura JSON» y copia el ejemplo a mano.");
                                 }
                             }}>
-                                📋 Copiar Plantilla
+                                <Copy size={16} aria-hidden /> Copiar plantilla
                             </button>
                         </div>
 
                         {savedExams.length > 0 && (
                             <div style={{ marginBottom: '1rem' }}>
-                                <h3 style={{ marginBottom: '0.5rem' }}>📚 Mis exámenes guardados</h3>
+                                <h3 style={{ marginBottom: '0.5rem' }}>Mis exámenes guardados</h3>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
                                     {savedExams.map(ex => (
                                         <div key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', border: '2px solid var(--line)', borderRadius: '12px', flexWrap: 'wrap' }}>
@@ -1100,9 +1101,9 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                                 <div style={{ fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ex.name}</div>
                                                 <div className="muted" style={{ fontSize: '0.75rem' }}>{ex.count} pregunta(s)</div>
                                             </div>
-                                            <button className="btn good" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => playSavedExam(ex.id)}>🎮 Jugar</button>
-                                            <button className="btn" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={() => loadExamToEdit(ex.id)}>✏️ Editar</button>
-                                            <button className="btn" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => deleteSavedExam(ex.id, ex.name)} title="Borrar examen">🗑️</button>
+                                            <button className="btn btn-sm good" onClick={() => playSavedExam(ex.id)}><Play size={14} aria-hidden /> Jugar</button>
+                                            <button className="btn btn-sm" onClick={() => loadExamToEdit(ex.id)}><Pencil size={14} aria-hidden /> Editar</button>
+                                            <button className="btn btn-sm danger" onClick={() => deleteSavedExam(ex.id, ex.name)} title="Borrar examen" aria-label={`Borrar ${ex.name}`}><Trash2 size={16} aria-hidden /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -1131,7 +1132,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                         )}
 
                         <div className="divider"></div>
-                        <h3>Ajustes del Game Show</h3>
+                        <h3>Ajustes del juego</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '10px' }}>
                             <label className="row" style={{ cursor: 'pointer' }}>
                                 <input type="checkbox" checked={settings.timer} onChange={e => setSettings({ ...settings, timer: e.target.checked })} />
@@ -1184,8 +1185,8 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
                         <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                <button className="btn primary" onClick={addQuestion}>➕ Añadir Pregunta</button>
-                                <button className="btn good" style={{ background: 'var(--good)', color: 'white' }} onClick={saveAndStart}>🎮 Guardar y Jugar</button>
+                                <button className="btn" onClick={addQuestion}><Plus size={16} aria-hidden /> Añadir pregunta</button>
+                                <button className="btn primary" onClick={saveAndStart}><Play size={16} aria-hidden /> Guardar y jugar</button>
                                 <input
                                     type="text"
                                     value={examName}
@@ -1193,12 +1194,12 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                     placeholder="Nombre del examen"
                                     style={{ minWidth: '150px' }}
                                 />
-                                <button className="btn" onClick={saveToLibrary} disabled={editedQuestions.length === 0}>💾 Guardar en biblioteca</button>
+                                <button className="btn" onClick={saveToLibrary} disabled={editedQuestions.length === 0}><Save size={16} aria-hidden /> Guardar en biblioteca</button>
                                 <button className="btn" onClick={newExamDraft} title="Empezar un examen nuevo en blanco">🆕 Nuevo</button>
-                                <button className="btn" onClick={exportExamJSON} disabled={editedQuestions.length === 0}>📥 Exportar JSON</button>
+                                <button className="btn" onClick={exportExamJSON} disabled={editedQuestions.length === 0}><Download size={16} aria-hidden /> Exportar JSON</button>
                                 <span className="pill" style={{ fontSize: '0.8rem' }}>{editedQuestions.length} pregunta{editedQuestions.length !== 1 ? 's' : ''}</span>
                             </div>
-                            <button className="btn" onClick={() => setSetupPhase('upload')}>↩️ Volver</button>
+                            <button className="btn" onClick={() => setSetupPhase('upload')}><ArrowLeft size={16} aria-hidden /> Volver</button>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '5px' }}>
@@ -1211,7 +1212,7 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                             <button className="btn" style={{ padding: '2px 8px', fontSize: '0.8rem' }} disabled={qIdx === editedQuestions.length - 1} onClick={() => moveQuestion(qIdx, 1)} title="Bajar">▼</button>
                                             <button className="btn" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => duplicateQuestion(qIdx)} title="Duplicar">⧉ Duplicar</button>
                                             {editedQuestions.length > 1 && (
-                                                <button className="btn error" style={{ padding: '2px 8px', fontSize: '0.8rem', background: 'var(--error)', color: 'white' }} onClick={() => removeQuestion(qIdx)}>✕ Eliminar</button>
+                                                <button className="btn btn-sm danger" onClick={() => removeQuestion(qIdx)}>✕ Eliminar</button>
                                             )}
                                         </div>
                                     </div>
@@ -1232,12 +1233,12 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                         {q.image ? (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                                 <img src={q.image} alt="Vista previa" style={{ maxHeight: '90px', maxWidth: '160px', borderRadius: '8px', border: '2px solid var(--line)', objectFit: 'cover' }} />
-                                                <button className="btn error" style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'var(--error)', color: 'white' }} onClick={() => updateQuestion(qIdx, 'image', null)}>✕ Quitar imagen</button>
+                                                <button className="btn btn-sm danger" onClick={() => updateQuestion(qIdx, 'image', null)}>✕ Quitar imagen</button>
                                             </div>
                                         ) : (
                                             <div>
                                                 <input type="file" accept="image/*" style={{ display: 'none' }} id={`q-img-${qIdx}`} onChange={e => handleQuestionImage(qIdx, e.target.files?.[0])} />
-                                                <label htmlFor={`q-img-${qIdx}`} className="btn" style={{ cursor: 'pointer', padding: '4px 10px', fontSize: '0.8rem' }}>🖼️ Añadir imagen</label>
+                                                <label htmlFor={`q-img-${qIdx}`} className="btn" style={{ cursor: 'pointer', padding: '4px 10px', fontSize: '0.8rem' }}><ImagePlus size={14} aria-hidden /> Añadir imagen</label>
                                             </div>
                                         )}
                                     </div>
@@ -1261,14 +1262,14 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                                         style={{ flex: 1, padding: '6px 10px', border: '1px solid var(--line)', borderRadius: '6px', background: 'var(--bg)', color: 'var(--text)' }}
                                                     />
                                                     {q.options.length > 2 && (
-                                                        <button className="btn error" style={{ padding: '4px 8px', fontSize: '0.75rem', background: 'var(--error)', color: 'white' }} onClick={() => removeOption(qIdx, oIdx)}>✕</button>
+                                                        <button className="btn btn-sm danger" onClick={() => removeOption(qIdx, oIdx)}>✕</button>
                                                     )}
                                                 </div>
                                             ))}
                                         </div>
                                         {q.options.length < 4 && (
                                             <button className="btn" style={{ alignSelf: 'flex-start', marginTop: '5px', padding: '4px 10px', fontSize: '0.8rem' }} onClick={() => addOption(qIdx)}>
-                                                ➕ Añadir Opción
+                                                <Plus size={14} aria-hidden /> Añadir opción
                                             </button>
                                         )}
                                     </div>
@@ -1738,8 +1739,8 @@ const GroupExam = ({ pickerItems = [], isActive = true }) => {
                                 ))}
                         </div>
                         <div className="row" style={{ justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '2rem' }}>
-                            <button className="btn primary" onClick={replaySameTeams}>🔁 Jugar de nuevo (mismos equipos)</button>
-                            <button className="btn" onClick={exportResults}>📊 Exportar Resultados</button>
+                            <button className="btn primary" onClick={replaySameTeams}><RotateCcw size={16} aria-hidden /> Jugar de nuevo (mismos equipos)</button>
+                            <button className="btn" onClick={exportResults}><Download size={16} aria-hidden /> Exportar resultados</button>
                             <button className="btn" onClick={() => { setExam(null); setSetupPhase('upload'); }}>🆕 Nuevo Examen</button>
                         </div>
                     </div>

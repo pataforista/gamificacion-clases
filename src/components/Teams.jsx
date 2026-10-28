@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RefreshCw, Copy } from 'lucide-react';
 import { useNotifications } from './NotificationContext';
 import { RNG } from '../utils/rng';
 
@@ -47,7 +48,7 @@ const Teams = ({ pickerItems = [] }) => {
     return (
         <div className="grid">
             <div className="card">
-                <h2>Generador de Equipos</h2>
+                <h2>Generador de equipos</h2>
                 <div className="smallout">Divide los nombres del Sorteo en grupos equilibrados.</div>
                 <div className="divider"></div>
                 <div className="row">
@@ -62,9 +63,8 @@ const Teams = ({ pickerItems = [] }) => {
                             style={{ width: '80px', marginTop: '5px' }}
                         />
                     </div>
-                    <button className="btn primary good" onClick={generateTeams}>Generar</button>
-                    <button className="btn" onClick={generateTeams}>🔄 Rehacer</button>
-                    {teams.length > 0 && <button className="btn" onClick={copyToClipboard}>📋 Copiar</button>}
+                    <button className="btn primary" onClick={generateTeams}>{teams.length > 0 ? <><RefreshCw size={16} aria-hidden /> Rehacer</> : 'Generar'}</button>
+                    {teams.length > 0 && <button className="btn" onClick={copyToClipboard}><Copy size={16} aria-hidden /> Copiar</button>}
                     <button className="btn" onClick={() => setTeams([])}>Limpiar</button>
                 </div>
             </div>
