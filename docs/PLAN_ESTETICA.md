@@ -122,4 +122,90 @@ huellas de IA ✔ · validación con usuarios ✘ (Fase 5).
 | 12. Tema Noche | Revisado | El logo sí se dibuja (la captura anterior se tomó antes de que terminara su animación); contraste corregido |
 | 13. Estados vacíos | Hecho | "Nadie todavía", "Elige un dado", "Sin asignar" |
 
-Pendiente: Fase 5 (prueba en aula real) y migrar los estilos en línea de `GroupExam.jsx` para poder retirar los `!important`.
+## 7. Cómo corregir lo pendiente
+
+Orden sugerido: de menor a mayor riesgo. Cada punto cabe en un PR propio y se
+verifica con `npm run lint`, `npm run build`, `npm run test:e2e` y el script de
+contraste (pares texto/fondo por tema, mínimo 4,5:1).
+
+### 7.1 Estilos en línea del Examen grupal → clases (desbloquea los `!important`)
+
+**Diagnóstico.** `GroupExam.jsx` tiene 137 atributos `style={{…}}`, 32 de ellos
+con `fontSize` fijo. El modo proyector (`.exam-stage`, en `index.css`) solo puede
+ganarles con `!important`: de los 37 que quedan, 19 viven en ese bloque y otros
+6 en la versión móvil del examen.
+
+**Corrección.**
+1. Extraer los estilos repetidos a clases con nombre de función, no de aspecto:
+   `.exam-saved-item`, `.exam-music-menu`, `.exam-track-btn` (con `[aria-pressed]`
+   para la pista elegida), `.exam-feedback`, `.exam-podium-place`.
+2. Pasar los `fontSize` fijos a la escala (`var(--fs-sm)` … `var(--fs-xl)`); los
+   que dependen de `isStage` se vuelven una regla `.exam-stage .x { … }`.
+3. Con el JSX ya sin estilos en línea, borrar los `!important` del bloque
+   `.exam-stage` uno por uno, revisando el modo proyector tras cada uno (la prueba
+   `examen.spec.js › Modo proyector` cubre que todo quepa sin scroll).
+4. Mantener `!important` solo donde gana a librerías o al navegador: canvas a
+   pantalla completa (`.fs-card:fullscreen canvas`), `.module-pane[hidden]` y los
+   `16px` que evitan el zoom de iOS.
+
+**Riesgo.** Medio: es el archivo más grande (≈1 750 líneas). Hacerlo por
+secciones (preparación → editor → juego → podio), un commit por sección.
+
+### 7.2 Valores sueltos fuera del sistema en otros módulos
+
+**Diagnóstico.** 54 tamaños de letra fijos y 41 colores escritos a mano
+(`#hex`, `'white'`, `'black'`) en componentes; los que más tienen son
+`TouchOrder.jsx` (14 colores), `GroupExam.jsx` (11) y `Ruleta.jsx` (10).
+
+**Corrección.**
+- Tamaños: sustituir por `var(--fs-*)` con la misma regla de redondeo usada en el
+  CSS global (< 0,9 rem → `--fs-sm`; 0,9–1,05 → `--fs-base`; etc.).
+- Colores en JSX: usar los tokens (`var(--text)`, `var(--on-signal)`,
+  `var(--error)`…). Excepción: la ruleta pinta en `<canvas>`, que no entiende
+  `var()`. Ahí se leen los tokens una vez con
+  `getComputedStyle(document.body).getPropertyValue('--primary')` y se repinta al
+  cambiar de tema.
+- Prevención: una regla de ESLint (`no-restricted-syntax`) que avise ante
+  `fontSize` numérico o `#hex` dentro de `style={{}}`.
+
+### 7.3 Huecos en la rejilla (hallazgo 6, parcial)
+
+**Diagnóstico.** Clase en vivo ya tiene su rejilla propia. Progreso RPG, Ruleta y
+Control de flujo usan `.grid` genérica (`auto-fit, minmax(300px, 1fr)`): cuando
+una tarjeta es mucho más alta que sus vecinas, deja una columna vacía debajo.
+
+**Corrección.** Aplicar el mismo patrón que `live-grid`: una clase por módulo que
+declare qué tarjeta domina (`grid-row: span 2`) y cuáles se apilan a su lado. En
+Progreso RPG: Jerarquía como principal; Energía e Insignias apiladas; Respaldo a
+lo ancho abajo, como panel `card-quiet`.
+
+### 7.4 Ajustes finos vistos en las capturas
+
+- **Semáforo muy alto en monitores grandes.** Limitar la altura de las luces
+  en Clase en vivo: `.live-main .traffic-btn { max-height: 42vh; }`. En proyector
+  sigue llenando; en un monitor de 27" deja de verse como tres columnas vacías.
+- **Insignias en 3 + 1.** Fijar dos columnas (`repeat(2, 1fr)`) con
+  `aspect-ratio: auto` para formar un 2 × 2 equilibrado sin que los nombres se
+  partan.
+
+### 7.5 Accesibilidad que falta medir
+
+- **Prueba automática.** Añadir `@axe-core/playwright` y una prueba que recorra
+  las 13 pestañas en los 6 temas y falle ante violaciones de nivel AA. Cubre lo
+  que el script de contraste no ve (texto sobre imágenes, etiquetas, roles).
+- **Lector de pantalla.** Revisión manual con NVDA o VoiceOver de tres flujos:
+  cambiar el semáforo, sortear un alumno y responder una pregunta del examen. El
+  semáforo ya anuncia su estado con `aria-pressed`; falta comprobar que el cambio
+  de módulo se anuncie (opción: mover el foco al `<h1>` al cambiar de pestaña).
+
+### 7.6 Fase 5: validación en aula
+
+Los cambios anteriores son hipótesis sustentadas en heurísticas; solo el aula
+las confirma.
+
+1. Proyectar Clase en vivo y Control de flujo en el salón habitual.
+2. Desde la última fila, 3–5 alumnos dicen en voz alta el estado del semáforo
+   y el número del temporizador. Registrar aciertos y dudas.
+3. Repetir con el tema Noche y con las luces del salón encendidas.
+4. Criterio de éxito: todos leen el estado sin acercarse. Si falla, considerar
+   la opción B (modo cartel) solo para esos dos módulos.
