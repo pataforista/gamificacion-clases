@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
+import { Download, Upload, RotateCcw } from 'lucide-react';
 import { usePersistence } from '../hooks/usePersistence';
 import { useNotifications } from './NotificationContext';
 import { useGSAP } from '@gsap/react';
@@ -213,30 +214,30 @@ const RPGDash = ({ theme, updateTheme }) => {
                     </div>
                     <div className="divider"></div>
                     <div className="row">
-                        <button className="btn good" onClick={() => handleXP(10)}>+10 XP (Acierto)</button>
+                        <button className="btn" onClick={() => handleXP(10)}>+10 XP (Acierto)</button>
                         <button className="btn" onClick={() => handleXP(50)}>+50 XP (Gran Logro)</button>
                     </div>
                 </div>
 
                 <div className="card">
-                    <h2>Energía del Grupo</h2>
+                    <h2>Energía del grupo</h2>
                     <div className="health-container">
                         <motion.div 
                             className="health-bar" 
                             animate={{ width: `${state.health}%` }}
                             transition={{ type: 'spring', stiffness: 100, damping: 20 }}
                         />
-                        <div className="health-text">{state.health} / 100</div>
+                        <div className="health-text"><span className="health-value">{state.health} / 100</span></div>
                     </div>
                     <div className="divider"></div>
                     <div className="row">
-                        <button className="btn warn" onClick={() => handleHealth(-10)}>Daño (Fallo)</button>
-                        <button className="btn good" onClick={() => handleHealth(10)}>Heal (Recuperación)</button>
+                        <button className="btn danger" onClick={() => handleHealth(-10)}>Daño (Fallo)</button>
+                        <button className="btn good" onClick={() => handleHealth(10)}>Recuperar (+10)</button>
                     </div>
                 </div>
 
                 <div className="card">
-                    <h2>Logros (Insignias)</h2>
+                    <h2>Insignias</h2>
                     <motion.div 
                         className="badge-grid"
                         initial="hidden"
@@ -274,15 +275,15 @@ const RPGDash = ({ theme, updateTheme }) => {
                     </div>
                 </div>
 
-                <div className="card">
-                    <h2>Gestión de Datos</h2>
+                <div className="card card-quiet">
+                    <h2>Respaldo de datos</h2>
                     <div className="smallout">Respalda o restaura todo (progreso, alumnos, títulos y tema) en un archivo. Ideal para pasar del proyector a tu celular sin nube.</div>
                     <div className="divider"></div>
                     <div className="row" style={{ flexWrap: 'wrap' }}>
-                        <button className="btn primary" onClick={exportData}>💾 Exportar respaldo</button>
+                        <button className="btn" onClick={exportData}><Download size={16} aria-hidden /> Exportar respaldo</button>
                         <input type="file" accept=".json,application/json" onChange={importData} style={{ display: 'none' }} id="rpg-import-input" />
-                        <label htmlFor="rpg-import-input" className="btn" style={{ cursor: 'pointer' }}>📥 Importar respaldo</label>
-                        <button className="btn warn" onClick={handleReset}>Reset Total</button>
+                        <label htmlFor="rpg-import-input" className="btn" style={{ cursor: 'pointer' }}><Upload size={16} aria-hidden /> Importar respaldo</label>
+                        <button className="btn danger" onClick={handleReset}><RotateCcw size={16} aria-hidden /> Reiniciar progreso</button>
                     </div>
                 </div>
             </div>

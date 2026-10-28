@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import { cleanLines, RNG } from '../utils/rng';
 import { useAudio } from './AudioContext';
 import { useNotifications } from './NotificationContext';
@@ -202,11 +203,11 @@ const Ruleta = ({ items = [] }) => {
 
   return (
     <div className="grid">
-      <div ref={fsRef} className="card fs-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+      <div ref={fsRef} className="card card-main fs-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
         <div className="row" style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>Ruleta de Decisiones</h2>
-          <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={toggleFullscreen}>
-            {isFullscreen ? '🔳 Salir' : '📺 Proyector'}
+          <h2 style={{ margin: 0 }}>Ruleta de decisiones</h2>
+          <button className="btn btn-sm" onClick={toggleFullscreen}>
+            {isFullscreen ? <><Minimize2 size={16} aria-hidden /> Salir</> : <><Maximize2 size={16} aria-hidden /> Proyector</>}
           </button>
         </div>
         <p className="muted" style={{ marginBottom: '1rem' }}>Gira la ruleta para elegir un tema, una actividad o un estudiante al azar.</p>
@@ -267,7 +268,7 @@ const Ruleta = ({ items = [] }) => {
         </AnimatePresence>
       </div>
 
-      <div className="card">
+      <div className="card card-quiet">
         <h2>Opciones ({options.length})</h2>
         <label style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Una opción por línea</label>
         <textarea

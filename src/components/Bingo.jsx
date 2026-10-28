@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { RNG } from '../utils/rng';
 import { useAudio } from './AudioContext';
@@ -78,11 +79,11 @@ const Bingo = () => {
   return (
     <div className="grid">
       {/* Left: caller panel */}
-      <div ref={fsRef} className="card fs-card" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div ref={fsRef} className="card card-main fs-card" style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0 }}>Bingo — Cantador</h2>
-          <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={toggleFullscreen}>
-            {isFullscreen ? '🔳 Salir' : '📺 Proyector'}
+          <button className="btn btn-sm" onClick={toggleFullscreen}>
+            {isFullscreen ? <><Minimize2 size={16} aria-hidden /> Salir</> : <><Maximize2 size={16} aria-hidden /> Proyector</>}
           </button>
         </div>
         <p className="muted" style={{ marginBottom: '1rem' }}>Genera números al azar sin repeticiones para dinámicas de bingo en clase.</p>
@@ -147,11 +148,11 @@ const Bingo = () => {
             className="btn primary"
             onClick={draw}
             disabled={rolling || done}
-            style={{ flex: 1, fontSize: '1rem', padding: '0.8rem' }}
+            style={{ flex: 1, padding: '0.8rem' }}
           >
-            {done ? '¡Todos sacados!' : rolling ? 'Sacando…' : '🎱 Sacar número'}
+            {done ? '¡Todos sacados!' : rolling ? 'Sacando…' : 'Sacar número'}
           </button>
-          <button className="btn warn" onClick={reset}>
+          <button className="btn danger" onClick={reset}>
             Reiniciar
           </button>
         </div>

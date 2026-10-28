@@ -3,7 +3,7 @@ import { test, expect, openTab, pane, audioLog, clearAudio } from './fixtures';
 test.describe('Clase en vivo', () => {
   test('código rojo inicia la música una sola vez', async ({ page }) => {
     await clearAudio(page);
-    await pane(page).getByRole('button', { name: '15s' }).click();
+    await pane(page).getByRole('button', { name: '15 s' }).click();
     await page.waitForTimeout(1500);
     const log = await audioLog(page);
     expect(log.filter(x => x.startsWith('play:musica-pensando')).length).toBe(1);
@@ -14,7 +14,7 @@ test.describe('Clase en vivo', () => {
     await pane(page).getByRole('button', { name: /Sortear ahora/ }).click();
     await expect(pane(page).locator('.win-text')).toBeVisible({ timeout: 5000 });
     await pane(page).getByRole('button', { name: 'd20', exact: true }).click();
-    await expect(pane(page).locator('.card', { hasText: 'Dados Rápidos' })).toContainText('1d20');
+    await expect(pane(page).locator('.card', { hasText: 'Dados rápidos' })).toContainText('1d20');
   });
 });
 
@@ -35,10 +35,10 @@ test.describe('Sorteo', () => {
     await expect(pane(page).locator('.out').first()).toHaveText(/Ana|Luis|Eva/);
 
     await pane(page).locator('input[placeholder^="Nombre de la lista"]').fill('2A');
-    await pane(page).getByRole('button', { name: '💾 Guardar actual' }).click();
+    await pane(page).getByRole('button', { name: 'Guardar actual' }).click();
     await expect(pane(page).getByText('3 alumno(s)')).toBeVisible();
 
-    await pane(page).getByRole('button', { name: '🗑️ Limpiar Todo' }).click();
+    await pane(page).getByRole('button', { name: 'Limpiar todo' }).click();
     await page.getByRole('button', { name: 'Confirmar' }).click();
     await expect(ta).toHaveValue('');
 
@@ -60,9 +60,9 @@ test.describe('Equipos', () => {
 test.describe('Control de flujo', () => {
   test('la música del código rojo no entra en bucle y se apaga al cerrar', async ({ page }) => {
     await openTab(page, 'Control de flujo');
-    await pane(page).getByRole('button', { name: 'OFF' }).click();
+    await pane(page).getByRole('button', { name: 'Apagada' }).click();
     await clearAudio(page);
-    await pane(page).getByText('⚡ Iniciar').click();
+    await pane(page).getByRole('button', { name: 'Iniciar', exact: true }).click();
     await page.waitForTimeout(1500);
     let log = await audioLog(page);
     expect(log.filter(x => x.startsWith('play:musica')).length).toBe(1);
@@ -75,6 +75,6 @@ test.describe('Control de flujo', () => {
     expect(log.some(x => x.startsWith('play:musica'))).toBeFalsy();
 
     await pane(page).getByText('Asignar Líder').click();
-    await expect(pane(page).locator('.card', { hasText: 'Gestión de Aula' }).locator('.out')).not.toHaveText('—');
+    await expect(pane(page).locator('.card', { hasText: 'Líder del día' }).locator('.out')).not.toHaveText('Sin asignar');
   });
 });

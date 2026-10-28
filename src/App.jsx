@@ -62,7 +62,8 @@ const NAV_GROUPS = [
   },
 ];
 const HELP_TAB = { id: 'help', label: 'Ayuda', Icon: CircleHelp };
-const MODULE_IDS = [...NAV_GROUPS.flatMap(g => g.items.map(t => t.id)), HELP_TAB.id];
+const ALL_TABS = [...NAV_GROUPS.flatMap(g => g.items), HELP_TAB];
+const MODULE_IDS = ALL_TABS.map(t => t.id);
 
 const App = () => {
   const { state, updateState } = usePersistence();
@@ -139,6 +140,8 @@ const App = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [state.isRedCodeActive, updateState, activeTab]);
+
+  const activeLabel = ALL_TABS.find(t => t.id === activeTab)?.label || '';
 
   const pickerItems = state.pickerItems && state.pickerItems.length > 0 
     ? state.pickerItems 
@@ -236,17 +239,17 @@ const App = () => {
 
         <div className="workspace">
         <header className="topbar">
-          <div>
-            <h1
-              className="title editable-text"
+          <div className="course-line">
+            <span
+              className="course-title editable-text"
               title="Haz clic para editar el nombre de la materia"
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => updateState({ customTitle: e.target.innerText.trim() })}
             >
-              {state.customTitle || "Herramientas didácticas"}
-            </h1>
-            <div
+              {state.customTitle || "Nombre de la materia"}
+            </span>
+            <span
               className="subtitle editable-text"
               title="Haz clic para editar el subtítulo"
               contentEditable
@@ -254,8 +257,11 @@ const App = () => {
               onBlur={(e) => updateState({ customSubtitle: e.target.innerText.trim() })}
             >
               {state.customSubtitle || "Gamificación para la clase de medicina"}
-            </div>
+            </span>
           </div>
+          {/* El título grande nombra la herramienta abierta: así el proyector
+              dice en qué estamos y no repite el nombre de la app. */}
+          <h1 className="title">{activeLabel}</h1>
         </header>
 
         <main>
